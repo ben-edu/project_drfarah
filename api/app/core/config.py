@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     # Trust the X-Forwarded-* headers from the cluster network.
     TRUST_PROXY: bool = Field(default=False)
 
+    # --- SMTP ---
+    # For reservation notification emails.
+    # When SMTP_TEST_MODE=true, emails are logged instead of sent.
+    SMTP_HOST: str = Field(default="")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(default="")
+    SMTP_PASSWORD: str = Field(default="")
+    SMTP_FROM: str = Field(default="noreply@drfarah.proxbenovh.cloud")
+    SMTP_TO: str = Field(default="appointments@drfarah.proxbenovh.cloud")
+    SMTP_USE_TLS: bool = Field(default=True)
+    SMTP_TEST_MODE: bool = Field(default=True)
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -105,10 +105,11 @@ migration. Do not create a sitemap until the final domain is active.
 - Four-step navigation with progress indicator, back button, and review step.
 - Step 2 shows 16 time slots (8 visible by default) with "Show more slots"
   button that reveals all 16.
-- Success state shows a prototype notice (no real booking created).
-- No network requests, no localStorage/sessionStorage for booking data, no
-  API connection.
-- The `/book` route and API integration belong to later steps.
+- On submit, the form POSTs to the staging API at
+  `https://api.staging.drfarah.proxbenovh.cloud/api/v1/bookings`.
+- On success, the booking reference ID and confirmation details are shown.
+- On failure, an error message with the clinic phone number is displayed.
+- The `/book` route and admin dashboard belong to later steps.
 
 ## Deployment
 

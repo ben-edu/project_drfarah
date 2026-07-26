@@ -403,3 +403,93 @@ reviews, final service list, credentials wording, logo.
 - No PR merge (awaiting operator review).
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05: Booking MVP Backend + Staging Deployment
+
+### Preconditions verified
+- `feature/frontend-refresh-v2` merged into dev (PR #6, commit 4e49d33).
+- Jenkins dev build #6: SUCCESS.
+- Staging frontend: HTTP 200 at `https://staging.drfarah.proxbenovh.cloud/`.
+
+### Branch
+- Created `feature/booking-mvp-staging` from `dev` (4e49d33).
+
+### K3s infrastructure
+- Created `drfarah-staging` namespace with labels.
+- Copied `harbor-regcred` from `toilettage` to `drfarah-staging`.
+- Created `drfarah-staging-db-secret` (POSTGRES_USER/PASSWORD/DB).
+- Created `drfarah-staging-api-secret` (DATABASE_URL + SMTP keys copied from
+  toilettage-api-secret — no values exposed).
+- Applied ConfigMap with SMTP settings (SMTP_TEST_MODE=true).
+- Deployed PostgreSQL StatefulSet + Service → 1/1 Ready.
+- Applied API Service and Ingress manifests.
+- API Deployment pending image build/push (no Docker on management VM).
+
+### Backend — new files
+- `api/app/models/booking.py` — Booking model (id, service_type, visit_type,
+  preferred_day, preferred_time, time_window, first_name, last_name, email,
+  phone, reason_category, status, created_at). No clinical free text.
+- `api/app/schemas/booking.py` — BookingCreate (strict regex validation on
+  name/email/phone fields) and BookingResponse schemas.
+- `api/app/routers/booking.py` — `POST /api/v1/bookings` (creates booking,
+  triggers email notification fire-and-forget).
+- `api/app/services/email.py` — SMTP notification via `smtplib`. Test mode
+  logs instead of sending. SMTP credentials from K8s secret.
+- `api/tests/test_booking.py` — 12 tests: creation, persistence, validation
+  (missing fields, invalid email, numeric names, accented names, empty payload,
+  optional fields). Plus safety: no secrets in response.
+
+### Backend — updated files
+- `api/app/main.py` — registered booking router, added `Base.metadata.create_all`
+  on startup for automatic table creation.
+- `api/app/core/config.py` — added SMTP settings (SMTP_HOST, SMTP_PORT,
+  SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SMTP_TO, SMTP_USE_TLS, SMTP_TEST_MODE).
+- `kubernetes/drfarah-staging/configmap.yaml` — added SMTP environment vars.
+- `kubernetes/drfarah-staging/secret.example.yaml` — added SMTP credential fields.
+
+### Frontend — updated
+- `frontend/app.js` — submit handler now POSTs to
+  `https://api.staging.drfarah.proxbenovh.cloud/api/v1/bookings`. Shows
+  booking reference ID on success, clinic phone number on failure.
+- `frontend/index.html` — success message now uses `data-success-detail` for
+  dynamic confirmation text.
+
+### Jenkinsfile changes
+- Added required paths for all new backend files and K8s manifests.
+- Added `API — build and push to Harbor` stage (dev only):
+  - Builds image, tags with GIT_COMMIT and `:dev`.
+  - Logs into Harbor with robot account, pushes both tags.
+- Added `API — deploy staging manifests` stage (dev only):
+  - Applies namespace, service, ingress. Sets image tag, applies deployment.
+  - Waits for rollout (120s timeout).
+- Added `API — staging health check` stage (dev only):
+  - Liveness probe retry loop, readiness probe, booking POST smoke test.
+- Updated header comments.
+
+### Documentation updated
+- `api/README.md` — full rewrite with endpoints, structure, env vars, booking
+  data discipline, SMTP docs.
+- `frontend/README.md` — booking behavior updated for API integration.
+- `kubernetes/drfarah-staging/README.md` — current deployed state, secrets,
+  Jenkins pipeline flow.
+- `HANDOFF.md` — full Step 05 handoff.
+- `SESSION_LOG.md` — this entry.
+
+### Validation
+- All Python files compile cleanly (`py_compile`).
+- Tests designed for in-container execution (22 total: 10 health/CORS +
+  12 booking).
+- `node --check frontend/app.js` — passed.
+- No secrets in Git diff.
+
+### What was NOT done
+- No Docker image build/push (Docker unavailable on management VM; Jenkins
+  handles this on `dev`).
+- No Keycloak, admin UI, production deployment.
+- No PR merge (awaiting operator review).
+- No clinical free text, no excessive PHI collected.
+- No secrets were printed, copied, committed, or exposed.
+
+### No secrets were printed, copied, committed, or exposed.

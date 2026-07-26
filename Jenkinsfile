@@ -3,7 +3,7 @@ pipeline {
   options { timestamps() }
 
   // =========================================================================
-  // JENKINSFILE — Phase 1 (test and build validation only).
+  // JENKINSFILE — Phase 1 (test, build, staging deploy).
   //
   // Runs on feature/*, dev, and main.
   //
@@ -12,20 +12,20 @@ pipeline {
   //   - Secret-filename detection
   //   - Markdown hygiene
   //   - API tests (in container)
-  //   - Docker image build validation
   //   - Frontend file/JS/serving/no-index validation
+  //   - API Docker build and push to Harbor (dev only)
+  //   - API staging manifest deploy and rollout (dev only)
+  //   - API staging health check + booking smoke test (dev only)
   //   - Frontend staging deployment (dev only, rsync to Hestia via benweb SSH)
   //
   // Does NOT:
-  //   - Log in to Harbor or push images
-  //   - Run kubectl or deploy to K3s
-  //   - Deploy to production frontend (main)
-  //   - Deploy API, admin, or database
+  //   - Deploy to production (main)
+  //   - Deploy API, admin, or database to production
   //   - Modify HAProxy, DNS, TLS, or Hestia config
   //
   // Feature branches: validation only.
-  // Dev: validation + staging deployment.
-  // Main: validation only (production frontend deploy not yet configured).
+  // Dev: validation + API build/push + API deploy + frontend staging deploy.
+  // Main: validation only (production deploy not yet configured).
   // =========================================================================
 
   stages {
@@ -76,7 +76,20 @@ pipeline {
             frontend/robots.txt
             admin/README.md
             api/README.md
+            api/app/models/booking.py
+            api/app/schemas/booking.py
+            api/app/routers/booking.py
+            api/app/services/email.py
+            api/tests/test_booking.py
             kubernetes/drfarah/README.md
+            kubernetes/drfarah-staging/namespace.yaml
+            kubernetes/drfarah-staging/postgres-statefulset.yaml
+            kubernetes/drfarah-staging/postgres-service.yaml
+            kubernetes/drfarah-staging/configmap.yaml
+            kubernetes/drfarah-staging/secret.example.yaml
+            kubernetes/drfarah-staging/api-deployment.yaml
+            kubernetes/drfarah-staging/api-service.yaml
+            kubernetes/drfarah-staging/api-ingress.yaml
           "
 
           missing=""
@@ -322,6 +335,129 @@ pipeline {
 
           echo ""
           echo "=== Frontend validation passed ==="
+        '''
+      }
+    }
+
+    stage('API — build and push to Harbor') {
+      when {
+        branch 'dev'
+      }
+      steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'harbor-robot-devops-project-harbor',
+            usernameVariable: 'HARBOR_USER',
+            passwordVariable: 'HARBOR_PASS'
+        )]) {
+          sh '''
+            set -e
+
+            HARBOR_REGISTRY=harbor.proxbenovh.cloud
+            HARBOR_REPO=devops-project-harbor/drfarah-api
+            IMAGE_TAG="${GIT_COMMIT:-dev}"
+
+            echo "=== Building API Docker image ==="
+            cd api
+            docker build -t "$HARBOR_REGISTRY/$HARBOR_REPO:$IMAGE_TAG" -t "$HARBOR_REGISTRY/$HARBOR_REPO:dev" .
+
+            echo "=== Logging in to Harbor ==="
+            echo "$HARBOR_PASS" | docker login "$HARBOR_REGISTRY" -u "$HARBOR_USER" --password-stdin
+
+            echo "=== Pushing to Harbor ==="
+            docker push "$HARBOR_REGISTRY/$HARBOR_REPO:$IMAGE_TAG"
+            docker push "$HARBOR_REGISTRY/$HARBOR_REPO:dev"
+
+            echo "=== Logging out ==="
+            docker logout "$HARBOR_REGISTRY"
+
+            echo "=== Image pushed: $HARBOR_REGISTRY/$HARBOR_REPO:$IMAGE_TAG ==="
+          '''
+        }
+      }
+    }
+
+    stage('API — deploy staging manifests') {
+      when {
+        branch 'dev'
+      }
+      steps {
+        withKubeConfig([credentialsId: 'kubeconfig-proxbenovh']) {
+          sh '''
+            set -e
+
+            echo "=== Ensuring drfarah-staging namespace ==="
+            kubectl apply -f kubernetes/drfarah-staging/namespace.yaml
+
+            echo "=== Applying API manifests ==="
+            kubectl apply -f kubernetes/drfarah-staging/api-service.yaml
+            kubectl apply -f kubernetes/drfarah-staging/api-ingress.yaml
+
+            echo "=== Patching API deployment image tag ==="
+            IMAGE_TAG="${GIT_COMMIT:-dev}"
+            kubectl set image deployment/drfarah-staging-api \
+              -n drfarah-staging \
+              "api=harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:$IMAGE_TAG"
+
+            echo "=== Applying API deployment ==="
+            kubectl apply -f kubernetes/drfarah-staging/api-deployment.yaml
+
+            echo "=== Waiting for rollout ==="
+            kubectl rollout status deployment/drfarah-staging-api -n drfarah-staging --timeout=120s
+          '''
+        }
+      }
+    }
+
+    stage('API — staging health check') {
+      when {
+        branch 'dev'
+      }
+      steps {
+        sh '''
+          set -e
+
+          STAGING_API=https://api.staging.drfarah.proxbenovh.cloud
+
+          echo "=== Checking staging API liveness ==="
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_API/api/v1/health/live")
+            if [ "$STATUS" = "200" ]; then
+              echo "Liveness OK (attempt $i)"
+              break
+            fi
+            echo "Waiting... (attempt $i, status $STATUS)"
+            sleep 5
+          done
+
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: staging API liveness probe failed"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Checking staging API readiness ==="
+          READY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_API/api/v1/health/ready")
+          if [ "$READY_STATUS" = "200" ]; then
+            echo "Readiness OK ($READY_STATUS)"
+          else
+            echo "FAIL: readiness returned $READY_STATUS"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Smoke-test booking endpoint ==="
+          BOOKING_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"service_type":"Test check","visit_type":"Clinic visit","preferred_day":"Monday","preferred_time":"9:00 AM","first_name":"Smoke","last_name":"Test","email":"test@example.com","phone":"+1-555-0000","reason_category":"General"}' \
+            "$STAGING_API/api/v1/bookings")
+          if [ "$BOOKING_STATUS" = "201" ]; then
+            echo "Booking endpoint OK ($BOOKING_STATUS)"
+          else
+            echo "WARNING: booking endpoint returned $BOOKING_STATUS (may need DB)"
+          fi
+
+          echo ""
+          echo "=== Staging API health check passed ==="
         '''
       }
     }

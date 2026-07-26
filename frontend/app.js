@@ -1,5 +1,7 @@
 
 (() => {
+  const API_BASE = 'https://api.staging.drfarah.proxbenovh.cloud';
+
   const header = document.querySelector('[data-header]');
   const overlay = document.querySelector('[data-booking-overlay]');
   const form = document.querySelector('[data-booking-form]');
@@ -9,6 +11,7 @@
   const prev = document.querySelector('[data-prev]');
   const actions = document.querySelector('[data-booking-actions]');
   const success = document.querySelector('[data-success]');
+  const successDetail = document.querySelector('[data-success-detail]');
   const summary = document.querySelector('[data-summary]');
   const timeOptions = document.querySelector('[data-time-options]');
   const moreSlotsButton = document.querySelector('[data-more-slots]');
@@ -136,7 +139,7 @@
     renderSlots();
   });
 
-  next?.addEventListener('click', () => {
+  next?.addEventListener('click', async () => {
     if (!validateCurrentStep()) return;
 
     if (currentStep < 4) {
@@ -153,9 +156,53 @@
       return;
     }
 
-    steps.forEach(step => step.classList.remove('active'));
-    success.hidden = false;
-    actions.hidden = true;
+    // Submit booking to staging API.
+    next.disabled = true;
+    next.textContent = 'Submitting...';
+
+    try {
+      const data = new FormData(form);
+      const payload = {
+        service_type: data.get('service'),
+        visit_type: data.get('visitType'),
+        preferred_day: data.get('day'),
+        preferred_time: data.get('time'),
+        time_window: data.get('timeWindow') || null,
+        first_name: data.get('firstName'),
+        last_name: data.get('lastName'),
+        email: data.get('email'),
+        phone: data.get('phone'),
+        reason_category: data.get('reason')
+      };
+
+      const resp = await fetch(`${API_BASE}/api/v1/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        throw new Error(`Server returned ${resp.status}`);
+      }
+
+      const result = await resp.json();
+      if (successDetail) {
+        successDetail.textContent = `Reference #${result.id} — ${result.first_name}, we have received your ${result.service_type.toLowerCase()} request for ${result.preferred_day} at ${result.preferred_time}. The clinic will review and confirm your appointment.`;
+      }
+
+      steps.forEach(step => step.classList.remove('active'));
+      success.hidden = false;
+      actions.hidden = true;
+    } catch (err) {
+      steps.forEach(step => step.classList.remove('active'));
+      success.hidden = false;
+      if (successDetail) {
+        successDetail.textContent = 'Your request could not be submitted right now. Please try again or call the clinic at (310) 555-0189.';
+      }
+    } finally {
+      next.disabled = false;
+      next.textContent = 'Submit request';
+    }
   });
 
   prev?.addEventListener('click', () => {
