@@ -13,6 +13,7 @@ pipeline {
   //   - Markdown hygiene
   //   - API tests (in container)
   //   - Docker image build validation
+  //   - Frontend file/JS/serving/no-index validation
   //
   // Does NOT:
   //   - Log in to Harbor or push images
@@ -21,7 +22,7 @@ pipeline {
   //   - Bind credentials of any kind
   //   - Deploy anything to any environment
   //
-  // Deployment stages will be added in Step 03B.
+  // Deployment stages will be added in a later step.
   // =========================================================================
 
   stages {
@@ -63,7 +64,12 @@ pipeline {
             docs/READINESS_AUDIT.md
             docs/DECISIONS.md
             docs/architecture/README.md
+            docs/design/DESIGN_SYSTEM_V1.md
             frontend/README.md
+            frontend/index.html
+            frontend/styles.css
+            frontend/app.js
+            frontend/robots.txt
             admin/README.md
             api/README.md
             kubernetes/drfarah/README.md
@@ -197,6 +203,98 @@ pipeline {
             docker rmi drfarah-api:test-build || true
           '''
         }
+      }
+    }
+
+    stage('Frontend — validation') {
+      when {
+        anyOf {
+          branch 'dev'
+          branch 'main'
+          branch pattern: 'feature/.*', comparator: 'REGEXP'
+        }
+      }
+      steps {
+        sh '''
+          set -e
+
+          echo "=== Frontend: checking required files ==="
+          required="
+            frontend/index.html
+            frontend/styles.css
+            frontend/app.js
+            frontend/robots.txt
+          "
+          for f in $required; do
+            if [ -f "$f" ]; then
+              echo "OK    $f"
+            else
+              echo "MISS  $f"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "=== Frontend: JavaScript syntax check ==="
+          docker run --rm \
+            -v "$PWD":/app \
+            -w /app \
+            node:20-slim \
+            node --check frontend/app.js
+          echo "JS syntax OK."
+
+          echo ""
+          echo "=== Frontend: no-index protection check ==="
+          grep -q 'noindex,nofollow,noarchive' frontend/index.html || {
+            echo "FAIL: missing noindex meta tag in frontend/index.html"
+            exit 1
+          }
+          echo "OK: noindex meta tag present."
+
+          grep -q 'Disallow: /' frontend/robots.txt || {
+            echo "FAIL: missing Disallow rule in frontend/robots.txt"
+            exit 1
+          }
+          echo "OK: robots.txt Disallow rule present."
+
+          echo ""
+          echo "=== Frontend: static asset serving check ==="
+          SERVER_PID=""
+          cleanup_server() {
+            if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+              kill "$SERVER_PID" 2>/dev/null || true
+              wait "$SERVER_PID" 2>/dev/null || true
+              echo "Static server stopped."
+            fi
+          }
+          trap cleanup_server EXIT
+
+          PORT=18900
+          cd frontend
+          python3 -m http.server "$PORT" --bind 127.0.0.1 &
+          SERVER_PID=$!
+          cd ..
+          sleep 1
+
+          if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "FAIL: static server did not start"
+            exit 1
+          fi
+          echo "Static server started on port $PORT (PID $SERVER_PID)."
+
+          for path in / /styles.css /app.js /robots.txt; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT$path")
+            if [ "$STATUS" = "200" ]; then
+              echo "OK    $path -> $STATUS"
+            else
+              echo "FAIL  $path -> $STATUS"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "=== Frontend validation passed ==="
+        '''
       }
     }
   }

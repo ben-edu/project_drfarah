@@ -1,90 +1,103 @@
-# HANDOFF — 2026-07-26 (Step 03A-FIX)
+# HANDOFF — 2026-07-26 (Step 04A)
 
 ## Current state
 
-- **Branch:** `feature/api-foundation`
+- **Branch:** `feature/frontend-prototype-integration`
+- **Base:** `dev` (Step 03A-FIX API foundation merged).
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
-- **Base:** `dev` (Step 02 infrastructure foundation merged).
 
-## Work completed (Step 03A-FIX — Repair Jenkins API Test Pipeline)
+## Work completed (Step 04A — Integrate Approved Frontend Prototype)
 
-### Fix: missing pytest in Jenkins test container
-- Created `api/requirements-dev.txt` with `pytest==8.3.4`.
-- Updated Jenkins `API — tests` stage to install both `requirements.txt`
-  and `requirements-dev.txt`.
-- Updated `api/README.md` test instructions.
-- All 10 tests pass locally (venv).
+### Source
+- Design prototype supplied by the design owner as
+  `project-sources/drfarah_design_prototype_v1.zip`.
+- Claude Code integrated the approved prototype faithfully — no redesign,
+  restyle, simplification, or framework migration.
 
-### Docker build validation
-- Reviewed and confirmed correct: builds the production Dockerfile using
-  only `requirements.txt`. No dev dependencies are included in the image.
+### Files created
+- `frontend/index.html` — homepage with integrated booking modal.
+- `frontend/styles.css` — complete responsive stylesheet.
+- `frontend/app.js` — booking modal interaction (frontend-only).
+- `frontend/robots.txt` — `Disallow: /` (temporary-domain protection).
+- `docs/design/DESIGN_SYSTEM_V1.md` — design system documentation.
 
-## Work completed (Step 03A — FastAPI Application Foundation)
+### Files updated
+- `frontend/README.md` — full documentation with placeholder list.
+- `docs/architecture/README.md` — added design document link.
+- `Jenkinsfile` — added frontend validation stage, updated required paths.
+- `HANDOFF.md` — this file.
+- `SESSION_LOG.md` — session record appended.
 
-### API application
-- FastAPI scaffold with two health endpoints:
-  - `GET /api/v1/health/live` — liveness probe.
-  - `GET /api/v1/health/ready` — readiness probe with database check.
-- Environment-based configuration (Pydantic Settings).
-- SQLAlchemy database abstraction (lazy engine, session management).
-- CORS middleware with configurable origins.
-- 10 passing tests (liveness, readiness, CORS, safety).
-- Dockerfile (python:3.12-slim, non-root user, healthcheck).
+### Allowed corrections made
+- Added `<meta name="robots" content="noindex,nofollow,noarchive">` to
+  `frontend/index.html`.
+- Created `frontend/robots.txt` with `Disallow: /`.
+- These must be removed during final-domain migration.
 
-### Kubernetes staging templates
-- 9 non-secret manifests under `kubernetes/drfarah-staging/`:
-  namespace, ConfigMap, secret.example.yaml, PostgreSQL StatefulSet,
-  PostgreSQL Service, API Deployment, API Service, API Ingress, README.
+### Accessibility
+- Prototype already included: `lang="en"`, single `h1`, labeled form controls,
+  keyboard-operable buttons, Escape-to-close dialog, `role="dialog"` and
+  `aria-modal="true"`, skip link, visible focus states (no outline
+  suppression), sufficient touch targets.
+- No accessibility defects requiring correction were found.
 
-### Environment isolation
-- `drfarah` = production namespace (reserved).
-- `drfarah-staging` = staging namespace (separate resources, DB, credentials).
-- Documented in `docs/architecture/ENVIRONMENT_ISOLATION.md` and `docs/DECISIONS.md`.
+### Booking status
+- Frontend-only modal preserved intact: four steps, service preselection,
+  progress indicator, review step, prototype success notice.
+- No network requests, no API connection, no data storage.
+- All 12 booking entry points use the same `data-open-booking` handler.
+- The `/book` route and API integration belong to later steps.
 
-### Jenkinsfile
-- Removed bootstrap "no application code" guard.
-- Added API test stage (containerized pytest).
-- Added Docker build validation stage.
-- Still no credentials, no image push, no deploy, no kubectl, no rsync.
+### Jenkinsfile changes
+- Added `Frontend — validation` stage:
+  - Confirms required files exist.
+  - Runs `node --check frontend/app.js` in `node:20-slim` container.
+  - Verifies no-index meta and robots.txt Disallow rule.
+  - Serves `frontend/` with Python `http.server` and validates HTTP 200 for
+    `/`, `/styles.css`, `/app.js`, `/robots.txt`.
+  - Cleans up server on exit (trap EXIT).
+- Updated required paths in `Validate required paths` stage.
+- No credentials, no rsync, no Hestia deploy, no Docker push, no kubectl.
 
-### Documentation
-- Updated: `api/README.md`, `kubernetes/drfarah/README.md`,
-  `docs/DECISIONS.md`, `docs/architecture/README.md`, `HANDOFF.md`,
-  `SESSION_LOG.md`.
-- Created: `docs/architecture/ENVIRONMENT_ISOLATION.md`.
+### Local validation
+- `node --check frontend/app.js` — passed.
+- `diff` between prototype sources and repo copies — only intentional
+  `meta robots` addition differs.
+- `python3 -m http.server` — all four assets served at HTTP 200.
+- No-index meta and robots Disallow rule verified via curl.
+- `git diff --check` — clean (no whitespace errors).
+- No secrets, passwords, tokens, or keys in the diff.
+- `project-sources/` and the ZIP archive are excluded by `.gitignore`.
+
+### Unresolved placeholders (documented in frontend/README.md)
+- Phone, email, exact address, office hours.
+- Legal text (privacy policy, NPP, accessibility).
+- Real portrait and clinic photography.
+- Appointment availability, verified reviews.
+- Final service list, credentials wording, logo.
 
 ## What was NOT done (intentionally)
 
-- No booking entities or endpoints.
-- No database tables or seed data.
-- No Alembic migrations.
-- No PostreSQL StatefulSet applied to the cluster.
-- No Docker image pushed to Harbor.
-- No Kubernetes manifests applied.
-- No Jenkins credential binding.
-- No Keycloak, SMTP, or frontend code.
-
-## Remaining blockers
-
-1. **Keycloak realm** — still blocked on admin credentials.
-2. **Backup destination** — blocker before production.
-3. **www → apex redirect** — not yet configured.
+- No redesign, restyle, or framework migration.
+- No API integration or `/book` route.
+- No deployment to Hestia or any environment.
+- No data persistence (localStorage, sessionStorage, API).
+- No analytics, tracking, or cookie banner.
+- No sitemap.
+- No Google Fonts self-hosting change (documented for later review).
+- No Kubernetes, Harbor, DNS, or HAProxy changes.
 
 ## Files the next session must read first
 
-1. `PROJECT.md` — approved product brief (booking scope, data model).
-2. `docs/READINESS_AUDIT.md` — current infrastructure readiness.
-3. `docs/architecture/ENVIRONMENT_ISOLATION.md` — staging/production design.
-4. `HANDOFF.md` — this file.
-5. `kubernetes/drfarah-staging/README.md` — staging manifest overview.
+1. `HANDOFF.md` — this file.
+2. `SESSION_LOG.md` — latest session entry.
+3. `frontend/README.md` — placeholder list and deployment notes.
+4. `PROJECT.md` — product brief.
+5. `docs/design/DESIGN_SYSTEM_V1.md` — design system reference.
 
-## Recommended Step 03B
+## Recommended next step
 
-**Staging deployment and database provisioning:**
-1. Create the `drfarah-staging` namespace in K3s.
-2. Copy Harbor pull secret into the namespace.
-3. Create PostgreSQL credentials and apply the StatefulSet.
-4. Build and push the first API image to Harbor (`drfarah-api:dev`).
-5. Apply all staging Kubernetes manifests.
-6. Add deployment stages to the Jenkinsfile (API build/push, K3s deploy).
-7. Verify the API responds at `https://api.staging.drfarah.proxbenovh.cloud`.
+**Deploy this approved static frontend to the staging Hestia vhost**
+(`staging.drfarah.proxbenovh.cloud`) through Jenkins after the PR is green and
+merged. Do not start API integration, the `/book` route, or Step 03B in the
+next session.
