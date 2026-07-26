@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: drfarah-staging-api
+  namespace: drfarah-staging
+  labels:
+    app: drfarah-staging-api
+spec:
+  type: ClusterIP
+  selector:
+    app: drfarah-staging-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

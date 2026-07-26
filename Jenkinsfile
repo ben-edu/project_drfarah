@@ -3,16 +3,25 @@ pipeline {
   options { timestamps() }
 
   // =========================================================================
-  // BOOTSTRAP JENKINSFILE — deliberately safe, non-deploying.
+  // JENKINSFILE — Phase 1 (test and build validation only).
   //
   // Runs on feature/*, dev, and main.
-  // Performs: checkout, metadata, path validation, Markdown hygiene,
-  //           secret-filename detection.
-  // Does NOT: build images, push to Harbor, rsync to Hestia, apply K8s
-  //           manifests, bind credentials, or deploy anything.
   //
-  // Deployment stages will be introduced only after the readiness audit
-  // is accepted and infrastructure prerequisites are resolved.
+  // Does:
+  //   - Checkout, metadata, path validation
+  //   - Secret-filename detection
+  //   - Markdown hygiene
+  //   - API tests (in container)
+  //   - Docker image build validation
+  //
+  // Does NOT:
+  //   - Log in to Harbor or push images
+  //   - Run kubectl or deploy to K3s
+  //   - rsync to Hestia
+  //   - Bind credentials of any kind
+  //   - Deploy anything to any environment
+  //
+  // Deployment stages will be added in Step 03B.
   // =========================================================================
 
   stages {
@@ -35,9 +44,6 @@ pipeline {
           echo "Node:        ${NODE_NAME:-unknown}"
           echo "Workspace:   ${WORKSPACE:-unknown}"
           echo "========================================="
-          echo
-          echo "Repository files:"
-          ls -la
         '''
       }
     }
@@ -90,10 +96,6 @@ pipeline {
         sh '''
           set -e
 
-          # Patterns that must never be committed (allow .example variants).
-          # This catches: .env, secret.yaml, *.tfstate, *.tfvars
-          # It allows:    .env.example, secret.example.yaml, *.tfvars.example
-
           forbidden_patterns="
             -name .env
             -o -name secret.yaml
@@ -107,7 +109,6 @@ pipeline {
             -o -name '*.pem'
           "
 
-          # We need to eval because of the -o chaining
           hits=$(eval find . \\( $forbidden_patterns \\) -not -name '*.example' -not -path './.git/*' 2>/dev/null) || true
 
           if [ -n "$hits" ]; then
@@ -140,41 +141,72 @@ pipeline {
       }
     }
 
-    stage('No application code guard') {
+    stage('API — tests') {
+      when {
+        anyOf {
+          branch 'dev'
+          branch 'main'
+          branch pattern: 'feature/.*', comparator: 'REGEXP'
+        }
+      }
       steps {
-        sh '''
-          set -e
-          # Phase 1 guard: no application implementation should appear before
-          # the readiness audit is accepted and infrastructure is provisioned.
+        dir('api') {
+          sh '''
+            set -e
+            # Agent has no python3-venv — run tests inside a container.
+            echo "Running API tests in python:3.12-slim container..."
+            docker run --rm \
+              -v "$PWD":/app \
+              -w /app \
+              python:3.12-slim \
+              bash -c "
+                set -e
+                pip install -q -r requirements.txt
+                PYTHONPATH=. python -m pytest -q tests/
+              "
+          '''
+        }
+      }
+    }
 
-          app_indicators=""
-          [ -f frontend/index.html ] && app_indicators="$app_indicators frontend/index.html"
-          [ -f frontend/package.json ] && app_indicators="$app_indicators frontend/package.json"
-          [ -f api/requirements.txt ] && app_indicators="$app_indicators api/requirements.txt"
-          [ -f api/app/main.py ] && app_indicators="$app_indicators api/app/main.py"
-          [ -f admin/index.html ] && app_indicators="$app_indicators admin/index.html"
-          [ -f Dockerfile ] && app_indicators="$app_indicators Dockerfile"
-          [ -f docker-compose.yml ] && app_indicators="$app_indicators docker-compose.yml"
+    stage('API — Docker build validation') {
+      when {
+        anyOf {
+          branch 'dev'
+          branch 'main'
+          branch pattern: 'feature/.*', comparator: 'REGEXP'
+        }
+      }
+      steps {
+        dir('api') {
+          sh '''
+            set -e
+            echo "Validating Docker image build..."
+            docker build -t drfarah-api:test-build .
+            echo "Docker build successful."
 
-          if [ -n "$app_indicators" ]; then
-            echo "WARNING: application files found before infrastructure readiness:"
-            echo "$app_indicators"
-            echo "This is informational — not a failure in bootstrap phase."
-          else
-            echo "OK: no application code detected (expected at bootstrap stage)."
-          fi
-        '''
+            echo "Running container health check..."
+            CONTAINER_ID=$(docker run -d -p 18000:8000 drfarah-api:test-build)
+            sleep 5
+            HEALTH=$(curl -fsS http://localhost:18000/api/v1/health/live 2>&1)
+            echo "Health response: $HEALTH"
+            docker stop "$CONTAINER_ID"
+            docker rm "$CONTAINER_ID"
+
+            # Clean up the test image to avoid disc clutter on the agent.
+            docker rmi drfarah-api:test-build || true
+          '''
+        }
       }
     }
   }
 
   post {
     success {
-      echo 'BOOTSTRAP VALIDATION PASSED — repository foundation is clean.'
-      echo 'Next: resolve infrastructure prerequisites, then begin implementation.'
+      echo 'BUILD PASSED — all checks, tests, and Docker build validation succeeded.'
     }
     failure {
-      echo 'FAILURE — see logs above. Fix issues before proceeding to implementation.'
+      echo 'FAILURE — see logs above. Fix issues before proceeding.'
     }
   }
 }

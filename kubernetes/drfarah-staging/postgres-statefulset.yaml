@@ -1,0 +1,79 @@
+# PostgreSQL StatefulSet — drfarah staging environment.
+# Follows the cluster pattern: StatefulSet + volumeClaimTemplates + local-path.
+# Credentials are provided via drfarah-staging-db-secret.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: drfarah-staging-postgres
+  namespace: drfarah-staging
+  labels:
+    app: drfarah-staging-postgres
+spec:
+  serviceName: drfarah-staging-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drfarah-staging-postgres
+  template:
+    metadata:
+      labels:
+        app: drfarah-staging-postgres
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: drfarah-staging-db-secret
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                [
+                  "sh",
+                  "-c",
+                  "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"",
+                ]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                [
+                  "sh",
+                  "-c",
+                  "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"",
+                ]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
