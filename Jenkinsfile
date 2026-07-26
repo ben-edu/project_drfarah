@@ -14,15 +14,18 @@ pipeline {
   //   - API tests (in container)
   //   - Docker image build validation
   //   - Frontend file/JS/serving/no-index validation
+  //   - Frontend staging deployment (dev only, rsync to Hestia via benweb SSH)
   //
   // Does NOT:
   //   - Log in to Harbor or push images
   //   - Run kubectl or deploy to K3s
-  //   - rsync to Hestia
-  //   - Bind credentials of any kind
-  //   - Deploy anything to any environment
+  //   - Deploy to production frontend (main)
+  //   - Deploy API, admin, or database
+  //   - Modify HAProxy, DNS, TLS, or Hestia config
   //
-  // Deployment stages will be added in a later step.
+  // Feature branches: validation only.
+  // Dev: validation + staging deployment.
+  // Main: validation only (production frontend deploy not yet configured).
   // =========================================================================
 
   stages {
@@ -295,6 +298,101 @@ pipeline {
           echo ""
           echo "=== Frontend validation passed ==="
         '''
+      }
+    }
+
+    stage('Frontend — deploy staging') {
+      when {
+        branch 'dev'
+      }
+      steps {
+        withCredentials([sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+        )]) {
+          sh '''
+            set -e
+
+            HESTIA_SSH_HOST=192.168.100.75
+            HESTIA_SSH_PORT=2275
+            HESTIA_SSH_USER=benweb
+            STAGING_FRONTEND_HOST=staging.drfarah.proxbenovh.cloud
+            STAGING_DOCROOT=/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html
+
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+
+            echo "=== Preflight: verify docroot and write access ==="
+            ssh $SSH_OPTS "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" "
+              set -e
+              [ -d '$STAGING_DOCROOT' ] || { echo 'ERROR: docroot missing'; exit 1; }
+              touch '$STAGING_DOCROOT/.wtest' 2>/dev/null || { echo 'ERROR: no write access as '\\$(whoami); ls -ld '$STAGING_DOCROOT'; exit 1; }
+              rm -f '$STAGING_DOCROOT/.wtest'
+              echo 'Preflight OK — docroot exists, write confirmed ('\\$(whoami)')'
+            "
+
+            echo ""
+            echo "=== Deploying frontend to staging ==="
+            rsync -av --delete \\
+              --exclude='.env' \\
+              --exclude='.well-known' \\
+              -e "ssh $SSH_OPTS" \\
+              frontend/ \\
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$STAGING_DOCROOT/"
+
+            echo ""
+            echo "=== Smoke test ==="
+            SMOKE_STATUS=""
+            for i in 1 2 3 4 5; do
+              SMOKE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$STAGING_FRONTEND_HOST/")
+              if [ "$SMOKE_STATUS" = "200" ]; then
+                echo "Smoke test OK (attempt $i)"
+                break
+              fi
+              echo "Waiting... (attempt $i, status $SMOKE_STATUS)"
+              sleep 3
+            done
+
+            if [ "$SMOKE_STATUS" != "200" ]; then
+              echo "FAIL: staging frontend not reachable after deploy"
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Content verification ==="
+            curl -sS "https://$STAGING_FRONTEND_HOST/" | grep -q 'Dr. Farah' || {
+              echo "FAIL: Dr. Farah marker not found in deployed page"
+              exit 1
+            }
+            echo "OK: Dr. Farah marker present."
+
+            curl -sS "https://$STAGING_FRONTEND_HOST/" | grep -q 'noindex,nofollow,noarchive' || {
+              echo "FAIL: noindex meta missing in deployed page"
+              exit 1
+            }
+            echo "OK: noindex meta present."
+
+            curl -sS "https://$STAGING_FRONTEND_HOST/robots.txt" | grep -q 'Disallow: /' || {
+              echo "FAIL: Disallow rule missing in deployed robots.txt"
+              exit 1
+            }
+            echo "OK: robots.txt Disallow rule present."
+
+            echo ""
+            echo "=== Asset verification ==="
+            for path in /styles.css /app.js /robots.txt; do
+              ASSET_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$STAGING_FRONTEND_HOST$path")
+              if [ "$ASSET_STATUS" = "200" ]; then
+                echo "OK    $path -> $ASSET_STATUS"
+              else
+                echo "FAIL  $path -> $ASSET_STATUS"
+                exit 1
+              fi
+            done
+
+            echo ""
+            echo "=== Staging deployment complete ==="
+          '''
+        }
       }
     }
   }

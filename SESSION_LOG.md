@@ -63,6 +63,65 @@
 
 ---
 
+## 2026-07-26 — Session 04B: Deploy Approved Frontend to Staging
+
+### Branch
+- Created `feature/frontend-staging-deploy` from `dev` (0e71857, containing
+  the Step 04A frontend prototype merge via PR #4).
+
+### Preflight (read-only, no infrastructure changes)
+- DNS: `staging.drfarah.proxbenovh.cloud` -> `87.98.174.211`.
+- TLS: valid Let's Encrypt cert, SAN covers staging hostname, expires Oct 24.
+- HTTPS: HTTP 200 (Hestia default placeholder page).
+- Docroot: `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html`
+  exists, owner `benweb:www-data`, permissions `drwxr-xr-x`.
+- Write access: `benweb` confirmed via temporary file create/delete.
+- Current content: Hestia default `index.html` and `robots.txt` only.
+- `benweb` shell: `/bin/bash` (SSH-ready).
+
+### Jenkinsfile changes
+- Added `Frontend — deploy staging` stage (runs on `dev` only):
+  - `withCredentials` using `hestia-benweb-ssh` (SSH user private key).
+  - Remote preflight: SSH to Hestia as `benweb`, confirm docroot and write.
+  - `rsync -av --delete --exclude='.env' --exclude='.well-known'` from
+    `frontend/` to staging docroot.
+  - Smoke test: HTTP 200 retry loop (5 attempts, 3s interval).
+  - Content verification: grep for Dr. Farah marker, noindex meta,
+    robots `Disallow: /`.
+  - Asset verification: HTTP 200 for /styles.css, /app.js, /robots.txt.
+- Updated header comments.
+- All existing stages preserved unchanged.
+- No API/DB/Keycloak/admin/K3s deployment stages.
+
+### Documentation created/updated
+- Created: `docs/deployment/FRONTEND_STAGING.md`.
+- Updated: `docs/architecture/README.md`, `frontend/README.md`, `HANDOFF.md`,
+  `SESSION_LOG.md`.
+
+### Validation before commit
+- `git diff --check` — clean.
+- No approved frontend file changed.
+- Deploy stage gated on `branch 'dev'` only — cannot run on feature/* or main.
+- `.well-known` excluded from rsync.
+- Credential ID: `hestia-benweb-ssh` (correct).
+- SSH user: `benweb` (correct).
+- Docroot: `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html`
+  (exact).
+- No kubectl, Harbor push, production docroot, or API deployment.
+- No secrets in diff.
+
+### What was NOT done
+- No frontend file changes.
+- No manual deployment to Hestia.
+- No production deployment configuration.
+- No API, PostgreSQL, Keycloak, admin, or K3s deployment.
+- No HAProxy, DNS, TLS, or Hestia config changes.
+- No PR merge (awaiting operator review).
+
+### No secrets were printed, copied, committed, or exposed.
+
+---
+
 ## 2026-07-26 — Session 04A: Integrate Approved Frontend Prototype
 
 ### Source

@@ -1,103 +1,96 @@
-# HANDOFF — 2026-07-26 (Step 04A)
+# HANDOFF — 2026-07-26 (Step 04B)
 
 ## Current state
 
-- **Branch:** `feature/frontend-prototype-integration`
-- **Base:** `dev` (Step 03A-FIX API foundation merged).
+- **Branch:** `feature/frontend-staging-deploy`
+- **Base:** `dev` (Step 04A frontend prototype merged via PR #4).
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 
-## Work completed (Step 04A — Integrate Approved Frontend Prototype)
+## Work completed (Step 04B — Deploy Approved Frontend to Staging)
 
-### Source
-- Design prototype supplied by the design owner as
-  `project-sources/drfarah_design_prototype_v1.zip`.
-- Claude Code integrated the approved prototype faithfully — no redesign,
-  restyle, simplification, or framework migration.
-
-### Files created
-- `frontend/index.html` — homepage with integrated booking modal.
-- `frontend/styles.css` — complete responsive stylesheet.
-- `frontend/app.js` — booking modal interaction (frontend-only).
-- `frontend/robots.txt` — `Disallow: /` (temporary-domain protection).
-- `docs/design/DESIGN_SYSTEM_V1.md` — design system documentation.
-
-### Files updated
-- `frontend/README.md` — full documentation with placeholder list.
-- `docs/architecture/README.md` — added design document link.
-- `Jenkinsfile` — added frontend validation stage, updated required paths.
-- `HANDOFF.md` — this file.
-- `SESSION_LOG.md` — session record appended.
-
-### Allowed corrections made
-- Added `<meta name="robots" content="noindex,nofollow,noarchive">` to
-  `frontend/index.html`.
-- Created `frontend/robots.txt` with `Disallow: /`.
-- These must be removed during final-domain migration.
-
-### Accessibility
-- Prototype already included: `lang="en"`, single `h1`, labeled form controls,
-  keyboard-operable buttons, Escape-to-close dialog, `role="dialog"` and
-  `aria-modal="true"`, skip link, visible focus states (no outline
-  suppression), sufficient touch targets.
-- No accessibility defects requiring correction were found.
-
-### Booking status
-- Frontend-only modal preserved intact: four steps, service preselection,
-  progress indicator, review step, prototype success notice.
-- No network requests, no API connection, no data storage.
-- All 12 booking entry points use the same `data-open-booking` handler.
-- The `/book` route and API integration belong to later steps.
+### Preflight (read-only)
+- DNS: `staging.drfarah.proxbenovh.cloud` resolves to `87.98.174.211`.
+- TLS: valid Let's Encrypt certificate, SAN covers the staging hostname.
+- HTTPS: HTTP 200 (default Hestia placeholder page).
+- Docroot: `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html`
+  exists, owned by `benweb:www-data`.
+- Write access: `benweb` can create/delete files in docroot (verified).
+- Current content: default placeholder files only (no prior frontend deploy).
+- benweb shell: `/bin/bash` (SSH-ready when key is in place).
 
 ### Jenkinsfile changes
-- Added `Frontend — validation` stage:
-  - Confirms required files exist.
-  - Runs `node --check frontend/app.js` in `node:20-slim` container.
-  - Verifies no-index meta and robots.txt Disallow rule.
-  - Serves `frontend/` with Python `http.server` and validates HTTP 200 for
-    `/`, `/styles.css`, `/app.js`, `/robots.txt`.
-  - Cleans up server on exit (trap EXIT).
-- Updated required paths in `Validate required paths` stage.
-- No credentials, no rsync, no Hestia deploy, no Docker push, no kubectl.
+- Added `Frontend — deploy staging` stage:
+  - **Trigger:** `dev` branch only. Never runs on `feature/*` or `main`.
+  - **Credential:** `hestia-benweb-ssh` (SSH user private key).
+  - **Preflight:** SSH to Hestia as `benweb`, confirm docroot exists and
+    is writable via temporary file create/delete.
+  - **Deploy:** `rsync -av --delete --exclude='.env' --exclude='.well-known'`
+    from `frontend/` to staging docroot.
+  - **Smoke test:** HTTP 200 retry loop (5 attempts, 3s interval) for `/`,
+    `/styles.css`, `/app.js`, `/robots.txt`.
+  - **Content verification:** grep for `Dr. Farah` marker, noindex meta,
+    `Disallow: /` in robots.txt.
+  - No sudo, chmod, chown, root, manual copy, or Hestia rebuild.
+- Updated header comments to reflect deployment capability.
+- All existing stages preserved unchanged.
 
-### Local validation
-- `node --check frontend/app.js` — passed.
-- `diff` between prototype sources and repo copies — only intentional
-  `meta robots` addition differs.
-- `python3 -m http.server` — all four assets served at HTTP 200.
-- No-index meta and robots Disallow rule verified via curl.
-- `git diff --check` — clean (no whitespace errors).
-- No secrets, passwords, tokens, or keys in the diff.
-- `project-sources/` and the ZIP archive are excluded by `.gitignore`.
+### Documentation created/updated
+- Created: `docs/deployment/FRONTEND_STAGING.md` — full deployment
+  documentation including branch mapping, mechanism, preflight, smoke tests,
+  rollback procedure, no-index status, constraints.
+- Updated: `docs/architecture/README.md` — added deployment section link.
+- Updated: `frontend/README.md` — added deployment section.
+- Updated: `HANDOFF.md` — this file.
+- Updated: `SESSION_LOG.md` — session record appended.
 
-### Unresolved placeholders (documented in frontend/README.md)
-- Phone, email, exact address, office hours.
-- Legal text (privacy policy, NPP, accessibility).
-- Real portrait and clinic photography.
-- Appointment availability, verified reviews.
-- Final service list, credentials wording, logo.
+### What was NOT done (intentionally)
 
-## What was NOT done (intentionally)
+- No frontend file changes (index.html, styles.css, app.js, robots.txt are
+  identical to Step 04A).
+- No deployment from feature branches (validation only).
+- No production deployment (main deploys nothing).
+- No API, PostgreSQL, Keycloak, admin panel, or Kubernetes deployment.
+- No HAProxy, DNS, TLS, or Hestia configuration changes.
+- No manual file copies to Hestia.
+- No credentials committed or exposed.
+- No PR merge (awaiting operator review).
 
-- No redesign, restyle, or framework migration.
-- No API integration or `/book` route.
-- No deployment to Hestia or any environment.
-- No data persistence (localStorage, sessionStorage, API).
-- No analytics, tracking, or cookie banner.
-- No sitemap.
-- No Google Fonts self-hosting change (documented for later review).
-- No Kubernetes, Harbor, DNS, or HAProxy changes.
+## Deployment behavior summary
+
+| Branch | Validation | Deploy to staging |
+|---|---|---|
+| `feature/*` | Yes | No |
+| `dev` | Yes | Yes (Hestia rsync) |
+| `main` | Yes | No (production not configured) |
 
 ## Files the next session must read first
 
 1. `HANDOFF.md` — this file.
 2. `SESSION_LOG.md` — latest session entry.
-3. `frontend/README.md` — placeholder list and deployment notes.
-4. `PROJECT.md` — product brief.
-5. `docs/design/DESIGN_SYSTEM_V1.md` — design system reference.
+3. `docs/deployment/FRONTEND_STAGING.md` — staging deployment details.
+4. `frontend/README.md` — placeholder list and deployment notes.
+5. `PROJECT.md` — product brief (for context on next steps).
+
+## Post-merge — what the operator must inspect
+
+After the PR is merged into `dev`, Jenkins will automatically build `dev`
+and trigger the `Frontend — deploy staging` stage. The operator must:
+
+1. Open the Jenkins dev build console and confirm the
+   `Frontend — deploy staging` stage completed successfully.
+2. Verify `https://staging.drfarah.proxbenovh.cloud/` shows the Dr. Farah
+   prototype (not the Hestia default page).
+3. Confirm all four assets return HTTP 200:
+   - `https://staging.drfarah.proxbenovh.cloud/`
+   - `https://staging.drfarah.proxbenovh.cloud/styles.css`
+   - `https://staging.drfarah.proxbenovh.cloud/app.js`
+   - `https://staging.drfarah.proxbenovh.cloud/robots.txt`
+4. Confirm noindex meta and robots Disallow rule are present.
+5. Open the booking modal and verify it functions (frontend-only).
 
 ## Recommended next step
 
-**Deploy this approved static frontend to the staging Hestia vhost**
-(`staging.drfarah.proxbenovh.cloud`) through Jenkins after the PR is green and
-merged. Do not start API integration, the `/book` route, or Step 03B in the
-next session.
+**Visually review the deployed staging frontend** at
+`https://staging.drfarah.proxbenovh.cloud/` before any API integration or
+backend deployment. Do not start Step 03B (staging deployment and database
+provisioning) until the design is reviewed and accepted.

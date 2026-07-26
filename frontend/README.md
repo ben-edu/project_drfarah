@@ -84,8 +84,23 @@ migration. Do not create a sitemap until the final domain is active.
 - No network requests, no localStorage/sessionStorage, no API connection.
 - The `/book` route and API integration belong to later steps.
 
+## Deployment
+
+Staging deployment is configured in the Jenkinsfile (`Frontend — deploy
+staging` stage). See `docs/deployment/FRONTEND_STAGING.md` for full details.
+
+| Aspect | Detail |
+|---|---|
+| Target | `staging.drfarah.proxbenovh.cloud` |
+| Mechanism | `rsync` from `frontend/` to Hestia docroot via `benweb` SSH |
+| Trigger | Jenkins build on `dev` only |
+| Credential | `hestia-benweb-ssh` |
+| Exclusions | `.env`, `.well-known` |
+| Rollback | Redeploy previous known-good commit through Jenkins |
+
 ## Next step
 
-Deploy this approved static frontend to the staging Hestia vhost through
-Jenkins after the PR is green and merged. Do not start API integration or the
-`/book` route in the current step.
+Visually review the deployed staging frontend at
+`https://staging.drfarah.proxbenovh.cloud/` before any API integration or
+backend deployment. Do not start the `/book` route or connect the booking
+form to the API until the design is reviewed.
