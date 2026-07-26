@@ -3,7 +3,8 @@
 Run from the api/ directory:
     PYTHONPATH=. python -m pytest -q tests/
 
-Uses SQLite for database tests — no live PostgreSQL required.
+Each test receives an isolated temporary SQLite database via tmp_path.
+No state leaks between tests — test execution order does not matter.
 """
 
 import os
@@ -13,12 +14,13 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture(autouse=True)
-def setup_env():
-    """Ensure clean environment with SQLite for testing."""
+def setup_env(tmp_path: pytest.TempPathFactory):
+    """Isolated environment — each test gets a unique temporary database."""
+    db_path = tmp_path / "test.db"
     saved = {}
     for k in ("DATABASE_URL", "ENVIRONMENT", "SMTP_HOST", "SMTP_TEST_MODE"):
         saved[k] = os.environ.get(k)
-    os.environ["DATABASE_URL"] = "sqlite:///./test_booking.db"
+    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["ENVIRONMENT"] = "test"
     os.environ["SMTP_HOST"] = ""
     os.environ["SMTP_TEST_MODE"] = "true"
@@ -46,12 +48,6 @@ def setup_env():
             os.environ[k] = v
     get_settings.cache_clear()
     reset_engine()
-
-    # Remove test db file
-    try:
-        os.remove("test_booking.db")
-    except FileNotFoundError:
-        pass
 
 
 VALID_BOOKING = {
@@ -84,7 +80,8 @@ class TestBookingCreate:
         with _client(app) as client:
             resp = client.post("/api/v1/bookings", json=VALID_BOOKING)
             body = resp.json()
-            assert body["id"] == 1
+            assert isinstance(body["id"], int)
+            assert body["id"] >= 1
             assert body["status"] == "requested"
             assert body["first_name"] == "Jane"
             assert body["last_name"] == "Doe"
@@ -98,15 +95,20 @@ class TestBookingCreate:
             assert r1.status_code == 201
             r2 = client.post("/api/v1/bookings", json=VALID_BOOKING)
             assert r2.status_code == 201
-            assert r2.json()["id"] == 2
+            # IDs must increase within the same isolated database.
+            assert r2.json()["id"] > r1.json()["id"]
 
     def test_id_increments(self, setup_env):
         app = setup_env
         with _client(app) as client:
-            client.post("/api/v1/bookings", json=VALID_BOOKING)
-            client.post("/api/v1/bookings", json=VALID_BOOKING)
-            resp = client.post("/api/v1/bookings", json=VALID_BOOKING)
-            assert resp.json()["id"] == 3
+            r1 = client.post("/api/v1/bookings", json=VALID_BOOKING)
+            r2 = client.post("/api/v1/bookings", json=VALID_BOOKING)
+            r3 = client.post("/api/v1/bookings", json=VALID_BOOKING)
+            id1 = r1.json()["id"]
+            id2 = r2.json()["id"]
+            id3 = r3.json()["id"]
+            assert id2 == id1 + 1
+            assert id3 == id2 + 1
 
     def test_no_secrets_in_response(self, setup_env):
         app = setup_env

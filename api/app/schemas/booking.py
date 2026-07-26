@@ -6,7 +6,7 @@ No clinical free text. No excessive PHI. No insurance or ID numbers.
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class BookingCreate(BaseModel):
@@ -79,6 +79,8 @@ class BookingCreate(BaseModel):
 class BookingResponse(BaseModel):
     """Returned to the frontend after a successful booking request."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     service_type: str
     visit_type: str
@@ -90,6 +92,3 @@ class BookingResponse(BaseModel):
     reason_category: str
     status: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True

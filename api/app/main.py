@@ -4,6 +4,7 @@ Phase 1: website + booking foundation. No clinical AI.
 """
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,12 +30,20 @@ logging.getLogger("uvicorn.access").addFilter(
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create database tables on startup (safe — no data loss)."""
+    Base.metadata.create_all(bind=_get_engine())
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Dr. Farah VIP Urgent Care API",
         version="0.1.0",
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
+        lifespan=lifespan,
     )
 
     # CORS — origins from ConfigMap / environment.
@@ -51,11 +60,6 @@ def create_app() -> FastAPI:
 
     # Booking endpoints.
     app.include_router(booking.router, prefix="/api/v1")
-
-    @app.on_event("startup")
-    def _create_tables():
-        """Create database tables on startup (safe — no data loss)."""
-        Base.metadata.create_all(bind=_get_engine())
 
     return app
 
