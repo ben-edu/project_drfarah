@@ -1,73 +1,85 @@
-# HANDOFF — 2026-07-26 (Step 04C)
+# HANDOFF — 2026-07-26 (Step 05-FIX2)
 
 ## Current state
 
-- **Branch:** `feature/frontend-refresh-v2`
-- **Base:** `dev`
+- **Branch:** `feature/booking-mvp-staging`
+- **Base:** `dev` (4e49d33)
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 
-## Work completed (Step 04C — Integrate Frontend Refresh V2)
+## Work completed (Step 05-FIX2 — Diagnose and Repair API Container Startup Validation)
 
-### Source package
-- Extracted `project-sources/drfarah_design_prototype_v2.zip` (15 files, ~20 KB).
-- Replaced all frontend files with v2 package contents.
+### Root cause of Docker build validation failure
 
-### Frontend files updated
+The API image built successfully but the health check always failed with
+"connection refused". The container crashed before Uvicorn started listening
+because:
+
+1. `DATABASE_URL` was not set (config default: `None`).
+2. `database.py` fell back to `sqlite:///./drfarah.db` → `/app/drfarah.db`.
+3. `main.py` lifespan handler calls `Base.metadata.create_all()` on startup.
+4. SQLite tried to create `/app/drfarah.db` — but `/app` is owned by root
+   and the container runs as non-root `appuser` (uid 10001).
+5. Startup crashed with a database permission error before Uvicorn bound
+   port 8000.
+
+### Fix applied
+
+Replaced the fragile `docker run -d / sleep 5 / curl` block in the Jenkinsfile
+"API — Docker build validation" stage with a robust validation stage:
+
+- Unique container name and host port per build number (avoids collisions).
+- Explicit test environment: `ENVIRONMENT=test`, `DATABASE_URL=sqlite:////tmp/drfarah-validation.db`.
+- Retry loop: checks liveness every 1s for up to 20 attempts (~20s).
+- Early exit on container crash with full diagnostics (ps, inspect, logs).
+- Trap-based cleanup on success and failure.
+- Readiness check under the isolated SQLite database.
+
+### Validation environment (no live dependencies)
+
+| Variable | Value |
+|---|---|
+| `ENVIRONMENT` | `test` |
+| `DATABASE_URL` | `sqlite:////tmp/drfarah-validation.db` |
+
+No SMTP, PostgreSQL, Kubernetes, or external infrastructure required.
+
+### Production image verification (no changes needed)
+
+- Non-root `appuser` (uid 10001).
+- Uvicorn on `0.0.0.0:8000`.
+- Runtime dependencies only.
+- Liveness does not touch the database.
+- Readiness checks PostgreSQL in staging/production.
+- No SMTP send during startup.
+
+### Files changed (1 file)
 
 | File | Change |
 |---|---|
-| `frontend/index.html` | Complete replacement — favicon link, noindex meta, SEO/OG tags, cookie banner markup, richer hero/slot UI, MedicalClinic structured data |
-| `frontend/styles.css` | Complete replacement — expanded design system, cookie banner, richer slot grid, responsive refinements |
-| `frontend/app.js` | Complete replacement — 16-slot time grid with "Show more slots" toggle, cookie consent via localStorage, same booking modal logic |
-| `frontend/robots.txt` | Unchanged (same `Disallow: /`) |
-| `frontend/assets/*.svg` | **New** — 10 SVG assets: favicon, logo mark, doctor portrait, hero/clinic/map/service illustrations, OG preview |
+| `Jenkinsfile` | Rewrote API Docker build validation stage |
 
-### Documentation created/updated
-- Created: `docs/design/DESIGN_SYSTEM_V2.md` (from package DESIGN_NOTES.md).
-- Updated: `frontend/README.md` — v2 status, favicon/logo support, temporary contact values, cookie notice, SEO/noindex behavior, richer slot UI, temporary placeholder status.
-- Updated: `docs/architecture/README.md` — both design docs linked, v2 marked as current.
-- Updated: `HANDOFF.md` — this file.
-- Updated: `SESSION_LOG.md` — session record appended.
+### Feature-branch safety
 
-### Jenkinsfile changes
-- Added `docs/design/DESIGN_SYSTEM_V2.md` to required paths.
-- Added asset serving validation for all 10 SVG files under `/assets/`.
-- No deployment changes.
+All deploy/push stages remain gated on `branch 'dev'`. Feature branches run:
+- Path validation
+- Secret filename detection
+- Markdown hygiene
+- API tests (containerized)
+- API Docker build validation (now robust)
+- Frontend validation
 
-### Validation results
-- JS syntax: passed (`node --check frontend/app.js`).
-- Static serving: all core paths and asset paths return HTTP 200.
-- No-index protection: `meta robots noindex,nofollow,noarchive` present; `robots.txt Disallow: /` present.
-- HTML checks: favicon link, SEO description, cookie banner markup confirmed.
-- Booking: all entry points open booking flow; step 2 shows 16 slots with "Show more slots" toggle working.
-- No network/API requests in frontend JavaScript.
+### What was NOT done
 
-### What was NOT done (intentionally)
-
-- No API, PostgreSQL, Keycloak, Harbor, or Kubernetes changes.
-- No deployment from this feature branch (validation only).
-- No production deployment configuration.
-- No redesign or reinterpretation of the supplied package.
+- No application code changes.
+- No frontend visual design changes.
+- No admin/Keycloak work.
+- No manual deployment.
 - No PR merge (awaiting operator review).
-
-## Deployment behavior summary
-
-| Branch | Validation | Deploy to staging |
-|---|---|---|
-| `feature/*` | Yes | No |
-| `dev` | Yes | Yes (Hestia rsync) |
-| `main` | Yes | No (production not configured) |
-
-## Files the next session must read first
-
-1. `HANDOFF.md` — this file.
-2. `SESSION_LOG.md` — latest session entry.
-3. `docs/deployment/FRONTEND_STAGING.md` — staging deployment details.
-4. `frontend/README.md` — placeholder list and deployment notes.
-5. `PROJECT.md` — product brief (for context on next steps).
 
 ## Recommended next step
 
-Merge this PR into `dev` and let Jenkins automatically redeploy to staging.
-The staging frontend will reflect the v2 refresh immediately after the `dev`
-build passes.
+1. Push and verify the Jenkins feature build is green.
+2. Merge the PR into `dev`.
+3. After the dev build deploys, verify the complete booking flow on staging.
+
+Do not start admin/Keycloak until the booking flow is verified end-to-end.

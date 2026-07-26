@@ -403,3 +403,245 @@ reviews, final service list, credentials wording, logo.
 - No PR merge (awaiting operator review).
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05: Booking MVP Backend + Staging Deployment
+
+### Preconditions verified
+- `feature/frontend-refresh-v2` merged into dev (PR #6, commit 4e49d33).
+- Jenkins dev build #6: SUCCESS.
+- Staging frontend: HTTP 200 at `https://staging.drfarah.proxbenovh.cloud/`.
+
+### Branch
+- Created `feature/booking-mvp-staging` from `dev` (4e49d33).
+
+### K3s infrastructure
+- Created `drfarah-staging` namespace with labels.
+- Copied `harbor-regcred` from `toilettage` to `drfarah-staging`.
+- Created `drfarah-staging-db-secret` (POSTGRES_USER/PASSWORD/DB).
+- Created `drfarah-staging-api-secret` (DATABASE_URL + SMTP keys copied from
+  toilettage-api-secret — no values exposed).
+- Applied ConfigMap with SMTP settings (SMTP_TEST_MODE=true).
+- Deployed PostgreSQL StatefulSet + Service → 1/1 Ready.
+- Applied API Service and Ingress manifests.
+- API Deployment pending image build/push (no Docker on management VM).
+
+### Backend — new files
+- `api/app/models/booking.py` — Booking model (id, service_type, visit_type,
+  preferred_day, preferred_time, time_window, first_name, last_name, email,
+  phone, reason_category, status, created_at). No clinical free text.
+- `api/app/schemas/booking.py` — BookingCreate (strict regex validation on
+  name/email/phone fields) and BookingResponse schemas.
+- `api/app/routers/booking.py` — `POST /api/v1/bookings` (creates booking,
+  triggers email notification fire-and-forget).
+- `api/app/services/email.py` — SMTP notification via `smtplib`. Test mode
+  logs instead of sending. SMTP credentials from K8s secret.
+- `api/tests/test_booking.py` — 12 tests: creation, persistence, validation
+  (missing fields, invalid email, numeric names, accented names, empty payload,
+  optional fields). Plus safety: no secrets in response.
+
+### Backend — updated files
+- `api/app/main.py` — registered booking router, added `Base.metadata.create_all`
+  on startup for automatic table creation.
+- `api/app/core/config.py` — added SMTP settings (SMTP_HOST, SMTP_PORT,
+  SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SMTP_TO, SMTP_USE_TLS, SMTP_TEST_MODE).
+- `kubernetes/drfarah-staging/configmap.yaml` — added SMTP environment vars.
+- `kubernetes/drfarah-staging/secret.example.yaml` — added SMTP credential fields.
+
+### Frontend — updated
+- `frontend/app.js` — submit handler now POSTs to
+  `https://api.staging.drfarah.proxbenovh.cloud/api/v1/bookings`. Shows
+  booking reference ID on success, clinic phone number on failure.
+- `frontend/index.html` — success message now uses `data-success-detail` for
+  dynamic confirmation text.
+
+### Jenkinsfile changes
+- Added required paths for all new backend files and K8s manifests.
+- Added `API — build and push to Harbor` stage (dev only):
+  - Builds image, tags with GIT_COMMIT and `:dev`.
+  - Logs into Harbor with robot account, pushes both tags.
+- Added `API — deploy staging manifests` stage (dev only):
+  - Applies namespace, service, ingress. Sets image tag, applies deployment.
+  - Waits for rollout (120s timeout).
+- Added `API — staging health check` stage (dev only):
+  - Liveness probe retry loop, readiness probe, booking POST smoke test.
+- Updated header comments.
+
+### Documentation updated
+- `api/README.md` — full rewrite with endpoints, structure, env vars, booking
+  data discipline, SMTP docs.
+- `frontend/README.md` — booking behavior updated for API integration.
+- `kubernetes/drfarah-staging/README.md` — current deployed state, secrets,
+  Jenkins pipeline flow.
+- `HANDOFF.md` — full Step 05 handoff.
+- `SESSION_LOG.md` — this entry.
+
+### Validation
+- All Python files compile cleanly (`py_compile`).
+- Tests designed for in-container execution (22 total: 10 health/CORS +
+  12 booking).
+- `node --check frontend/app.js` — passed.
+- No secrets in Git diff.
+
+### What was NOT done
+- No Docker image build/push (Docker unavailable on management VM; Jenkins
+  handles this on `dev`).
+- No Keycloak, admin UI, production deployment.
+- No PR merge (awaiting operator review).
+- No clinical free text, no excessive PHI collected.
+- No secrets were printed, copied, committed, or exposed.
+
+### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05-FIX: Test Isolation + Correct SMTP + Complete Staging Booking MVP
+
+### Root cause of Jenkins test failures
+Three booking tests failed with unexpected IDs (expected 1 got 2, expected
+2 got 4, expected 3 got 7) because all tests shared a single SQLite database
+file (`sqlite:///./test_booking.db`). The `setup_env` fixture cleared the
+cached engine/settings but did not create a unique database per test. Rows
+inserted by earlier tests persisted and caused auto-increment drift.
+
+### Fix: per-test isolated databases
+- Changed `setup_env` fixture to accept `tmp_path` (pytest built-in).
+- Each test receives `sqlite:///{tmp_path}/test.db` — a unique temporary file.
+- `reset_engine()` disposes the old engine and sets cached globals to None.
+- Tables are created fresh via the FastAPI lifespan handler.
+- After each test, the temp directory is automatically cleaned up by pytest.
+- Tested: no cross-test state leakage, order-independent, passes repeatedly.
+
+### Brittle ID assertions fixed
+- `test_response_contains_booking_fields`: checks `id >= 1` and `isinstance(id, int)`
+- `test_persistence_across_requests`: checks `r2_id > r1_id` (relative ordering)
+- `test_id_increments`: checks `id2 == id1 + 1` and `id3 == id2 + 1` within
+  the same isolated database
+
+### Deprecation warnings resolved
+- **Pydantic v1 `class Config`**: replaced with `model_config = ConfigDict(from_attributes=True)` in `BookingResponse` (Pydantic v2).
+- **FastAPI `@app.on_event("startup")`**: replaced with async `lifespan` context manager. Preserved existing behavior: `Base.metadata.create_all()` on startup.
+
+### SMTP configuration corrected
+
+**Identity (verified with reference Soria SMTP pattern):**
+- SMTP_HOST: `mail.soria-academie.fr` (was `smtp.soria-academie.fr`)
+- SMTP_FROM: `contact@soria-academie.fr` (was `noreply@drfarah.proxbenovh.cloud`)
+- SMTP_USER: `contact@soria-academie.fr`
+- SMTP_PORT: 587 (verified from reference, STARTTLS)
+- SMTP_USE_TLS: true (verified from reference)
+- SMTP_TO: `appointments@drfarah.proxbenovh.cloud` (separately configurable)
+
+**Architecture:**
+- ConfigMap: non-secret values (SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_USE_TLS, SMTP_TEST_MODE)
+- Secret: identity/password only (SMTP_USER, SMTP_PASSWORD)
+- Updated live ConfigMap and Secret via kubectl (no credential exposure).
+- `secret.example.yaml` documented the split architecture.
+
+### Email service verification
+- Reviewed `api/app/services/email.py`: authenticates with SMTP_USER/PASSWORD, uses STARTTLS on port 587, sender is `contact@soria-academie.fr`.
+- No clinical free text in notification body.
+- SMTP errors logged safely (no credential leakage). Booking persistence not rolled back on notification failure.
+- Added `api/tests/test_email.py` with 7 mock-based tests:
+  - successful SMTP send
+  - sender address is correct
+  - no secrets in logs on connection failure
+  - test mode logs instead of sending
+  - subject contains patient name
+  - body does not contain clinical free text
+  - SMTP not configured returns False
+
+### Feature-branch safety confirmed
+- All deploy/push stages gated on `branch 'dev'` — feature/* runs validation only.
+- No manual deployment performed from feature branch.
+
+### Files changed (6 files, +198 / -36)
+
+| File | Change |
+|---|---|
+| `api/tests/test_booking.py` | Per-test isolated SQLite via tmp_path; relative ID assertions |
+| `api/tests/test_email.py` | **New** — 7 email service tests with mocks |
+| `api/app/main.py` | Replaced `on_event("startup")` with async lifespan |
+| `api/app/schemas/booking.py` | Pydantic v2 `ConfigDict(from_attributes=True)` |
+| `kubernetes/drfarah-staging/configmap.yaml` | Corrected SMTP_HOST and SMTP_FROM |
+| `kubernetes/drfarah-staging/secret.example.yaml` | Documented SMTP architecture split |
+
+### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05-FIX2: Diagnose and Repair API Container Startup Validation
+
+### Root cause of Docker build validation failure
+
+The API image built successfully but the health check (`curl
+http://localhost:18000/api/v1/health/live`) always failed with "connection
+refused". The container crashed before Uvicorn started listening because:
+
+1. `DATABASE_URL` was not set (config default: `None`).
+2. `database.py` fell back to `sqlite:///./drfarah.db` → resolves to
+   `/app/drfarah.db`.
+3. `main.py` lifespan handler calls `Base.metadata.create_all()` on startup.
+4. SQLite tried to create `/app/drfarah.db` — but `/app` is owned by root
+   and the container runs as non-root `appuser` (uid 10001).
+5. Startup crashed with a database permission error before Uvicorn could bind
+   port 8000.
+
+### Fix: Jenkinsfile validation stage rewrite
+
+Replaced the fragile `docker run -d / sleep 5 / curl` block with a robust
+validation stage:
+
+- **Unique container name** per build number (`drfarah-api-validation-${BUILD_NUMBER}`).
+- **Unique host port** derived from build number to avoid collisions (`18000 + BUILD_NUMBER % 100`).
+- **Explicit test environment**:
+  - `ENVIRONMENT=test` — readiness accepts SQLite in test mode.
+  - `DATABASE_URL=sqlite:////tmp/drfarah-validation.db` — writable path
+    under `/tmp/` (world-writable, accessible to non-root `appuser`).
+- **Retry loop**: checks liveness every 1s for up to 20 attempts (~20s) instead
+  of a single fixed 5s sleep.
+- **Early exit on container crash**: if the container exits, stops retrying
+  immediately and prints diagnostics.
+- **Failure diagnostics**: prints `docker ps -a`, container state/exit code,
+  and last 200 log lines.
+- **Trap-based cleanup**: container removed on success and failure.
+- **Readiness check**: also validates the readiness endpoint under the isolated
+  SQLite database.
+
+### Validation environment (no live dependencies)
+
+| Variable | Value | Purpose |
+|---|---|---|
+| `ENVIRONMENT` | `test` | Readiness accepts SQLite |
+| `DATABASE_URL` | `sqlite:////tmp/drfarah-validation.db` | Writable SQLite under /tmp |
+
+SMTP is not configured (`SMTP_HOST=""`) and `SMTP_TEST_MODE=true` (default),
+so no email sending is attempted during validation.
+
+### Production image verification
+
+Confirmed (no changes needed):
+- Runs as non-root `appuser` (uid 10001).
+- Uvicorn on `0.0.0.0:8000`.
+- Runtime dependencies only (no `requirements-dev.txt` in image).
+- No test files in image (only `requirements.txt` and `app/` copied).
+- Liveness (`/live`) does not touch the database.
+- Readiness (`/ready`) checks PostgreSQL in staging/production; passes with
+  SQLite in test mode.
+- No SMTP send during startup.
+
+### Staging safety preserved
+
+- Feature branches still skip Harbor push, Kubernetes deployment, and staging
+  API smoke test (gated on `branch 'dev'`).
+- Staging still requires real PostgreSQL URL and runtime secrets.
+- No application code changed — only the Jenkinsfile validation stage.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `Jenkinsfile` | Rewrote API Docker build validation stage with test env, retry loop, diagnostics, cleanup trap |
+
+### No secrets were printed, copied, committed, or exposed.

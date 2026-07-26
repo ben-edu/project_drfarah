@@ -94,7 +94,7 @@ class TestLiveness:
 class TestReadiness:
     def test_returns_200_with_sqlite(self):
         """Readiness succeeds when a valid SQLite database is configured."""
-        os.environ["DATABASE_URL"] = "sqlite:///./test_drfarah.db"
+        os.environ["DATABASE_URL"] = "sqlite:////tmp/test_drfarah.db"
         os.environ["ENVIRONMENT"] = "test"
         app = _clear_and_reload()
         with TestClient(app) as client:
