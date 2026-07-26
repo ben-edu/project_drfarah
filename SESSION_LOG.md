@@ -645,3 +645,73 @@ Confirmed (no changes needed):
 | `Jenkinsfile` | Rewrote API Docker build validation stage with test env, retry loop, diagnostics, cleanup trap |
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 06: Immutable Staging API Image
+
+### Root cause
+
+The staging API Deployment was running `harbor.proxbenovh.cloud/.../drfarah-api:dev`
+instead of the intended immutable commit SHA. The Jenkinsfile used
+`${GIT_COMMIT:-dev}` which fell back to `dev` when the Jenkins environment
+variable was empty or unset.
+
+### Branch
+
+- Created `fix/immutable-staging-api-image` from `dev` (eb728ff).
+
+### Fix applied
+
+1. **Image tag derivation**: replaced all `${GIT_COMMIT:-dev}` with
+   `git rev-parse HEAD` in every stage that needs the tag (build/push,
+   deploy, health check).
+2. **SHA validation**: each derivation is followed by a POSIX check that
+   the value is a non-empty 40-character lowercase hex string. Build fails
+   immediately on empty or malformed SHAs.
+3. **Deployment rendering**: the committed `:dev` placeholder in
+   `api-deployment.yaml` is never applied to the cluster. Instead, Jenkins
+   uses `kubectl set image -f ... --dry-run=client -o yaml | kubectl apply -f -`
+   to render the Deployment with the immutable SHA at apply time.
+4. **Post-rollout verification**: after rollout, Jenkins queries the live
+   Deployment image via `kubectl get deployment -o jsonpath` and compares it
+   with the expected SHA. Mismatch fails the build.
+5. **Both Harbor tags preserved**: the immutable `<sha>` tag and the `:dev`
+   convenience alias continue to be pushed.
+
+### Build metadata
+
+The "Build metadata" stage now also prints the SHA obtained from
+`git rev-parse HEAD` alongside the Jenkins `GIT_COMMIT` variable for
+comparison.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `Jenkinsfile` | Four stages updated: build metadata, build/push, deploy, health check |
+| `kubernetes/drfarah-staging/README.md` | Documented immutable image tagging and rendering |
+| `HANDOFF.md` | Full session handoff |
+| `SESSION_LOG.md` | This entry |
+
+### Local `.gitignore` modification
+
+The working tree had an uncommitted `**/.pytest_cache/` addition to
+`.gitignore`. This is appropriate and is included in the branch commit.
+
+### Local validation
+
+- `git diff --check` — clean.
+- No remaining `${GIT_COMMIT:-dev}` in Jenkinsfile.
+- `git rev-parse HEAD` used in all three image-tag locations.
+- `kubectl set image --dry-run=client` approach validated locally (kubectl v1.34.5).
+- Container name is `api` (confirmed in `api-deployment.yaml` line 30).
+
+### What was NOT done
+
+- No SMTP, secret, or password changes.
+- No RBAC changes.
+- No production deployment, frontend changes, or Keycloak work.
+- No PR merge (awaiting operator review).
+
+### No secrets were printed, copied, committed, or exposed.

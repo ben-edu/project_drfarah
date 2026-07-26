@@ -47,13 +47,31 @@ Namespace and all resources are deployed and running:
 - `harbor-regcred` — Docker registry pull secret (copied from `toilettage`)
 - SMTP credentials copied from toilettage SMTP pattern
 
+## Image tagging
+
+The Jenkins pipeline derives the image tag from `git rev-parse HEAD` (full
+40-character commit SHA). The SHA is validated before every use. Two Harbor
+tags are pushed:
+
+- `<full-commit-sha>` — immutable deployment source of truth
+- `:dev` — convenience alias only, never deployed directly
+
+The committed `api-deployment.yaml` contains a placeholder image (`:dev`).
+At deploy time, Jenkins renders the Deployment with the exact immutable image
+using `kubectl set image --dry-run=client` and applies the rendered result.
+The `:dev` placeholder is never applied to the cluster.
+
+After rollout, Jenkins verifies that the deployed image matches the expected
+commit SHA and fails the build if they differ.
+
 ## Jenkins deployment (dev branch)
 
 On `dev` builds, Jenkins:
 1. Builds the API Docker image
 2. Pushes to Harbor (`harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api`)
-3. Applies K8s manifests
-4. Updates deployment image tag
-5. Rolls out and verifies API health + booking endpoint
+   with both commit SHA and `:dev` tags
+3. Applies K8s manifests (Deployment rendered with immutable SHA, not `:dev`)
+4. Rolls out and verifies API health + booking endpoint
+5. Verifies the deployed image matches the immutable commit SHA
 
 Feature branches run validation only. No deployment.

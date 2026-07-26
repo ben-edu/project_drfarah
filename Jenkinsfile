@@ -67,6 +67,7 @@ pipeline {
           echo "Project:     ${PROJECT_SLUG}"
           echo "Branch:      ${BRANCH_NAME:-unknown}"
           echo "Commit:      ${GIT_COMMIT:-unknown}"
+          echo "Git SHA:     $(git rev-parse HEAD)"
           echo "Build:       ${BUILD_NUMBER:-unknown}"
           echo "Node:        ${NODE_NAME:-unknown}"
           echo "Workspace:   ${WORKSPACE:-unknown}"
@@ -623,7 +624,20 @@ pipeline {
           sh '''
             set -eu
 
-            IMAGE_TAG="${GIT_COMMIT:-dev}"
+            IMAGE_TAG="$(git rev-parse HEAD)"
+
+            if [ -z "$IMAGE_TAG" ]; then
+              echo "FAIL: git rev-parse HEAD returned an empty string."
+              exit 1
+            fi
+
+            if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
+              echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
+              exit 1
+            fi
+
+            echo "Immutable image tag validated: $IMAGE_TAG"
+
             FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}"
             BUILD_IMAGE="${FULL_IMAGE}:${IMAGE_TAG}"
             DEV_IMAGE="${FULL_IMAGE}:dev"
@@ -686,10 +700,22 @@ pipeline {
         sh '''
           set -eu
 
-          IMAGE_TAG="${GIT_COMMIT:-dev}"
+          IMAGE_TAG="$(git rev-parse HEAD)"
+
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "FAIL: git rev-parse HEAD returned an empty string."
+            exit 1
+          fi
+
+          if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
+            exit 1
+          fi
+
           FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
 
           echo "Using kubeconfig: $KUBECONFIG"
+          echo "Immutable image: $FULL_IMAGE"
 
           test -r "$KUBECONFIG" || {
             echo "FAIL: kubeconfig missing or unreadable."
@@ -710,16 +736,17 @@ pipeline {
             -f kubernetes/drfarah-staging/postgres-service.yaml \
             -f kubernetes/drfarah-staging/postgres-statefulset.yaml \
             -f kubernetes/drfarah-staging/api-service.yaml \
-            -f kubernetes/drfarah-staging/api-ingress.yaml \
-            -f kubernetes/drfarah-staging/api-deployment.yaml
+            -f kubernetes/drfarah-staging/api-ingress.yaml
 
           echo ""
-          echo "=== Setting immutable API image ==="
+          echo "=== Rendering and applying Deployment with immutable image ==="
 
-          kubectl \
-            -n "$STAGING_NAMESPACE" \
-            set image deployment/drfarah-staging-api \
-            "api=$FULL_IMAGE"
+          kubectl set image \
+            -f kubernetes/drfarah-staging/api-deployment.yaml \
+            "api=$FULL_IMAGE" \
+            --dry-run=client \
+            -o yaml \
+            | kubectl apply -f -
 
           echo ""
           echo "=== Waiting for PostgreSQL ==="
@@ -868,6 +895,39 @@ pipeline {
           }
 
           echo "Booking response contains an id."
+
+          echo ""
+          echo "=== Immutable image verification ==="
+
+          IMAGE_TAG="$(git rev-parse HEAD)"
+
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "FAIL: git rev-parse HEAD returned an empty string."
+            exit 1
+          fi
+
+          if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
+            exit 1
+          fi
+
+          FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
+
+          DEPLOYED_IMAGE="$(
+            kubectl -n "$STAGING_NAMESPACE" \
+              get deployment drfarah-staging-api \
+              -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
+          )"
+
+          echo "Expected image: $FULL_IMAGE"
+          echo "Deployed image: $DEPLOYED_IMAGE"
+
+          if [ "$DEPLOYED_IMAGE" != "$FULL_IMAGE" ]; then
+            echo "FAIL: deployed image does not match the immutable commit SHA."
+            exit 1
+          fi
+
+          echo "Immutable image verification passed."
           echo ""
           echo "Staging API health and booking checks passed."
         '''
