@@ -394,70 +394,30 @@
         <section class="booking-step active" data-step="1">
           <p class="step-kicker">Step 1 of 4</p>
           <h3>Choose your care</h3>
-          <div class="choice-grid">
-            <label class="choice-card">
-              <input type="radio" name="service" value="Urgent or acute care" checked>
-              <span><strong>Urgent or acute care</strong><small>Same-day illness, injury, or immediate concern</small></span>
-            </label>
-            <label class="choice-card">
-              <input type="radio" name="service" value="VIP or mobile visit">
-              <span><strong>VIP / mobile visit</strong><small>Hotel, office, home, or traveler request</small></span>
-            </label>
-            <label class="choice-card">
-              <input type="radio" name="service" value="Rejuvenation consultation">
-              <span><strong>Rejuvenation consultation</strong><small>PRP, PRF, skin, hair, or recovery goals</small></span>
-            </label>
+          <div class="choice-grid" id="service-choices" data-service-choices>
+            <p class="service-loading">Loading services...</p>
           </div>
+          <p id="service-error" class="form-error" hidden></p>
         </section>
 
         <section class="booking-step" data-step="2">
           <p class="step-kicker">Step 2 of 4</p>
-          <h3>Choose where and when</h3>
-          <div class="field-row">
-            <label>
-              <span>Visit type</span>
-              <select name="visitType">
-                <option>Clinic visit</option>
-                <option>Mobile / VIP request</option>
-              </select>
-            </label>
-            <label>
-              <span>Preferred day</span>
-              <select name="day" data-day-select>
-                <option>Today</option>
-                <option>Tomorrow</option>
-                <option>Monday, July 27</option>
-                <option>Tuesday, July 28</option>
-                <option>Wednesday, July 29</option>
-                <option>Thursday, July 30</option>
-                <option>Friday, July 31</option>
-              </select>
-            </label>
+          <h3>Choose your date and time</h3>
+          <div class="date-picker-row" id="date-picker" data-date-picker>
+            <p class="slot-loading">Select a date to see available times.</p>
           </div>
 
-          <div class="slot-toolbar">
+          <div class="slot-toolbar" id="slot-toolbar" hidden>
             <div class="slot-label">
               <span>Available time slots</span>
-              <small>Prototype availability for UI demonstration</small>
+              <small id="slot-status">Loading...</small>
             </div>
-            <button type="button" class="slot-more" data-more-slots>Show more slots</button>
+            <button type="button" class="slot-more" id="show-more-slots" data-more-slots hidden>Show more slots</button>
           </div>
 
-          <div class="time-options" role="group" aria-label="Available times" data-time-options></div>
+          <div class="time-options" role="group" aria-label="Available times" id="slot-grid" data-time-options></div>
 
-          <label>
-            <span>Preferred time window (optional)</span>
-            <select name="timeWindow">
-              <option>Any available time</option>
-              <option>Early morning</option>
-              <option>Late morning</option>
-              <option>Early afternoon</option>
-              <option>Late afternoon</option>
-              <option>Evening</option>
-            </select>
-          </label>
-
-          <p class="microcopy">Times shown are prototype data. Mobile visits may require clinic confirmation.</p>
+          <p id="availability-error" class="form-error" hidden></p>
         </section>
 
         <section class="booking-step" data-step="3">
