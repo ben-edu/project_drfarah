@@ -33,6 +33,18 @@ def _to_utc(dt: datetime.datetime, tz: ZoneInfo) -> datetime.datetime:
     return dt.astimezone(datetime.timezone.utc)
 
 
+def _ensure_utc(dt: datetime.datetime) -> datetime.datetime:
+    """Ensure a datetime is UTC-aware. Naive datetimes are assumed to be UTC.
+
+    SQLite stores datetimes without timezone info, so values read back
+    from the database may be naive even though the column was declared
+    with timezone=True. This helper normalizes them for comparison.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=datetime.timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
+
+
 def generate_availability(
     db: Session,
     service: Service,
@@ -143,7 +155,7 @@ def generate_availability(
                 occ_start_utc = occupied_start.astimezone(datetime.timezone.utc)
                 occ_end_utc = occupied_end.astimezone(datetime.timezone.utc)
                 for bp in blocked_periods:
-                    if occ_start_utc < bp.ends_at and occ_end_utc > bp.starts_at:
+                    if occ_start_utc < _ensure_utc(bp.ends_at) and occ_end_utc > _ensure_utc(bp.starts_at):
                         conflict = True
                         break
                 if conflict:
@@ -152,7 +164,7 @@ def generate_availability(
 
                 # Check against existing appointments.
                 for appt in existing_appointments:
-                    if occ_start_utc < appt.ends_at and occ_end_utc > appt.starts_at:
+                    if occ_start_utc < _ensure_utc(appt.ends_at) and occ_end_utc > _ensure_utc(appt.starts_at):
                         conflict = True
                         break
                 if conflict:
