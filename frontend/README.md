@@ -6,7 +6,7 @@ Public website prototype for `drfarah.proxbenovh.cloud` and
 ## Source
 
 The design prototype was created by the design owner and supplied as
-`project-sources/drfarah_design_prototype_v1.zip`. Claude Code integrated the
+`project-sources/drfarah_design_prototype_v2.zip`. Claude Code integrated the
 approved prototype faithfully — no redesign, restyle, or framework migration
 was performed.
 
@@ -18,40 +18,62 @@ frontend/
 ├── styles.css      Complete responsive stylesheet
 ├── app.js           Booking modal interaction (frontend-only)
 ├── robots.txt       Disallow all (temporary-domain protection)
+├── assets/          SVG visual assets (logos, icons, illustrations)
+│   ├── favicon.svg
+│   ├── logo-mark.svg
+│   ├── doctor-portrait.svg
+│   ├── hero-clinic.svg
+│   ├── urgent-care.svg
+│   ├── mobile-care.svg
+│   ├── traveler-care.svg
+│   ├── rejuvenation-main.svg
+│   ├── clinic-map.svg
+│   └── og-preview.svg
 └── README.md
 ```
 
 ## Status
 
-- **Design:** approved prototype v1, integrated without reinterpretation.
+- **Design:** approved prototype v2, integrated without reinterpretation.
 - **Booking:** frontend-only modal with four steps, service preselection,
-  review, and prototype success state. No network requests, no API connection,
-  no data storage.
+  richer slot set (16 times) with "show more slots" toggle, review step, and
+  prototype success state. No network requests, no API connection, no data
+  storage.
 - **Backend independence:** the frontend is fully static and does not depend
   on the FastAPI backend or any runtime service.
 - **No-index protection:** active via `<meta name="robots">` and
   `robots.txt`. Must be removed or changed during final-domain migration.
+- **Logo/favicon:** SVG favicon and logo mark in `assets/`. Linked via
+  `<link rel="icon">` and used in header/footer branding.
+- **Cookie notice:** fixed-position banner at bottom of viewport. Uses
+  `localStorage` key `drfarah-cookie-notice` to remember dismissal. No
+  third-party cookies, no analytics, no tracking scripts.
+- **SEO:** Open Graph tags, Twitter card, canonical URL, MedicalClinic
+  structured data, and `noindex,nofollow,noarchive` meta tag for temporary
+  staging protection.
+- **Richer slot UI:** booking step 2 presents 16 time slots (8 visible by
+  default) with a "Show more slots" button that reveals the full set.
 - **Direct `/book` route:** not yet implemented. Belongs to a later step.
 
-## Unresolved placeholders
+## Temporary placeholder values
 
 The following prototype values must be replaced with verified clinic
 information before the site is promoted as final production content:
 
 | Placeholder | Location |
 |---|---|
-| Phone number `(310) 000-0000` / `+13100000000` | Header, hero, location, footer, mobile bar |
-| Email `contact@example.com` | Location, footer |
-| Exact clinic address | Location section map card |
-| Office hours | Not yet present in prototype |
+| Phone number `(310) 555-0189` / `+13105550189` | Utility bar, header, hero, location, footer, mobile bar |
+| Email `appointments@drfarah.proxbenovh.cloud` | Utility bar, location, footer |
+| Exact clinic address `9400 Brighton Way, Beverly Hills, CA 90210` | Location section map card |
+| Office hours `Daily by appointment` | Location section |
 | Legal text (privacy policy, notice of privacy practices, accessibility) | Footer links (all `#`) |
-| Real portrait photograph | About section (CSS artwork placeholder) |
-| Clinic photography | Not yet present |
-| Appointment availability (dates/times) | Booking step 2 |
+| Real portrait photograph | About section (SVG illustration placeholder) |
+| Clinic photography | Hero, service cards (SVG illustration placeholders) |
+| Appointment availability (dates/times) | Booking step 2 (prototype demo data) |
 | Verified patient reviews | Not yet present |
 | Final service list and descriptions | Service cards |
 | Credentials wording | About section |
-| Logo / brand mark | Header and footer (text-based `DF` mark) |
+| Domain (canonical URL, email domain) | Meta tags, email addresses |
 
 The temporary site must not be promoted as final production content until all
 placeholders are verified and replaced.
@@ -71,6 +93,7 @@ migration. Do not create a sitemap until the final domain is active.
 
 - No analytics or tracking scripts.
 - No third-party cookies.
+- Cookie notice uses `localStorage` only (key: `drfarah-cookie-notice`).
 - Google Fonts loaded from `fonts.googleapis.com`. Self-hosting or privacy
   review is a later production decision (documented, not changed in this step).
 - No patient data logged to console or stored.
@@ -80,8 +103,11 @@ migration. Do not create a sitemap until the final domain is active.
 - All booking entry points open the same four-step modal.
 - Service preselection is preserved from the entry context.
 - Four-step navigation with progress indicator, back button, and review step.
+- Step 2 shows 16 time slots (8 visible by default) with "Show more slots"
+  button that reveals all 16.
 - Success state shows a prototype notice (no real booking created).
-- No network requests, no localStorage/sessionStorage, no API connection.
+- No network requests, no localStorage/sessionStorage for booking data, no
+  API connection.
 - The `/book` route and API integration belong to later steps.
 
 ## Deployment
