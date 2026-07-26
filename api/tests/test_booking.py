@@ -32,9 +32,11 @@ def setup_env(tmp_path: pytest.TempPathFactory):
     reset_engine()
 
     import importlib
+    import app.core.database
     import app.routers.health
     import app.main
 
+    importlib.reload(app.core.database)
     importlib.reload(app.routers.health)
     importlib.reload(app.main)
 

@@ -11,8 +11,6 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
 
-settings = get_settings()
-
 # Engine is created lazily so tests can override the URL first.
 _engine: Engine | None = None
 _SessionLocal: sessionmaker | None = None
@@ -21,13 +19,14 @@ _SessionLocal: sessionmaker | None = None
 def _get_engine() -> Engine:
     global _engine
     if _engine is None:
-        url = settings.effective_database_url
+        s = get_settings()
+        url = s.effective_database_url
         if url is None:
             url = "sqlite:///./drfarah.db"
         _engine = create_engine(
             url,
             pool_pre_ping=True,
-            echo=(settings.ENVIRONMENT == "dev"),
+            echo=(s.ENVIRONMENT == "dev"),
             connect_args={"check_same_thread": False} if url.startswith("sqlite") else {},
         )
     return _engine
