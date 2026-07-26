@@ -1,85 +1,68 @@
-# HANDOFF — 2026-07-26 (Step 05-FIX2)
+# HANDOFF — 2026-07-26 (Step 06: Immutable Staging API Image)
 
 ## Current state
 
-- **Branch:** `feature/booking-mvp-staging`
-- **Base:** `dev` (4e49d33)
+- **Branch:** `fix/immutable-staging-api-image`
+- **Base:** `dev` (eb728ff)
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 
-## Work completed (Step 05-FIX2 — Diagnose and Repair API Container Startup Validation)
+## Work completed (Step 06 — Immutable Staging API Image)
 
-### Root cause of Docker build validation failure
+### Root cause of `:dev` being deployed
 
-The API image built successfully but the health check always failed with
-"connection refused". The container crashed before Uvicorn started listening
-because:
-
-1. `DATABASE_URL` was not set (config default: `None`).
-2. `database.py` fell back to `sqlite:///./drfarah.db` → `/app/drfarah.db`.
-3. `main.py` lifespan handler calls `Base.metadata.create_all()` on startup.
-4. SQLite tried to create `/app/drfarah.db` — but `/app` is owned by root
-   and the container runs as non-root `appuser` (uid 10001).
-5. Startup crashed with a database permission error before Uvicorn bound
-   port 8000.
+The Jenkinsfile derived the image tag from `${GIT_COMMIT:-dev}`. When
+`GIT_COMMIT` was empty or unset in the Jenkins environment, the fallback `dev`
+was used. This resulted in the live Deployment running the `:dev` tag instead
+of the immutable commit SHA.
 
 ### Fix applied
 
-Replaced the fragile `docker run -d / sleep 5 / curl` block in the Jenkinsfile
-"API — Docker build validation" stage with a robust validation stage:
+1. **All image-tag derivations** now use `git rev-parse HEAD` directly from the
+   checked-out repository instead of `${GIT_COMMIT:-dev}`.
+2. **POSIX validation** confirms each derived SHA is a 40-character lowercase
+   hexadecimal string. The build fails immediately on empty or malformed SHAs.
+3. **Deployment rendering** uses `kubectl set image -f ... --dry-run=client -o yaml
+   | kubectl apply -f -` so the committed `:dev` placeholder is never applied
+   to the cluster.
+4. **Post-rollout verification** queries the live Deployment image via
+   `kubectl get deployment -o jsonpath` and compares it with the expected
+   immutable SHA. Mismatch fails the build.
+5. **Both Harbor tags** (`<sha>` and `:dev`) continue to be pushed. The
+   immutable SHA tag is the deployment source of truth; `:dev` is only a
+   convenience alias.
 
-- Unique container name and host port per build number (avoids collisions).
-- Explicit test environment: `ENVIRONMENT=test`, `DATABASE_URL=sqlite:////tmp/drfarah-validation.db`.
-- Retry loop: checks liveness every 1s for up to 20 attempts (~20s).
-- Early exit on container crash with full diagnostics (ps, inspect, logs).
-- Trap-based cleanup on success and failure.
-- Readiness check under the isolated SQLite database.
-
-### Validation environment (no live dependencies)
-
-| Variable | Value |
-|---|---|
-| `ENVIRONMENT` | `test` |
-| `DATABASE_URL` | `sqlite:////tmp/drfarah-validation.db` |
-
-No SMTP, PostgreSQL, Kubernetes, or external infrastructure required.
-
-### Production image verification (no changes needed)
-
-- Non-root `appuser` (uid 10001).
-- Uvicorn on `0.0.0.0:8000`.
-- Runtime dependencies only.
-- Liveness does not touch the database.
-- Readiness checks PostgreSQL in staging/production.
-- No SMTP send during startup.
-
-### Files changed (1 file)
+### Files changed (4 files)
 
 | File | Change |
 |---|---|
-| `Jenkinsfile` | Rewrote API Docker build validation stage |
+| `Jenkinsfile` | Replaced all `${GIT_COMMIT:-dev}` with `git rev-parse HEAD` + validation; switched to rendered Deployment application; added post-rollout image verification |
+| `kubernetes/drfarah-staging/README.md` | Documented immutable image tagging and deployment rendering |
+| `HANDOFF.md` | This handoff |
+| `SESSION_LOG.md` | Session entry added |
 
-### Feature-branch safety
+### Local `.gitignore` modification
 
-All deploy/push stages remain gated on `branch 'dev'`. Feature branches run:
-- Path validation
-- Secret filename detection
-- Markdown hygiene
-- API tests (containerized)
-- API Docker build validation (now robust)
-- Frontend validation
+The working tree had an uncommitted addition to `.gitignore`:
+`**/.pytest_cache/`. This is appropriate Python pytest-cache exclusion and is
+included in the branch commit.
 
 ### What was NOT done
 
-- No application code changes.
-- No frontend visual design changes.
-- No admin/Keycloak work.
-- No manual deployment.
+- No SMTP, secret, or password changes.
+- No RBAC changes (Jenkins still lacks `pods/exec` and Events access).
+- No production deployment.
+- No frontend redesign.
+- No Keycloak, admin UI, HAProxy, DNS, or TLS changes.
 - No PR merge (awaiting operator review).
 
 ## Recommended next step
 
-1. Push and verify the Jenkins feature build is green.
-2. Merge the PR into `dev`.
-3. After the dev build deploys, verify the complete booking flow on staging.
+1. Push the branch and open a PR into `dev`.
+2. After merge, trigger a `dev` build in Jenkins.
+3. Verify the Jenkins deploy stage log shows:
+   - `Expected image: harbor...:<sha>`
+   - `Deployed image: harbor...:<sha>`
+   - `Immutable image verification passed.`
+4. Confirm the live Deployment image matches the commit SHA.
 
 Do not start admin/Keycloak until the booking flow is verified end-to-end.

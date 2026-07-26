@@ -60,3 +60,4 @@ project-sources/
 
 # Misc
 *.tmp
+**/.pytest_cache/
