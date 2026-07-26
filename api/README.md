@@ -55,10 +55,20 @@ PYTHONPATH=. python -m pytest -q tests/
 
 ## Docker
 
+The container runs as non-root `appuser`. The default SQLite path (`./drfarah.db`)
+resolves to `/app/drfarah.db` which is not writable by `appuser`. For local
+Docker runs, point `DATABASE_URL` to a writable location under `/tmp/`:
+
 ```bash
 docker build -t drfarah-api:latest .
-docker run -p 8000:8000 drfarah-api:latest
+docker run -p 8000:8000 \
+  -e ENVIRONMENT=test \
+  -e DATABASE_URL='sqlite:////tmp/drfarah.db' \
+  drfarah-api:latest
 ```
+
+In staging/production, `DATABASE_URL` points to a real PostgreSQL instance
+and `ENVIRONMENT` is `staging` or `prod`.
 
 ## Environment variables
 

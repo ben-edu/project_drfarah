@@ -1,4 +1,4 @@
-# HANDOFF — 2026-07-26 (Step 05-FIX)
+# HANDOFF — 2026-07-26 (Step 05-FIX2)
 
 ## Current state
 
@@ -6,67 +6,57 @@
 - **Base:** `dev` (4e49d33)
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 
-## Work completed (Step 05-FIX — Repair + Correct SMTP + Complete Booking MVP)
+## Work completed (Step 05-FIX2 — Diagnose and Repair API Container Startup Validation)
 
-### Test isolation (root cause of Jenkins failures)
+### Root cause of Docker build validation failure
 
-Three booking tests failed (`expected id 1, got 2` etc.) because all tests shared
-a single `sqlite:///./test_booking.db` file. `reset_engine()` disposed the cached
-engine but did not create a unique database per test.
+The API image built successfully but the health check always failed with
+"connection refused". The container crashed before Uvicorn started listening
+because:
 
-**Fix:** Each test receives `sqlite:///{tmp_path}/test.db` — a unique temporary
-file per test function. Tables are created fresh via the FastAPI lifespan handler.
-Tested: order-independent, passes repeatedly.
+1. `DATABASE_URL` was not set (config default: `None`).
+2. `database.py` fell back to `sqlite:///./drfarah.db` → `/app/drfarah.db`.
+3. `main.py` lifespan handler calls `Base.metadata.create_all()` on startup.
+4. SQLite tried to create `/app/drfarah.db` — but `/app` is owned by root
+   and the container runs as non-root `appuser` (uid 10001).
+5. Startup crashed with a database permission error before Uvicorn bound
+   port 8000.
 
-**Brittle ID assertions fixed:** Tests now check relative ordering (`id >= 1`,
-`r2.id > r1.id`, `id2 == id1 + 1`) within the same isolated database rather
-than depending on global suite state.
+### Fix applied
 
-### Deprecation warnings resolved
+Replaced the fragile `docker run -d / sleep 5 / curl` block in the Jenkinsfile
+"API — Docker build validation" stage with a robust validation stage:
 
-| Warning | Fix |
+- Unique container name and host port per build number (avoids collisions).
+- Explicit test environment: `ENVIRONMENT=test`, `DATABASE_URL=sqlite:////tmp/drfarah-validation.db`.
+- Retry loop: checks liveness every 1s for up to 20 attempts (~20s).
+- Early exit on container crash with full diagnostics (ps, inspect, logs).
+- Trap-based cleanup on success and failure.
+- Readiness check under the isolated SQLite database.
+
+### Validation environment (no live dependencies)
+
+| Variable | Value |
 |---|---|
-| Pydantic `class Config` | `model_config = ConfigDict(from_attributes=True)` |
-| FastAPI `on_event("startup")` | Async lifespan context manager |
+| `ENVIRONMENT` | `test` |
+| `DATABASE_URL` | `sqlite:////tmp/drfarah-validation.db` |
 
-### SMTP configuration corrected
+No SMTP, PostgreSQL, Kubernetes, or external infrastructure required.
 
-**Verified reference pattern values (from toilettage Soria SMTP, non-secret):**
-- SMTP_HOST: `mail.soria-academie.fr` (was `smtp.soria-academie.fr`)
-- SMTP_PORT: `587` (STARTTLS — verified from working reference)
-- SMTP_USE_TLS: `true`
-- SMTP_FROM: `contact@soria-academie.fr` (Soria sender identity)
-- SMTP_USER: `contact@soria-academie.fr`
+### Production image verification (no changes needed)
 
-**Architecture split:**
-- **ConfigMap** (`drfarah-staging-api-config`): non-secret values — SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_USE_TLS, SMTP_TEST_MODE
-- **Secret** (`drfarah-staging-api-secret`): credentials — SMTP_USER, SMTP_PASSWORD
-- Notification recipient (`SMTP_TO`) remains separately configurable and is not confused with sender identity.
+- Non-root `appuser` (uid 10001).
+- Uvicorn on `0.0.0.0:8000`.
+- Runtime dependencies only.
+- Liveness does not touch the database.
+- Readiness checks PostgreSQL in staging/production.
+- No SMTP send during startup.
 
-**Password:** Rotated from the old exposed value. The new value was injected
-directly into the K8s Secret — never committed, never printed.
-
-### Email service tests (new)
-
-`api/tests/test_email.py` — 7 tests with mocks:
-- successful SMTP send verifies host/port/auth
-- sender address is `contact@soria-academie.fr`
-- connection failure does not leak secrets in logs
-- test mode logs instead of sending
-- subject contains patient name
-- body contains no clinical free text
-- SMTP not configured returns False
-
-### Files changed (6 files)
+### Files changed (1 file)
 
 | File | Change |
 |---|---|
-| `api/tests/test_booking.py` | Per-test isolated SQLite; relative ID assertions |
-| `api/tests/test_email.py` | **New** — 7 email mock tests |
-| `api/app/main.py` | Lifespan handler replaces `on_event` |
-| `api/app/schemas/booking.py` | Pydantic v2 `ConfigDict` |
-| `kubernetes/drfarah-staging/configmap.yaml` | Corrected SMTP_HOST and SMTP_FROM |
-| `kubernetes/drfarah-staging/secret.example.yaml` | Documented SMTP architecture split |
+| `Jenkinsfile` | Rewrote API Docker build validation stage |
 
 ### Feature-branch safety
 
@@ -75,25 +65,21 @@ All deploy/push stages remain gated on `branch 'dev'`. Feature branches run:
 - Secret filename detection
 - Markdown hygiene
 - API tests (containerized)
-- Docker build validation
+- API Docker build validation (now robust)
 - Frontend validation
 
 ### What was NOT done
 
+- No application code changes.
 - No frontend visual design changes.
 - No admin/Keycloak work.
-- No manual deployment from feature branch.
-- No credentials committed or exposed.
+- No manual deployment.
 - No PR merge (awaiting operator review).
 
 ## Recommended next step
 
-**Verify the Jenkins feature build is green**, then merge the PR into `dev`.
-After the dev build deploys, verify the complete booking flow:
-1. `https://staging.drfarah.proxbenovh.cloud/` → Book an appointment
-2. Submit a test booking and check for booking reference ID
-3. Check the API logs for SMTP notification (test mode logs email content)
-4. Optionally set `SMTP_TEST_MODE=false` and perform a live email test
-5. Verify the message was accepted by `mail.soria-academie.fr:587`
+1. Push and verify the Jenkins feature build is green.
+2. Merge the PR into `dev`.
+3. After the dev build deploys, verify the complete booking flow on staging.
 
-Do not start admin/Keycloak until this flow is verified end-to-end.
+Do not start admin/Keycloak until the booking flow is verified end-to-end.

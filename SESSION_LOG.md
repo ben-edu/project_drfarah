@@ -568,3 +568,80 @@ inserted by earlier tests persisted and caused auto-increment drift.
 | `kubernetes/drfarah-staging/secret.example.yaml` | Documented SMTP architecture split |
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05-FIX2: Diagnose and Repair API Container Startup Validation
+
+### Root cause of Docker build validation failure
+
+The API image built successfully but the health check (`curl
+http://localhost:18000/api/v1/health/live`) always failed with "connection
+refused". The container crashed before Uvicorn started listening because:
+
+1. `DATABASE_URL` was not set (config default: `None`).
+2. `database.py` fell back to `sqlite:///./drfarah.db` → resolves to
+   `/app/drfarah.db`.
+3. `main.py` lifespan handler calls `Base.metadata.create_all()` on startup.
+4. SQLite tried to create `/app/drfarah.db` — but `/app` is owned by root
+   and the container runs as non-root `appuser` (uid 10001).
+5. Startup crashed with a database permission error before Uvicorn could bind
+   port 8000.
+
+### Fix: Jenkinsfile validation stage rewrite
+
+Replaced the fragile `docker run -d / sleep 5 / curl` block with a robust
+validation stage:
+
+- **Unique container name** per build number (`drfarah-api-validation-${BUILD_NUMBER}`).
+- **Unique host port** derived from build number to avoid collisions (`18000 + BUILD_NUMBER % 100`).
+- **Explicit test environment**:
+  - `ENVIRONMENT=test` — readiness accepts SQLite in test mode.
+  - `DATABASE_URL=sqlite:////tmp/drfarah-validation.db` — writable path
+    under `/tmp/` (world-writable, accessible to non-root `appuser`).
+- **Retry loop**: checks liveness every 1s for up to 20 attempts (~20s) instead
+  of a single fixed 5s sleep.
+- **Early exit on container crash**: if the container exits, stops retrying
+  immediately and prints diagnostics.
+- **Failure diagnostics**: prints `docker ps -a`, container state/exit code,
+  and last 200 log lines.
+- **Trap-based cleanup**: container removed on success and failure.
+- **Readiness check**: also validates the readiness endpoint under the isolated
+  SQLite database.
+
+### Validation environment (no live dependencies)
+
+| Variable | Value | Purpose |
+|---|---|---|
+| `ENVIRONMENT` | `test` | Readiness accepts SQLite |
+| `DATABASE_URL` | `sqlite:////tmp/drfarah-validation.db` | Writable SQLite under /tmp |
+
+SMTP is not configured (`SMTP_HOST=""`) and `SMTP_TEST_MODE=true` (default),
+so no email sending is attempted during validation.
+
+### Production image verification
+
+Confirmed (no changes needed):
+- Runs as non-root `appuser` (uid 10001).
+- Uvicorn on `0.0.0.0:8000`.
+- Runtime dependencies only (no `requirements-dev.txt` in image).
+- No test files in image (only `requirements.txt` and `app/` copied).
+- Liveness (`/live`) does not touch the database.
+- Readiness (`/ready`) checks PostgreSQL in staging/production; passes with
+  SQLite in test mode.
+- No SMTP send during startup.
+
+### Staging safety preserved
+
+- Feature branches still skip Harbor push, Kubernetes deployment, and staging
+  API smoke test (gated on `branch 'dev'`).
+- Staging still requires real PostgreSQL URL and runtime secrets.
+- No application code changed — only the Jenkinsfile validation stage.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `Jenkinsfile` | Rewrote API Docker build validation stage with test env, retry loop, diagnostics, cleanup trap |
+
+### No secrets were printed, copied, committed, or exposed.

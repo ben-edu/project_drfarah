@@ -207,21 +207,81 @@ pipeline {
       steps {
         dir('api') {
           sh '''
-            set -e
-            echo "Validating Docker image build..."
-            docker build -t drfarah-api:test-build .
+            set -euo pipefail
+
+            CONTAINER_NAME="drfarah-api-validation-${BUILD_NUMBER}"
+            IMAGE_NAME="drfarah-api:test-build"
+            HOST_PORT="$((18000 + BUILD_NUMBER % 100))"
+
+            cleanup() {
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            }
+            trap cleanup EXIT
+
+            echo "=== Building Docker image ==="
+            docker build -t "$IMAGE_NAME" .
             echo "Docker build successful."
 
-            echo "Running container health check..."
-            CONTAINER_ID=$(docker run -d -p 18000:8000 drfarah-api:test-build)
-            sleep 5
-            HEALTH=$(curl -fsS http://localhost:18000/api/v1/health/live 2>&1)
+            echo "=== Starting validation container (port=$HOST_PORT) ==="
+            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+
+            docker run -d \\
+              --name "$CONTAINER_NAME" \\
+              -p "${HOST_PORT}:8000" \\
+              -e ENVIRONMENT=test \\
+              -e DATABASE_URL='sqlite:////tmp/drfarah-validation.db' \\
+              "$IMAGE_NAME"
+
+            echo "=== Waiting for liveness endpoint ==="
+            healthy=0
+            for attempt in $(seq 1 20); do
+              state="$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo missing)"
+              if [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
+                echo "  Container exited unexpectedly (state=$state) — aborting."
+                break
+              fi
+
+              if curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/health/live" >/dev/null 2>&1; then
+                healthy=1
+                break
+              fi
+
+              echo "  attempt $attempt/20 — not ready yet..."
+              sleep 1
+            done
+
+            if [ "$healthy" -ne 1 ]; then
+              echo ""
+              echo "=== FAILURE: container did not become healthy ==="
+              echo ""
+              echo "--- docker ps ---"
+              docker ps -a --filter "name=$CONTAINER_NAME" || true
+              echo ""
+              echo "--- container state ---"
+              docker inspect "$CONTAINER_NAME" \\
+                --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \\
+                || true
+              echo ""
+              echo "--- container logs (last 200 lines) ---"
+              docker logs --tail 200 "$CONTAINER_NAME" || true
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Liveness check passed ==="
+            HEALTH=$(curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/health/live")
             echo "Health response: $HEALTH"
-            docker stop "$CONTAINER_ID"
-            docker rm "$CONTAINER_ID"
+
+            echo ""
+            echo "=== Readiness check ==="
+            READY=$(curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/health/ready")
+            echo "Ready response: $READY"
+
+            echo ""
+            echo "=== Container validation passed ==="
 
             # Clean up the test image to avoid disc clutter on the agent.
-            docker rmi drfarah-api:test-build || true
+            docker rmi "$IMAGE_NAME" >/dev/null 2>&1 || true
           '''
         }
       }
