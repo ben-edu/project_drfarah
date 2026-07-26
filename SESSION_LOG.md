@@ -160,3 +160,27 @@
 - Jenkins agent has Docker — build validation stage will run there.
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 03A-FIX: Repair Jenkins API Test Pipeline
+
+### Problem
+- Jenkins branch build for `feature/api-foundation` (commit `acc2f98`)
+  failed in `API — tests` stage: `No module named pytest`.
+- Root cause: `pytest` correctly excluded from `requirements.txt` (keeps
+  production image lean), but Jenkins test stage only installed
+  `requirements.txt`.
+
+### Fix applied
+- Created `api/requirements-dev.txt` with `pytest==8.3.4`.
+- Updated Jenkins `API — tests` stage:
+  `pip install -q -r requirements.txt -r requirements-dev.txt`.
+- Updated `api/README.md` test instructions to include both files.
+- Reviewed Docker build validation stage — already correct: builds
+  production Dockerfile with only `requirements.txt`.
+
+### Local validation
+- All 10 tests pass in `.venv` (Python 3.11).
+
+### No secrets were printed, copied, committed, or exposed.

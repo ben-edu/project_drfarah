@@ -1,10 +1,23 @@
-# HANDOFF — 2026-07-26 (Step 03A)
+# HANDOFF — 2026-07-26 (Step 03A-FIX)
 
 ## Current state
 
 - **Branch:** `feature/api-foundation`
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 - **Base:** `dev` (Step 02 infrastructure foundation merged).
+
+## Work completed (Step 03A-FIX — Repair Jenkins API Test Pipeline)
+
+### Fix: missing pytest in Jenkins test container
+- Created `api/requirements-dev.txt` with `pytest==8.3.4`.
+- Updated Jenkins `API — tests` stage to install both `requirements.txt`
+  and `requirements-dev.txt`.
+- Updated `api/README.md` test instructions.
+- All 10 tests pass locally (venv).
+
+### Docker build validation
+- Reviewed and confirmed correct: builds the production Dockerfile using
+  only `requirements.txt`. No dev dependencies are included in the image.
 
 ## Work completed (Step 03A — FastAPI Application Foundation)
 

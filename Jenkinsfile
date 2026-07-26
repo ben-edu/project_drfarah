@@ -161,7 +161,7 @@ pipeline {
               python:3.12-slim \
               bash -c "
                 set -e
-                pip install -q -r requirements.txt
+                pip install -q -r requirements.txt -r requirements-dev.txt
                 PYTHONPATH=. python -m pytest -q tests/
               "
           '''
