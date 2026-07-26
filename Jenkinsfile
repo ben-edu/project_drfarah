@@ -187,6 +187,14 @@ pipeline {
                 pip install -q -r requirements.txt -r requirements-dev.txt
                 PYTHONPATH=. python -m pytest -q tests/
               "
+
+            # Clean up root-owned __pycache__ so Jenkins workspace
+            # cleanup on the next build does not fail.
+            docker run --rm \
+              -v "$PWD":/app \
+              -w /app \
+              python:3.12-slim \
+              find /app -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
           '''
         }
       }

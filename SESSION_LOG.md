@@ -493,3 +493,78 @@ reviews, final service list, credentials wording, logo.
 - No secrets were printed, copied, committed, or exposed.
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 05-FIX: Test Isolation + Correct SMTP + Complete Staging Booking MVP
+
+### Root cause of Jenkins test failures
+Three booking tests failed with unexpected IDs (expected 1 got 2, expected
+2 got 4, expected 3 got 7) because all tests shared a single SQLite database
+file (`sqlite:///./test_booking.db`). The `setup_env` fixture cleared the
+cached engine/settings but did not create a unique database per test. Rows
+inserted by earlier tests persisted and caused auto-increment drift.
+
+### Fix: per-test isolated databases
+- Changed `setup_env` fixture to accept `tmp_path` (pytest built-in).
+- Each test receives `sqlite:///{tmp_path}/test.db` — a unique temporary file.
+- `reset_engine()` disposes the old engine and sets cached globals to None.
+- Tables are created fresh via the FastAPI lifespan handler.
+- After each test, the temp directory is automatically cleaned up by pytest.
+- Tested: no cross-test state leakage, order-independent, passes repeatedly.
+
+### Brittle ID assertions fixed
+- `test_response_contains_booking_fields`: checks `id >= 1` and `isinstance(id, int)`
+- `test_persistence_across_requests`: checks `r2_id > r1_id` (relative ordering)
+- `test_id_increments`: checks `id2 == id1 + 1` and `id3 == id2 + 1` within
+  the same isolated database
+
+### Deprecation warnings resolved
+- **Pydantic v1 `class Config`**: replaced with `model_config = ConfigDict(from_attributes=True)` in `BookingResponse` (Pydantic v2).
+- **FastAPI `@app.on_event("startup")`**: replaced with async `lifespan` context manager. Preserved existing behavior: `Base.metadata.create_all()` on startup.
+
+### SMTP configuration corrected
+
+**Identity (verified with reference Soria SMTP pattern):**
+- SMTP_HOST: `mail.soria-academie.fr` (was `smtp.soria-academie.fr`)
+- SMTP_FROM: `contact@soria-academie.fr` (was `noreply@drfarah.proxbenovh.cloud`)
+- SMTP_USER: `contact@soria-academie.fr`
+- SMTP_PORT: 587 (verified from reference, STARTTLS)
+- SMTP_USE_TLS: true (verified from reference)
+- SMTP_TO: `appointments@drfarah.proxbenovh.cloud` (separately configurable)
+
+**Architecture:**
+- ConfigMap: non-secret values (SMTP_HOST, SMTP_PORT, SMTP_FROM, SMTP_TO, SMTP_USE_TLS, SMTP_TEST_MODE)
+- Secret: identity/password only (SMTP_USER, SMTP_PASSWORD)
+- Updated live ConfigMap and Secret via kubectl (no credential exposure).
+- `secret.example.yaml` documented the split architecture.
+
+### Email service verification
+- Reviewed `api/app/services/email.py`: authenticates with SMTP_USER/PASSWORD, uses STARTTLS on port 587, sender is `contact@soria-academie.fr`.
+- No clinical free text in notification body.
+- SMTP errors logged safely (no credential leakage). Booking persistence not rolled back on notification failure.
+- Added `api/tests/test_email.py` with 7 mock-based tests:
+  - successful SMTP send
+  - sender address is correct
+  - no secrets in logs on connection failure
+  - test mode logs instead of sending
+  - subject contains patient name
+  - body does not contain clinical free text
+  - SMTP not configured returns False
+
+### Feature-branch safety confirmed
+- All deploy/push stages gated on `branch 'dev'` — feature/* runs validation only.
+- No manual deployment performed from feature branch.
+
+### Files changed (6 files, +198 / -36)
+
+| File | Change |
+|---|---|
+| `api/tests/test_booking.py` | Per-test isolated SQLite via tmp_path; relative ID assertions |
+| `api/tests/test_email.py` | **New** — 7 email service tests with mocks |
+| `api/app/main.py` | Replaced `on_event("startup")` with async lifespan |
+| `api/app/schemas/booking.py` | Pydantic v2 `ConfigDict(from_attributes=True)` |
+| `kubernetes/drfarah-staging/configmap.yaml` | Corrected SMTP_HOST and SMTP_FROM |
+| `kubernetes/drfarah-staging/secret.example.yaml` | Documented SMTP architecture split |
+
+### No secrets were printed, copied, committed, or exposed.
