@@ -68,6 +68,7 @@ pipeline {
             docs/DECISIONS.md
             docs/architecture/README.md
             docs/design/DESIGN_SYSTEM_V1.md
+            docs/design/DESIGN_SYSTEM_V2.md
             frontend/README.md
             frontend/index.html
             frontend/styles.css
@@ -286,6 +287,30 @@ pipeline {
           echo "Static server started on port $PORT (PID $SERVER_PID)."
 
           for path in / /styles.css /app.js /robots.txt; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT$path")
+            if [ "$STATUS" = "200" ]; then
+              echo "OK    $path -> $STATUS"
+            else
+              echo "FAIL  $path -> $STATUS"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "=== Frontend: asset serving check ==="
+          asset_paths="
+            /assets/logo-mark.svg
+            /assets/favicon.svg
+            /assets/doctor-portrait.svg
+            /assets/hero-clinic.svg
+            /assets/urgent-care.svg
+            /assets/mobile-care.svg
+            /assets/traveler-care.svg
+            /assets/rejuvenation-main.svg
+            /assets/clinic-map.svg
+            /assets/og-preview.svg
+          "
+          for path in $asset_paths; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT$path")
             if [ "$STATUS" = "200" ]; then
               echo "OK    $path -> $STATUS"

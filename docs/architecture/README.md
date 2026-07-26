@@ -13,7 +13,8 @@ Architecture decisions and diagrams for the Dr. Farah VIP Urgent Care project.
 
 | File | Purpose |
 |---|---|
-| `../design/DESIGN_SYSTEM_V1.md` | Approved frontend design prototype v1 — visual system, IA, placeholders |
+| `../design/DESIGN_SYSTEM_V2.md` | **Current** — approved frontend design prototype v2 — richer visuals, assets, cookie notice, SEO, fuller slot UI |
+| `../design/DESIGN_SYSTEM_V1.md` | Approved frontend design prototype v1 — visual system, IA, placeholders (superseded by v2) |
 
 ## Deployment
 

@@ -1,58 +1,53 @@
-# HANDOFF — 2026-07-26 (Step 04B)
+# HANDOFF — 2026-07-26 (Step 04C)
 
 ## Current state
 
-- **Branch:** `feature/frontend-staging-deploy`
-- **Base:** `dev` (Step 04A frontend prototype merged via PR #4).
+- **Branch:** `feature/frontend-refresh-v2`
+- **Base:** `dev`
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
 
-## Work completed (Step 04B — Deploy Approved Frontend to Staging)
+## Work completed (Step 04C — Integrate Frontend Refresh V2)
 
-### Preflight (read-only)
-- DNS: `staging.drfarah.proxbenovh.cloud` resolves to `87.98.174.211`.
-- TLS: valid Let's Encrypt certificate, SAN covers the staging hostname.
-- HTTPS: HTTP 200 (default Hestia placeholder page).
-- Docroot: `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html`
-  exists, owned by `benweb:www-data`.
-- Write access: `benweb` can create/delete files in docroot (verified).
-- Current content: default placeholder files only (no prior frontend deploy).
-- benweb shell: `/bin/bash` (SSH-ready when key is in place).
+### Source package
+- Extracted `project-sources/drfarah_design_prototype_v2.zip` (15 files, ~20 KB).
+- Replaced all frontend files with v2 package contents.
 
-### Jenkinsfile changes
-- Added `Frontend — deploy staging` stage:
-  - **Trigger:** `dev` branch only. Never runs on `feature/*` or `main`.
-  - **Credential:** `hestia-benweb-ssh` (SSH user private key).
-  - **Preflight:** SSH to Hestia as `benweb`, confirm docroot exists and
-    is writable via temporary file create/delete.
-  - **Deploy:** `rsync -av --delete --exclude='.env' --exclude='.well-known'`
-    from `frontend/` to staging docroot.
-  - **Smoke test:** HTTP 200 retry loop (5 attempts, 3s interval) for `/`,
-    `/styles.css`, `/app.js`, `/robots.txt`.
-  - **Content verification:** grep for `Dr. Farah` marker, noindex meta,
-    `Disallow: /` in robots.txt.
-  - No sudo, chmod, chown, root, manual copy, or Hestia rebuild.
-- Updated header comments to reflect deployment capability.
-- All existing stages preserved unchanged.
+### Frontend files updated
+
+| File | Change |
+|---|---|
+| `frontend/index.html` | Complete replacement — favicon link, noindex meta, SEO/OG tags, cookie banner markup, richer hero/slot UI, MedicalClinic structured data |
+| `frontend/styles.css` | Complete replacement — expanded design system, cookie banner, richer slot grid, responsive refinements |
+| `frontend/app.js` | Complete replacement — 16-slot time grid with "Show more slots" toggle, cookie consent via localStorage, same booking modal logic |
+| `frontend/robots.txt` | Unchanged (same `Disallow: /`) |
+| `frontend/assets/*.svg` | **New** — 10 SVG assets: favicon, logo mark, doctor portrait, hero/clinic/map/service illustrations, OG preview |
 
 ### Documentation created/updated
-- Created: `docs/deployment/FRONTEND_STAGING.md` — full deployment
-  documentation including branch mapping, mechanism, preflight, smoke tests,
-  rollback procedure, no-index status, constraints.
-- Updated: `docs/architecture/README.md` — added deployment section link.
-- Updated: `frontend/README.md` — added deployment section.
+- Created: `docs/design/DESIGN_SYSTEM_V2.md` (from package DESIGN_NOTES.md).
+- Updated: `frontend/README.md` — v2 status, favicon/logo support, temporary contact values, cookie notice, SEO/noindex behavior, richer slot UI, temporary placeholder status.
+- Updated: `docs/architecture/README.md` — both design docs linked, v2 marked as current.
 - Updated: `HANDOFF.md` — this file.
 - Updated: `SESSION_LOG.md` — session record appended.
 
+### Jenkinsfile changes
+- Added `docs/design/DESIGN_SYSTEM_V2.md` to required paths.
+- Added asset serving validation for all 10 SVG files under `/assets/`.
+- No deployment changes.
+
+### Validation results
+- JS syntax: passed (`node --check frontend/app.js`).
+- Static serving: all core paths and asset paths return HTTP 200.
+- No-index protection: `meta robots noindex,nofollow,noarchive` present; `robots.txt Disallow: /` present.
+- HTML checks: favicon link, SEO description, cookie banner markup confirmed.
+- Booking: all entry points open booking flow; step 2 shows 16 slots with "Show more slots" toggle working.
+- No network/API requests in frontend JavaScript.
+
 ### What was NOT done (intentionally)
 
-- No frontend file changes (index.html, styles.css, app.js, robots.txt are
-  identical to Step 04A).
-- No deployment from feature branches (validation only).
-- No production deployment (main deploys nothing).
-- No API, PostgreSQL, Keycloak, admin panel, or Kubernetes deployment.
-- No HAProxy, DNS, TLS, or Hestia configuration changes.
-- No manual file copies to Hestia.
-- No credentials committed or exposed.
+- No API, PostgreSQL, Keycloak, Harbor, or Kubernetes changes.
+- No deployment from this feature branch (validation only).
+- No production deployment configuration.
+- No redesign or reinterpretation of the supplied package.
 - No PR merge (awaiting operator review).
 
 ## Deployment behavior summary
@@ -71,26 +66,8 @@
 4. `frontend/README.md` — placeholder list and deployment notes.
 5. `PROJECT.md` — product brief (for context on next steps).
 
-## Post-merge — what the operator must inspect
-
-After the PR is merged into `dev`, Jenkins will automatically build `dev`
-and trigger the `Frontend — deploy staging` stage. The operator must:
-
-1. Open the Jenkins dev build console and confirm the
-   `Frontend — deploy staging` stage completed successfully.
-2. Verify `https://staging.drfarah.proxbenovh.cloud/` shows the Dr. Farah
-   prototype (not the Hestia default page).
-3. Confirm all four assets return HTTP 200:
-   - `https://staging.drfarah.proxbenovh.cloud/`
-   - `https://staging.drfarah.proxbenovh.cloud/styles.css`
-   - `https://staging.drfarah.proxbenovh.cloud/app.js`
-   - `https://staging.drfarah.proxbenovh.cloud/robots.txt`
-4. Confirm noindex meta and robots Disallow rule are present.
-5. Open the booking modal and verify it functions (frontend-only).
-
 ## Recommended next step
 
-**Visually review the deployed staging frontend** at
-`https://staging.drfarah.proxbenovh.cloud/` before any API integration or
-backend deployment. Do not start Step 03B (staging deployment and database
-provisioning) until the design is reviewed and accepted.
+Merge this PR into `dev` and let Jenkins automatically redeploy to staging.
+The staging frontend will reflect the v2 refresh immediately after the `dev`
+build passes.
