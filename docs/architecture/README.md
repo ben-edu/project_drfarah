@@ -15,9 +15,15 @@ Architecture decisions and diagrams for the Dr. Farah VIP Urgent Care project.
 |---|---|
 | `../design/DESIGN_SYSTEM_V1.md` | Approved frontend design prototype v1 — visual system, IA, placeholders |
 
+## Deployment
+
+| File | Purpose |
+|---|---|
+| `../deployment/FRONTEND_STAGING.md` | Staging frontend deployment — branch mapping, mechanism, rollback |
+
 ## Status
 
-Phase 1: website + booking foundation. Frontend prototype integrated; API scaffold complete.
+Phase 1: website + booking foundation. Frontend prototype integrated; staging deployment configured; API scaffold complete.
 
 ## Reference documents (outside repository)
 
