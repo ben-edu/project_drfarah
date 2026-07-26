@@ -24,7 +24,6 @@ pipeline {
     STAGING_FRONTEND_HOST = 'staging.drfarah.proxbenovh.cloud'
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html'
 
-    CLEANUP_TOKEN = 'staging-ci-cleanup-token-2026'
   }
 
   // =========================================================================
@@ -759,15 +758,38 @@ pipeline {
             -f kubernetes/drfarah-staging/api-ingress.yaml
 
           echo ""
-          echo "=== Rendering and applying Deployment with immutable image ==="
+          echo "=== Rendering Deployment with immutable image ==="
 
-          kubectl set image \
-            -f kubernetes/drfarah-staging/api-deployment.yaml \
-            "api=$FULL_IMAGE" \
-            "db-migrate=$FULL_IMAGE" \
-            --dry-run=client \
-            -o yaml \
-            | kubectl apply -f -
+          RENDERED="$(mktemp)"
+
+          PLACEHOLDER="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:dev"
+
+          sed "s|image: ${PLACEHOLDER}|image: ${FULL_IMAGE}|g" \
+            kubernetes/drfarah-staging/api-deployment.yaml > "$RENDERED"
+
+          IMAGE_COUNT="$(grep -cF "image: ${FULL_IMAGE}" "$RENDERED" || true)"
+
+          if [ "$IMAGE_COUNT" -ne 2 ]; then
+            echo "FAIL: expected 2 image lines with immutable tag, found ${IMAGE_COUNT}"
+            echo "Rendered manifest preserved at $RENDERED"
+            exit 1
+          fi
+
+          if grep -qE 'image:.*:dev\b' "$RENDERED"; then
+            echo "FAIL: :dev placeholder still present in rendered manifest"
+            grep -nE 'image:.*:dev\b' "$RENDERED" || true
+            exit 1
+          fi
+
+          echo "Rendered image: $FULL_IMAGE"
+          echo "  image occurrences: $IMAGE_COUNT"
+
+          echo ""
+          echo "=== Applying rendered Deployment ==="
+
+          kubectl apply -f "$RENDERED"
+
+          rm -f "$RENDERED"
 
           echo ""
           echo "=== Waiting for PostgreSQL ==="
@@ -797,6 +819,44 @@ pipeline {
       }
 
       steps {
+        // CI cleanup — token-protected, runs first to clear previous build records.
+        withCredentials([
+          string(
+            credentialsId: 'drfarah-staging-ci-cleanup-token',
+            variable: 'CLEANUP_TOKEN'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            echo "=== CI cleanup ==="
+
+            CLEANUP_RESPONSE="$(mktemp)"
+
+            set +x
+            cleanup_status="$(
+              curl -sS \
+                -o "$CLEANUP_RESPONSE" \
+                -w '%{http_code}' \
+                -X POST \
+                -H "Authorization: Bearer ${CLEANUP_TOKEN}" \
+                "${STAGING_API_URL}/api/v1/internal/cleanup-ci" \
+                || true
+            )"
+            set -x
+
+            if [ "$cleanup_status" != "200" ]; then
+              echo "FAIL: CI cleanup returned HTTP $cleanup_status"
+              cat "$CLEANUP_RESPONSE"
+              rm -f "$CLEANUP_RESPONSE"
+              exit 1
+            fi
+
+            echo "CI cleanup returned HTTP 200."
+            rm -f "$CLEANUP_RESPONSE"
+          '''
+        }
+
         sh '''
           set -eu
 
@@ -864,78 +924,80 @@ pipeline {
           fi
 
           echo ""
-          echo "=== CI cleanup ==="
-
-          CLEANUP_RESPONSE="$(mktemp)"
-
-          cleanup_status="$(
-            curl -sS \
-              -o "$CLEANUP_RESPONSE" \
-              -w '%{http_code}' \
-              -X POST \
-              -H "Authorization: Bearer ${CLEANUP_TOKEN}" \
-              "${STAGING_API_URL}/api/v1/internal/cleanup-ci" \
-              || true
-          )"
-
-          if [ "$cleanup_status" != "200" ]; then
-            echo "FAIL: CI cleanup returned HTTP $cleanup_status"
-            cat "$CLEANUP_RESPONSE"
-            rm -f "$CLEANUP_RESPONSE"
-            exit 1
-          fi
-
-          echo "CI cleanup returned HTTP 200."
-          rm -f "$CLEANUP_RESPONSE"
-
-          echo ""
           echo "=== Staging services endpoint ==="
 
-          services_status="$(
+          SERVICES_JSON="$(
             curl -sS \
-              -o /dev/null \
-              -w '%{http_code}' \
               "${STAGING_API_URL}/api/v1/services" \
               || true
           )"
 
-          if [ "$services_status" != "200" ]; then
-            echo "FAIL: services endpoint returned HTTP $services_status"
+          if [ -z "$SERVICES_JSON" ]; then
+            echo "FAIL: services endpoint returned empty response"
             exit 1
           fi
 
-          echo "Services endpoint returned HTTP 200."
+          SERVICE_COUNT="$(
+            echo "$SERVICES_JSON" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('services',[])))" \
+            2>/dev/null || echo "0"
+          )"
+
+          if [ "$SERVICE_COUNT" -eq 0 ]; then
+            echo "FAIL: no active services found — migrations may have failed"
+            echo "$SERVICES_JSON"
+            exit 1
+          fi
+
+          SERVICE_CODE="$(
+            echo "$SERVICES_JSON" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['services'][0]['code'])"
+          )"
+
+          echo "Services endpoint returned ${SERVICE_COUNT} active service(s)."
+          echo "Selected service for smoke test: $SERVICE_CODE"
 
           echo ""
           echo "=== Staging availability endpoint ==="
 
-          TOMORROW="$(date -d '+3 days' '+%Y-%m-%d' 2>/dev/null || date -v+3d '+%Y-%m-%d')"
+          START_DATE="$(date -d '+1 day' '+%Y-%m-%d' 2>/dev/null || date -v+1d '+%Y-%m-%d')"
+          END_DATE="$(date -d '+14 days' '+%Y-%m-%d' 2>/dev/null || date -v+14d '+%Y-%m-%d')"
 
-          availability_status="$(
+          AVAIL_JSON="$(
             curl -sS \
-              -o /dev/null \
-              -w '%{http_code}' \
-              "${STAGING_API_URL}/api/v1/availability?service_code=urgent-care&start_date=${TOMORROW}&end_date=${TOMORROW}" \
+              "${STAGING_API_URL}/api/v1/availability?service_code=${SERVICE_CODE}&start_date=${START_DATE}&end_date=${END_DATE}" \
               || true
           )"
 
-          if [ "$availability_status" != "200" ]; then
-            echo "FAIL: availability endpoint returned HTTP $availability_status"
+          if [ -z "$AVAIL_JSON" ]; then
+            echo "FAIL: availability endpoint returned empty response"
             exit 1
           fi
 
-          echo "Availability endpoint returned HTTP 200."
+          SLOT_COUNT="$(
+            echo "$AVAIL_JSON" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('slots',[])))" \
+            2>/dev/null || echo "0"
+          )"
+
+          if [ "$SLOT_COUNT" -eq 0 ]; then
+            echo "FAIL: no available slots in 14-day window for $SERVICE_CODE"
+            echo "$AVAIL_JSON"
+            exit 1
+          fi
+
+          SLOT_START="$(
+            echo "$AVAIL_JSON" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['slots'][0]['starts_at'])"
+          )"
+
+          echo "Availability returned ${SLOT_COUNT} slot(s)."
+          echo "First available slot: $SLOT_START"
 
           echo ""
           echo "=== Staging booking smoke test ==="
 
           RESPONSE_FILE="$(mktemp)"
-
-          cleanup_response() {
-            rm -f "$RESPONSE_FILE"
-          }
-
-          trap cleanup_response EXIT HUP INT TERM
 
           booking_status="$(
             curl -sS \
@@ -967,6 +1029,7 @@ pipeline {
             echo "FAIL: booking smoke test returned HTTP $booking_status"
             echo "Response body:"
             cat "$RESPONSE_FILE"
+            rm -f "$RESPONSE_FILE"
             exit 1
           fi
 
@@ -975,19 +1038,17 @@ pipeline {
           grep -q '"id"' "$RESPONSE_FILE" || {
             echo "FAIL: booking response does not contain an id."
             cat "$RESPONSE_FILE"
+            rm -f "$RESPONSE_FILE"
             exit 1
           }
 
           echo "Booking response contains an id."
+          rm -f "$RESPONSE_FILE"
 
           echo ""
           echo "=== Staging appointment smoke test ==="
 
           APPT_RESPONSE="$(mktemp)"
-
-          # Compute a future slot (4 days ahead, 10:00 AM Pacific).
-          APPT_DATE="$(date -d '+4 days' '+%Y-%m-%d' 2>/dev/null || date -v+4d '+%Y-%m-%d')"
-          APPT_STARTS="${APPT_DATE}T10:00:00-07:00"
 
           appt_status="$(
             curl -sS \
@@ -996,8 +1057,8 @@ pipeline {
               -X POST \
               -H 'Content-Type: application/json' \
               -d "{
-                \"service_code\": \"urgent-care\",
-                \"starts_at\": \"${APPT_STARTS}\",
+                \"service_code\": \"${SERVICE_CODE}\",
+                \"starts_at\": \"${SLOT_START}\",
                 \"first_name\": \"Jenkins\",
                 \"last_name\": \"SmokeTest\",
                 \"email\": \"smoke-test@example.com\",
@@ -1043,17 +1104,29 @@ pipeline {
               -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
           )"
 
+          DEPLOYED_INIT_IMAGE="$(
+            kubectl -n "$STAGING_NAMESPACE" \
+              get deployment drfarah-staging-api \
+              -o jsonpath='{.spec.template.spec.initContainers[?(@.name=="db-migrate")].image}'
+          )"
+
           echo "Expected image: $FULL_IMAGE"
-          echo "Deployed image: $DEPLOYED_IMAGE"
+          echo "Deployed api container:        $DEPLOYED_IMAGE"
+          echo "Deployed db-migrate container: $DEPLOYED_INIT_IMAGE"
 
           if [ "$DEPLOYED_IMAGE" != "$FULL_IMAGE" ]; then
-            echo "FAIL: deployed image does not match the immutable commit SHA."
+            echo "FAIL: deployed api image does not match the immutable commit SHA."
             exit 1
           fi
 
-          echo "Immutable image verification passed."
+          if [ "$DEPLOYED_INIT_IMAGE" != "$FULL_IMAGE" ]; then
+            echo "FAIL: deployed db-migrate image does not match the immutable commit SHA."
+            exit 1
+          fi
+
+          echo "Immutable image verification passed (both containers)."
           echo ""
-          echo "Staging API health and booking checks passed."
+          echo "Staging API health checks passed."
         '''
       }
     }

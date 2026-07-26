@@ -1,104 +1,105 @@
-# HANDOFF — 2026-07-26 (Step 07: Real Availability and Appointment Scheduling)
+# HANDOFF — 2026-07-26 (Step 07-FIX: Repair Staging Deployment)
 
 ## Current state
 
-- **Branch:** `feature/real-availability-scheduling`
-- **Base:** `dev` (5ca8b47)
-- **6 logical commits** (see SESSION_LOG.md for details)
+- **Branch:** `fix/scheduling-staging-deployment`
+- **Base:** `dev` (ad8b38a — Step 07 merged)
+- **Status:** fixes applied, awaiting operator review and push
 
-## Work completed (Step 07 — Real Availability Scheduling)
+## Previous state (Step 07)
 
-### What changed
+Step 07 (Real Availability and Appointment Scheduling) was merged into `dev`
+(ad8b38a) but the live `dev` staging deployment failed with 5 errors.
+See SESSION_LOG.md for the full incident report.
 
-Replaced the free-text `preferred_day`/`preferred_time` booking system with
-real appointment slots, availability generation, and double-booking prevention.
+## Fixes applied on `fix/scheduling-staging-deployment`
 
-### New data models
-- `Service` — bookable services with duration and buffer times
-- `WorkingHours` — per-weekday operating hours with effective dates
-- `BlockedPeriod` — clinic closure/unavailability periods
-- `Appointment` — scheduled appointments with FK to services
+### Fix 1 — Deployment rendering (CRITICAL)
 
-### Alembic migrations
-- `alembic` added to requirements, `alembic init` configured
-- Migration 0001: captures existing `bookings` table (baseline)
-- Migration 0002: creates scheduling tables + seeds provisional data
-- PostgreSQL branch: `btree_gist` extension + exclusion constraint for
-  double-booking prevention
-- SQLite branch: plain index (no exclusion constraints in SQLite)
+**Problem:** `kubectl set image` cannot target init containers — it only
+updates `spec.containers`. The db-migrate init container was left at `:dev`.
+The pipe `| kubectl apply -f -` masked the rendering failure because POSIX sh
+lacks `pipefail`.
 
-### New API endpoints
-- `GET /api/v1/services` — list active services
-- `GET /api/v1/availability` — available slots for date range
-- `POST /api/v1/appointments` — create scheduled appointment with conflict
-  detection
-- `POST /api/v1/internal/cleanup-ci` — token-protected CI cleanup
+**Fix:** Render the Deployment to a temp file via `sed` (replacing the `:dev`
+placeholder with the immutable SHA globally). Validate 2 image lines contain
+the immutable image. Validate no `:dev` placeholder remains. Apply the
+validated temp file directly — no pipe. Clean up the temp file after apply.
 
-### Legacy booking preserved
-- `POST /api/v1/bookings` and `bookings` table unchanged
-- Booking tests (12) and health tests (10) pass without modification
-- Deprecation docstring added to booking router
+### Fix 2 — Compromised cleanup token
 
-### Frontend integration
-- Services loaded dynamically from API
-- Date picker (14-day rolling window) with clinic timezone
-- Slot grid from availability endpoint with show-more toggle
-- 409 conflict handling with "slot was just taken" message
-- Loading/error states for all network operations
-- Duplicate submission prevention
+**Problem:** `CLEANUP_TOKEN = 'staging-ci-cleanup-token-2026'` was committed
+in `Jenkinsfile` (environment block) and `configmap.yaml`. Printed in Jenkins
+logs via the curl Authorization header.
 
-### Double-booking protection
-- **Layer 1:** application-level conflict check (`check_slot_conflict`)
-- **Layer 2:** PostgreSQL GiST exclusion constraint (`no_double_booking`)
-- SQLite tests document the limitation; concurrent test skipped on SQLite
+**Fix:**
+- Removed from `Jenkinsfile` environment block. Now uses `withCredentials`
+  with a String credential (`drfarah-staging-ci-cleanup-token`).
+- `set +x` / `set -x` around the authenticated curl prevents token in logs.
+- Removed from `configmap.yaml`. Moved to `drfarah-staging-api-secret`
+  (injected via existing `envFrom.secretRef`).
+- Updated `secret.example.yaml` with CLEANUP_TOKEN field.
+- **Token rotation is mandatory** before next deploy.
 
-### CI updates
-- Init container (`db-migrate`) in API Deployment runs migrations before
-  main container starts
-- Both containers set to immutable SHA at deploy time
-- `CLEANUP_TOKEN` in ConfigMap for CI cleanup endpoint
-- Jenkins health check: cleanup-ci, services, availability, appointment
-  smoke test with `source="ci"`
+### Fix 3 — Availability smoke test
 
-### Tests
-- 70 tests pass, 1 skipped (concurrency requires PostgreSQL)
-- New test files: conftest.py, test_services.py, test_availability.py,
-  test_appointments.py, test_concurrency.py
-- Per-test isolated SQLite databases via tmp_path
+**Problem:** Hardcoded `service_code=urgent-care` on a single date. If
+`urgent-care` isn't seeded or the date has no slots, the test fails
+incorrectly.
 
-### Provisional seed data
-- 4 services (urgent-care, vip-mobile, traveler-care, rejuvenation)
-- Working hours: Mon-Fri 9am-5pm Pacific
-- Clearly marked as provisional — requires business confirmation
+**Fix:** Smoke test now calls `GET /api/v1/services`, validates at least one
+active service exists, picks the first one. Queries availability over a
+14-day window. Picks the first returned slot for the appointment smoke test.
+Uses `python3` for JSON parsing (available on Jenkins agent).
 
-### Files changed (summarized)
-| Area | Files |
-|---|---|
-| Models | 4 new (service, working_hours, blocked_period, appointment) |
-| Schemas | 3 new (service, availability, appointment) |
-| Routers | 1 new (appointments), 1 modified (booking deprecation) |
-| Services | 1 new (scheduling) |
-| Tests | 5 new (conftest + 4 test files) |
-| Migrations | alembic.ini, env.py, 2 versions |
-| Frontend | index.html, app.js updated |
-| Kubernetes | api-deployment.yaml (init container), configmap.yaml (CLEANUP_TOKEN) |
-| CI | Jenkinsfile (required paths, init container image, health check) |
-| Docs | SCHEDULING.md, updated READMEs, HANDOFF.md, SESSION_LOG.md |
+### Fix 4 — Root cause of 404
 
-### What was NOT done
-- No SMTP, secret, or password changes
-- No RBAC changes
-- No production deployment
-- No frontend visual redesign
-- No admin UI, Keycloak, HAProxy, DNS, or TLS changes
-- No PR merge (awaiting operator review)
+**Diagnosis:** The init container ran the old `:dev` image (kubectl set image
+couldn't update it), so Alembic migrations never ran. The `services` table
+was never seeded → `GET /api/v1/availability?service_code=urgent-care`
+returned 404 because no service with code `urgent-care` existed.
 
-## Recommended next step
+**Fix:** Fix 1 ensures the init container gets the immutable image with the
+migration code. Fix 3 makes the test resilient in case any individual service
+is missing.
 
-1. Push the branch and open a PR into `dev`.
-2. After merge, trigger a `dev` build in Jenkins.
-3. Verify the init container runs migrations successfully.
-4. Verify the new endpoints respond correctly.
-5. Confirm the CI cleanup + appointment smoke test pass.
+### Fix 5 — False success from piped commands
 
-Do not start Keycloak/admin UI until scheduling is verified end-to-end.
+**Problem:** Without `pipefail`, the `kubectl set image` failure (exit code 1)
+was discarded — only `kubectl apply` exit code (0) mattered.
+
+**Fix:** The deployment rendering no longer uses a pipe. See Fix 1.
+
+### Fix 6 — Cleanup endpoint security
+
+**Validated:**
+- Only deletes records where `source='ci'` — never touches real appointments.
+- 1-hour grace period prevents race conditions.
+- Returns 401 for wrong/missing token (not 403 — avoids user enumeration).
+- Token is operational (not a user authentication secret). Constant-time
+  comparison is not required for this use case.
+
+**Applied:**
+- `set +x` / `set -x` around the authenticated curl in Jenkins.
+- Token moved from ConfigMap to Secret (defense in depth).
+
+### Fix 7 — Documentation
+
+- Updated this HANDOFF.md.
+- Updated SESSION_LOG.md with incident report and fix summary.
+- Updated `kubernetes/drfarah-staging/README.md` with token rotation notice
+  and corrected deployment rendering description.
+
+## Recommended next steps
+
+1. **Rotate the cleanup token before any deploy.** The old token
+   (`staging-ci-cleanup-token-2026`) was committed in two files and must be
+   replaced in both the live Kubernetes Secret and the Jenkins credential.
+2. Review the changes on this branch.
+3. Push and open a PR into `dev`.
+4. After merge, trigger a `dev` build and verify:
+   - Deployment renders with both containers set to the immutable SHA.
+   - Init container runs migrations successfully.
+   - Services and availability endpoints return real data.
+   - CI cleanup + dynamic appointment smoke test pass.
+5. Do not start Keycloak/admin UI until scheduling is verified end-to-end.
