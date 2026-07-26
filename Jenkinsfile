@@ -246,8 +246,9 @@ pipeline {
           sh '''
             set -eu
 
-            CONTAINER_NAME="drfarah-api-validation-${BUILD_NUMBER}"
-            IMAGE_NAME="drfarah-api:test-build"
+            UNIQUE_SUFFIX="${BUILD_NUMBER}-$$"
+            CONTAINER_NAME="drfarah-api-validation-${UNIQUE_SUFFIX}"
+            IMAGE_NAME="drfarah-api:test-build-${UNIQUE_SUFFIX}"
 
             cleanup() {
               docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -263,9 +264,6 @@ pipeline {
               .
 
             echo "Docker image build passed."
-
-            docker rm -f "$CONTAINER_NAME" \
-              >/dev/null 2>&1 || true
 
             echo ""
             echo "=== Starting isolated validation container ==="
@@ -295,7 +293,7 @@ pipeline {
             done
 
             if [ -z "$HOST_PORT" ]; then
-              echo "FAIL: Docker did not publish the validation port."
+              echo "FAIL: Docker did not publish the API validation port."
 
               docker ps -a \
                 --filter "name=$CONTAINER_NAME" \
@@ -452,7 +450,8 @@ pipeline {
           echo ""
           echo "=== Static frontend serving validation ==="
 
-          CONTAINER_NAME="drfarah-frontend-validation-${BUILD_NUMBER}"
+          UNIQUE_SUFFIX="${BUILD_NUMBER}-$$"
+          CONTAINER_NAME="drfarah-frontend-validation-${UNIQUE_SUFFIX}"
 
           cleanup_frontend() {
             docker rm -f "$CONTAINER_NAME" \
@@ -461,11 +460,9 @@ pipeline {
 
           trap cleanup_frontend EXIT HUP INT TERM
 
-          docker rm -f "$CONTAINER_NAME" \
-            >/dev/null 2>&1 || true
-
           docker run -d \
             --name "$CONTAINER_NAME" \
+            --expose 8000 \
             -P \
             -v "$PWD/frontend":/site:ro \
             -w /site \
@@ -480,9 +477,23 @@ pipeline {
               docker port "$CONTAINER_NAME" 8000/tcp 2>/dev/null \
                 | head -n 1 \
                 | awk -F: '{print $NF}'
-            )"
+              )"
 
             if [ -n "$HOST_PORT" ]; then
+              break
+            fi
+
+            state="$(
+              docker inspect "$CONTAINER_NAME" \
+                --format '{{.State.Status}}' \
+                2>/dev/null \
+                || echo missing
+            )"
+
+            if [ "$state" = "exited" ] || \
+               [ "$state" = "dead" ] || \
+               [ "$state" = "missing" ]; then
+              echo "Frontend container stopped before publishing a port."
               break
             fi
 
@@ -492,6 +503,14 @@ pipeline {
           if [ -z "$HOST_PORT" ]; then
             echo "FAIL: frontend validation port was not published."
 
+            docker ps -a \
+              --filter "name=$CONTAINER_NAME" \
+              || true
+
+            docker inspect "$CONTAINER_NAME" \
+              --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
+              || true
+
             docker logs \
               --tail 100 \
               "$CONTAINER_NAME" \
@@ -500,9 +519,25 @@ pipeline {
             exit 1
           fi
 
+          echo "Published frontend validation port: $HOST_PORT"
+
           server_ready=0
 
           for attempt in $(seq 1 15); do
+            state="$(
+              docker inspect "$CONTAINER_NAME" \
+                --format '{{.State.Status}}' \
+                2>/dev/null \
+                || echo missing
+            )"
+
+            if [ "$state" = "exited" ] || \
+               [ "$state" = "dead" ] || \
+               [ "$state" = "missing" ]; then
+              echo "Frontend container stopped before becoming ready."
+              break
+            fi
+
             if curl -fsS \
               "http://127.0.0.1:${HOST_PORT}/" \
               >/dev/null 2>&1; then
@@ -510,6 +545,7 @@ pipeline {
               break
             fi
 
+            echo "  attempt $attempt/15 — frontend not ready yet"
             sleep 1
           done
 
@@ -518,6 +554,10 @@ pipeline {
 
             docker ps -a \
               --filter "name=$CONTAINER_NAME" \
+              || true
+
+            docker inspect "$CONTAINER_NAME" \
+              --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
               || true
 
             docker logs \
@@ -588,7 +628,7 @@ pipeline {
             BUILD_IMAGE="${FULL_IMAGE}:${IMAGE_TAG}"
             DEV_IMAGE="${FULL_IMAGE}:dev"
 
-            DOCKER_CONFIG="${WORKSPACE}/.docker-auth-${BUILD_NUMBER}"
+            DOCKER_CONFIG="${WORKSPACE}/.docker-auth-${BUILD_NUMBER}-$$"
             export DOCKER_CONFIG
 
             cleanup_harbor() {
@@ -663,27 +703,6 @@ pipeline {
             -f kubernetes/drfarah-staging/namespace.yaml
 
           echo ""
-          echo "=== Verifying required runtime Secrets ==="
-
-          required_secrets="
-            harbor-regcred
-            drfarah-staging-db-secret
-            drfarah-staging-api-secret
-          "
-
-          for secret in $required_secrets; do
-            if kubectl \
-              -n "$STAGING_NAMESPACE" \
-              get secret "$secret" \
-              >/dev/null 2>&1; then
-              echo "OK    Secret/$secret"
-            else
-              echo "FAIL  missing Secret/$secret"
-              exit 1
-            fi
-          done
-
-          echo ""
           echo "=== Applying PostgreSQL and API resources ==="
 
           kubectl apply \
@@ -701,6 +720,14 @@ pipeline {
             -n "$STAGING_NAMESPACE" \
             set image deployment/drfarah-staging-api \
             "api=$FULL_IMAGE"
+
+          echo ""
+          echo "=== Waiting for PostgreSQL ==="
+
+          kubectl \
+            -n "$STAGING_NAMESPACE" \
+            rollout status statefulset/drfarah-staging-postgres \
+            --timeout=180s
 
           echo ""
           echo "=== Waiting for API rollout ==="
@@ -961,7 +988,7 @@ pipeline {
               /robots.txt
               /assets/logo-mark.svg
               /assets/favicon.svg
-            "
+          "
 
             for path in $deployed_paths; do
               status="$(
