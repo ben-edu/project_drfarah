@@ -715,3 +715,119 @@ The working tree had an uncommitted `**/.pytest_cache/` addition to
 - No PR merge (awaiting operator review).
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 07: Real Availability and Appointment Scheduling
+
+### Branch
+
+- Created `feature/real-availability-scheduling` from `dev` (5ca8b47).
+
+### What was built
+
+Replaced the legacy free-text `preferred_day`/`preferred_time` booking system
+with real appointment slots, availability generation, and double-booking
+prevention backed by PostgreSQL exclusion constraints.
+
+### Commit 1 — Alembic migrations and scheduling data models (`10d6a5f`)
+
+- Added `alembic==1.14.1` to `api/requirements.txt`
+- Created `api/alembic.ini`, `api/alembic/env.py` (reads DATABASE_URL from
+  Settings, SQLite `render_as_batch=True`)
+- Migration 0001: baseline — captures existing `bookings` table
+- Migration 0002: creates services, working_hours, blocked_periods,
+  appointments tables. PostgreSQL branch: `btree_gist` extension +
+  exclusion constraint `no_double_booking`. SQLite branch: plain index.
+  Seeds 4 provisional services + Mon-Fri 9am-5pm working hours.
+- New models: Service, WorkingHours, BlockedPeriod, Appointment
+- Added CLEANUP_TOKEN to Settings
+- Booking router: added deprecation docstring
+
+### Commit 2 — Scheduling service and public API endpoints (`fcf1a5f`)
+
+- `api/app/services/scheduling.py` (~190 lines):
+  - `generate_availability()` — slot generation at 15-min increments
+  - `check_slot_conflict()` — application-level double-booking detection
+  - `validate_slot_in_working_hours()` — working hours validation
+  - Clinic timezone: `America/Los_Angeles`, UTC storage, ISO 8601 output
+- New schemas: ServiceOut, ServiceListResponse, SlotOut,
+  AvailabilityResponse, AppointmentCreate, AppointmentResponse
+- New router `api/app/routers/appointments.py` (~220 lines):
+  - `GET /api/v1/services` — active services only
+  - `GET /api/v1/availability` — date-validated slot generation
+  - `POST /api/v1/appointments` — conflict detection, 409 on double-booking
+  - `POST /api/v1/internal/cleanup-ci` — Bearer token auth, deletes
+    `source='ci'` records older than 1 hour
+- Registered appointments router in `app/main.py`
+
+### Commit 3 — Frontend integration (`1deb559`)
+
+- `frontend/index.html`: replaced hardcoded service cards with dynamic
+  `<div id="service-choices">`, replaced hardcoded slots with date picker
+  + slot toolbar + dynamic slot grid
+- `frontend/app.js` (~320 lines): rewritten for real API integration
+  - `loadServices()` — fetches and renders service cards
+  - `renderDatePicker()` — 14-day date picker in clinic timezone
+  - `loadAvailability()` / `renderSlots()` — slot grid with show-more
+  - `submitAppointment()` — POST with 409 handling, loading states,
+    duplicate submission prevention
+
+### Commit 4 — Tests (`0dc599f`)
+
+- `api/tests/conftest.py`: isolated SQLite per test, seed fixtures
+- `api/tests/test_services.py`: 7 tests (listing, filtering, validation)
+- `api/tests/test_availability.py`: 12 tests (slots, weekends, blocked
+  periods, date validation)
+- `api/tests/test_appointments.py`: 16 tests (creation, conflict, working
+  hours, VIP buffers, validation, cleanup-ci)
+- `api/tests/test_concurrency.py`: 3 tests (sequential double-booking,
+  concurrent threads [skipped on SQLite], overlapping slots)
+- Fixed `_ensure_utc()` helper for SQLite naive datetime comparison
+- 70 tests pass, 1 skipped (concurrency requires PostgreSQL)
+
+### Commit 5 — CI and deployment (`27f2d66`)
+
+- `api-deployment.yaml`: added `db-migrate` init container running
+  `python -m alembic upgrade head`
+- `configmap.yaml`: added `CLEANUP_TOKEN`
+- `Jenkinsfile`:
+  - Added new required paths (models, schemas, services, routers,
+    migrations, tests)
+  - Added `CLEANUP_TOKEN` env var
+  - `kubectl set image` sets both `api` and `db-migrate` containers
+  - Health check: CI cleanup before tests, services endpoint check,
+    availability endpoint check, appointment smoke test with
+    `source="ci"`
+- Added optional `source` field to `AppointmentCreate` schema
+
+### Commit 6 — Documentation (this commit)
+
+- Created `docs/architecture/SCHEDULING.md` — full architecture document
+- Updated `api/README.md`, `frontend/README.md`,
+  `kubernetes/drfarah-staging/README.md`
+- Updated `HANDOFF.md`, `SESSION_LOG.md`
+
+### Design decisions
+
+- **Migration execution:** init container, not app startup. Deterministic
+  single execution; failure keeps old pod running.
+- **Double-booking:** two-layer defense. App-level conflict check catches
+  most cases; PostgreSQL exclusion constraint prevents race conditions.
+- **CI cleanup:** token-protected internal endpoint + `source="ci"` marker.
+  No public delete endpoint, no new RBAC.
+- **Provisional data:** all seed data marked PROVISIONAL. Requires business
+  confirmation before production.
+- **SQLite dialect branching:** migrations branch on dialect for PostgreSQL
+  (exclusion constraint) vs SQLite (plain index). Tests document SQLite
+  concurrency limitations.
+
+### What was NOT done
+
+- No SMTP, secret, or password changes
+- No RBAC changes
+- No production deployment
+- No frontend visual redesign
+- No admin UI, Keycloak, HAProxy, DNS, or TLS changes
+
+### No secrets were printed, copied, committed, or exposed.
