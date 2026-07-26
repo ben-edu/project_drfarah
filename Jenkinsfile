@@ -26,8 +26,11 @@ pipeline {
   }
 
   // =========================================================================
+  // JENKINSFILE — Phase 1
+  //
   // All branches:
-  //   - Checkout and repository validation
+  //   - Clean checkout
+  //   - Repository validation
   //   - Secret-filename detection
   //   - Markdown inventory
   //   - API tests
@@ -35,9 +38,9 @@ pipeline {
   //   - Frontend validation
   //
   // dev only:
-  //   - Build and push API image
-  //   - Deploy API/PostgreSQL resources to staging
-  //   - Verify API and booking endpoint
+  //   - Build and push API image to Harbor
+  //   - Deploy API and PostgreSQL resources to staging
+  //   - Verify staging API and booking endpoint
   //   - Deploy frontend to staging
   //
   // main:
@@ -207,7 +210,7 @@ pipeline {
 
             docker run --rm \
               -v "$PWD":/app:ro \
-              -w /app \
+              -w /tmp \
               -e ENVIRONMENT=test \
               -e DATABASE_URL='sqlite:////tmp/drfarah-ci.db' \
               -e PYTHONDONTWRITEBYTECODE=1 \
@@ -215,9 +218,20 @@ pipeline {
               python:3.12-slim \
               bash -c '
                 set -e
-                rm -f /tmp/drfarah-ci.db
-                pip install -q -r requirements.txt -r requirements-dev.txt
-                PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/
+
+                rm -f \
+                  /tmp/drfarah-ci.db \
+                  /tmp/drfarah.db
+
+                pip install -q \
+                  -r /app/requirements.txt \
+                  -r /app/requirements-dev.txt
+
+                PYTHONPATH=/app \
+                  python -m pytest \
+                  -q \
+                  -p no:cacheprovider \
+                  /app/tests/
               '
 
             echo "API tests passed."
@@ -243,10 +257,15 @@ pipeline {
             trap cleanup EXIT HUP INT TERM
 
             echo "=== Building production API image ==="
-            docker build -t "$IMAGE_NAME" .
+
+            docker build \
+              -t "$IMAGE_NAME" \
+              .
+
             echo "Docker image build passed."
 
-            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            docker rm -f "$CONTAINER_NAME" \
+              >/dev/null 2>&1 || true
 
             echo ""
             echo "=== Starting isolated validation container ==="
@@ -277,13 +296,20 @@ pipeline {
 
             if [ -z "$HOST_PORT" ]; then
               echo "FAIL: Docker did not publish the validation port."
-              docker ps -a --filter "name=$CONTAINER_NAME" || true
+
+              docker ps -a \
+                --filter "name=$CONTAINER_NAME" \
+                || true
 
               docker inspect "$CONTAINER_NAME" \
                 --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
                 || true
 
-              docker logs --tail 200 "$CONTAINER_NAME" || true
+              docker logs \
+                --tail 200 \
+                "$CONTAINER_NAME" \
+                || true
+
               exit 1
             fi
 
@@ -324,33 +350,43 @@ pipeline {
               echo "=== FAILURE: validation container did not become healthy ==="
 
               echo "--- docker ps ---"
-              docker ps -a --filter "name=$CONTAINER_NAME" || true
+
+              docker ps -a \
+                --filter "name=$CONTAINER_NAME" \
+                || true
 
               echo ""
               echo "--- container state ---"
+
               docker inspect "$CONTAINER_NAME" \
                 --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
                 || true
 
               echo ""
               echo "--- container logs ---"
-              docker logs --tail 200 "$CONTAINER_NAME" || true
+
+              docker logs \
+                --tail 200 \
+                "$CONTAINER_NAME" \
+                || true
 
               exit 1
             fi
 
             echo ""
             echo "=== Liveness response ==="
+
             curl -fsS \
               "http://127.0.0.1:${HOST_PORT}/api/v1/health/live"
-            echo ""
 
+            echo ""
             echo ""
             echo "=== Readiness response ==="
+
             curl -fsS \
               "http://127.0.0.1:${HOST_PORT}/api/v1/health/ready"
-            echo ""
 
+            echo ""
             echo ""
             echo "API Docker runtime validation passed."
           '''
@@ -395,15 +431,21 @@ pipeline {
           echo ""
           echo "=== Temporary-domain indexing protection ==="
 
-          grep -q 'noindex,nofollow,noarchive' frontend/index.html || {
-            echo "FAIL: noindex meta is missing."
-            exit 1
-          }
+          grep -q \
+            'noindex,nofollow,noarchive' \
+            frontend/index.html \
+            || {
+              echo "FAIL: noindex meta is missing."
+              exit 1
+            }
 
-          grep -q 'Disallow: /' frontend/robots.txt || {
-            echo "FAIL: robots.txt Disallow rule is missing."
-            exit 1
-          }
+          grep -q \
+            'Disallow: /' \
+            frontend/robots.txt \
+            || {
+              echo "FAIL: robots.txt Disallow rule is missing."
+              exit 1
+            }
 
           echo "No-index checks passed."
 
@@ -413,12 +455,14 @@ pipeline {
           CONTAINER_NAME="drfarah-frontend-validation-${BUILD_NUMBER}"
 
           cleanup_frontend() {
-            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            docker rm -f "$CONTAINER_NAME" \
+              >/dev/null 2>&1 || true
           }
 
           trap cleanup_frontend EXIT HUP INT TERM
 
-          docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          docker rm -f "$CONTAINER_NAME" \
+            >/dev/null 2>&1 || true
 
           docker run -d \
             --name "$CONTAINER_NAME" \
@@ -447,7 +491,12 @@ pipeline {
 
           if [ -z "$HOST_PORT" ]; then
             echo "FAIL: frontend validation port was not published."
-            docker logs --tail 100 "$CONTAINER_NAME" || true
+
+            docker logs \
+              --tail 100 \
+              "$CONTAINER_NAME" \
+              || true
+
             exit 1
           fi
 
@@ -466,8 +515,16 @@ pipeline {
 
           if [ "$server_ready" -ne 1 ]; then
             echo "FAIL: frontend static server did not become ready."
-            docker ps -a --filter "name=$CONTAINER_NAME" || true
-            docker logs --tail 100 "$CONTAINER_NAME" || true
+
+            docker ps -a \
+              --filter "name=$CONTAINER_NAME" \
+              || true
+
+            docker logs \
+              --tail 100 \
+              "$CONTAINER_NAME" \
+              || true
+
             exit 1
           fi
 
@@ -536,7 +593,10 @@ pipeline {
 
             cleanup_harbor() {
               rm -rf "$DOCKER_CONFIG"
-              docker rmi "$BUILD_IMAGE" "$DEV_IMAGE" \
+
+              docker rmi \
+                "$BUILD_IMAGE" \
+                "$DEV_IMAGE" \
                 >/dev/null 2>&1 || true
             }
 
@@ -561,10 +621,12 @@ pipeline {
 
             echo ""
             echo "=== Pushing immutable image ==="
+
             docker push "$BUILD_IMAGE"
 
             echo ""
             echo "=== Pushing dev alias ==="
+
             docker push "$DEV_IMAGE"
 
             echo ""
@@ -869,21 +931,26 @@ pipeline {
             echo ""
             echo "=== Deployed content checks ==="
 
-            curl -fsS "https://${STAGING_FRONTEND_HOST}/" \
-              | grep -q 'Dr. Farah' || {
+            curl -fsS \
+              "https://${STAGING_FRONTEND_HOST}/" \
+              | grep -q 'Dr. Farah' \
+              || {
                 echo "FAIL: Dr. Farah marker is absent."
                 exit 1
               }
 
-            curl -fsS "https://${STAGING_FRONTEND_HOST}/" \
-              | grep -q 'noindex,nofollow,noarchive' || {
+            curl -fsS \
+              "https://${STAGING_FRONTEND_HOST}/" \
+              | grep -q 'noindex,nofollow,noarchive' \
+              || {
                 echo "FAIL: noindex meta is absent."
                 exit 1
               }
 
             curl -fsS \
               "https://${STAGING_FRONTEND_HOST}/robots.txt" \
-              | grep -q 'Disallow: /' || {
+              | grep -q 'Disallow: /' \
+              || {
                 echo "FAIL: robots.txt Disallow rule is absent."
                 exit 1
               }
