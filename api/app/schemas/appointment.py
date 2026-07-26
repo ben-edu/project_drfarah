@@ -58,6 +58,12 @@ class AppointmentCreate(BaseModel):
         max_length=128,
         examples=["General appointment request"],
     )
+    source: str | None = Field(
+        default=None,
+        max_length=64,
+        examples=[None],
+        description="Internal marker (e.g. 'ci' for CI smoke tests). Not exposed to patients.",
+    )
 
 
 class AppointmentResponse(BaseModel):

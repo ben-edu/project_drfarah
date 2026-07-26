@@ -183,7 +183,7 @@ def create_appointment(
         phone=payload.phone,
         reason_category=payload.reason_category,
         status="pending",
-        source=None,
+        source=payload.source,
     )
 
     try:
