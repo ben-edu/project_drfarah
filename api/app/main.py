@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.database import Base, _get_engine
-from app.routers import booking, health
+from app.routers import appointments, booking, health
 
 settings = get_settings()
 
@@ -60,6 +60,9 @@ def create_app() -> FastAPI:
 
     # Booking endpoints.
     app.include_router(booking.router, prefix="/api/v1")
+
+    # Scheduling endpoints (services, availability, appointments).
+    app.include_router(appointments.router, prefix="/api/v1")
 
     return app
 
