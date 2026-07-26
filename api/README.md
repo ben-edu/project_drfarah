@@ -8,7 +8,11 @@ FastAPI booking and administration API. Phase 1: booking MVP.
 |---|---|---|
 | GET | `/api/v1/health/live` | Liveness probe (returns 200 when process is alive) |
 | GET | `/api/v1/health/ready` | Readiness probe (returns 200 when database is reachable, 503 otherwise) |
-| POST | `/api/v1/bookings` | Create a booking request (returns 201 with booking data) |
+| POST | `/api/v1/bookings` | **Legacy** — create a booking request (deprecated, preserved for backward compat) |
+| GET | `/api/v1/services` | List active bookable services |
+| GET | `/api/v1/availability` | Available appointment slots for a service and date range |
+| POST | `/api/v1/appointments` | Create a scheduled appointment with conflict detection |
+| POST | `/api/v1/internal/cleanup-ci` | Clean up CI smoke-test records (token-protected) |
 
 ## Structure
 
@@ -18,23 +22,43 @@ api/
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── README.md
+├── alembic.ini
+├── alembic/
+│   ├── env.py
+│   └── versions/
+│       ├── 0001_initial_bookings.py
+│       └── 0002_add_scheduling_tables.py
 ├── app/
-│   ├── main.py               App factory, router registration, table creation
+│   ├── main.py               App factory, router registration, lifespan
 │   ├── core/
 │   │   ├── config.py          Pydantic Settings (env-based, includes SMTP)
 │   │   └── database.py        SQLAlchemy engine, session, Base
 │   ├── models/
-│   │   └── booking.py         Booking SQLAlchemy model
+│   │   ├── booking.py         Legacy Booking model
+│   │   ├── service.py         Service model
+│   │   ├── working_hours.py   Working hours model
+│   │   ├── blocked_period.py  Blocked period model
+│   │   └── appointment.py     Appointment model
 │   ├── routers/
 │   │   ├── health.py          Health endpoints (/live, /ready)
-│   │   └── booking.py         Booking creation endpoint
+│   │   ├── booking.py         Legacy booking endpoint
+│   │   └── appointments.py    Services, availability, appointments, cleanup
 │   ├── schemas/
-│   │   └── booking.py         Pydantic request/response schemas
+│   │   ├── booking.py         Legacy booking schemas
+│   │   ├── service.py         Service list schemas
+│   │   ├── availability.py    Availability response schemas
+│   │   └── appointment.py     Appointment create/response schemas
 │   └── services/
-│       └── email.py           SMTP notification service
+│       ├── email.py           SMTP notification service
+│       └── scheduling.py      Slot generation and conflict detection
 └── tests/
+    ├── conftest.py            Shared fixtures (isolated SQLite per test)
     ├── test_health.py         10 health/CORS tests
-    └── test_booking.py        12 booking tests
+    ├── test_booking.py        12 legacy booking tests
+    ├── test_services.py       7 service listing tests
+    ├── test_availability.py   12 availability slot tests
+    ├── test_appointments.py   16 appointment creation tests
+    └── test_concurrency.py    3 concurrency/double-booking tests
 ```
 
 ## Running locally
@@ -88,6 +112,7 @@ and `ENVIRONMENT` is `staging` or `prod`.
 | `SMTP_TO` | `appointments@drfarah.proxbenovh.cloud` | Yes |
 | `SMTP_USE_TLS` | `true` | No |
 | `SMTP_TEST_MODE` | `true` | No (set to `false` to send real emails) |
+| `CLEANUP_TOKEN` | `""` | Yes (for CI cleanup endpoint) |
 
 ## Booking data discipline
 
@@ -122,3 +147,9 @@ The booking endpoint enforces strict validation:
 - K8s namespace: `drfarah-staging`
 - API URL: `https://api.staging.drfarah.proxbenovh.cloud`
 - Jenkins handles build, push, and manifest deployment on `dev` branch.
+
+## Scheduling
+
+See [`docs/architecture/SCHEDULING.md`](../docs/architecture/SCHEDULING.md)
+for the full data model, slot generation algorithm, double-booking
+protection, migration strategy, and CI cleanup mechanism.

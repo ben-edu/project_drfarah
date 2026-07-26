@@ -61,6 +61,16 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = Field(default=True)
     SMTP_TEST_MODE: bool = Field(default=True)
 
+    # --- Internal operations ---
+    CLEANUP_TOKEN: str = Field(
+        default="",
+        description="Pre-shared token for the CI cleanup internal endpoint",
+    )
+
+    @property
+    def cleanup_token(self) -> str:
+        return self.CLEANUP_TOKEN
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -64,14 +64,38 @@ The `:dev` placeholder is never applied to the cluster.
 After rollout, Jenkins verifies that the deployed image matches the expected
 commit SHA and fails the build if they differ.
 
+## Migration init container
+
+The API Deployment includes a `db-migrate` init container that runs
+`python -m alembic upgrade head` before the main API container starts.
+This ensures database migrations execute exactly once, before the API
+begins serving traffic.
+
+- If the migration succeeds: the main container starts, readiness probe
+  passes, old pod terminates.
+- If the migration fails: the init container exits non-zero, pod stays in
+  Init phase, old pod keeps running. Rollout times out and Jenkins fails.
+
+The init container uses the same immutable image as the main container.
+Both are set by Jenkins at deploy time via `kubectl set image`.
+
+## CI cleanup token
+
+The ConfigMap includes `CLEANUP_TOKEN`, a pre-shared operational token
+used by the CI smoke test to call `POST /api/v1/internal/cleanup-ci`
+and remove CI-created appointments from previous builds. This token is
+not a secret — it protects a CI-only cleanup endpoint, not sensitive data.
+
 ## Jenkins deployment (dev branch)
 
 On `dev` builds, Jenkins:
 1. Builds the API Docker image
 2. Pushes to Harbor (`harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api`)
    with both commit SHA and `:dev` tags
-3. Applies K8s manifests (Deployment rendered with immutable SHA, not `:dev`)
-4. Rolls out and verifies API health + booking endpoint
+3. Applies K8s manifests (Deployment rendered with immutable SHA for both
+   `api` and `db-migrate` containers)
+4. Rolls out and verifies API health, CI cleanup, services/availability
+   endpoints, booking endpoint (legacy), and appointment endpoint
 5. Verifies the deployed image matches the immutable commit SHA
 
 Feature branches run validation only. No deployment.

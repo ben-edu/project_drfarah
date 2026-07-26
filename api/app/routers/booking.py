@@ -1,6 +1,12 @@
 """Booking request endpoint — create and acknowledge appointment requests.
 
 POST /api/v1/bookings  —  create a new booking request.
+
+DEPRECATED: This endpoint stores free-text day/time preferences.
+New integrations should use POST /api/v1/appointments which provides
+real scheduling with availability verification and conflict prevention.
+This endpoint is preserved for backward compatibility and will be
+removed once the frontend migrates to the appointments API.
 """
 
 import logging

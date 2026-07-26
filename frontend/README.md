@@ -35,10 +35,12 @@ frontend/
 ## Status
 
 - **Design:** approved prototype v2, integrated without reinterpretation.
-- **Booking:** frontend-only modal with four steps, service preselection,
-  richer slot set (16 times) with "show more slots" toggle, review step, and
-  prototype success state. No network requests, no API connection, no data
-  storage.
+- **Booking:** four-step modal with real API integration. Services loaded
+  dynamically from `GET /api/v1/services`. Slots loaded from
+  `GET /api/v1/availability`. Appointments submitted to
+  `POST /api/v1/appointments` with conflict detection (409 handling).
+  Date picker with 14-day rolling window. Slot grid with show-more toggle.
+  Loading and error states for all network operations.
 - **Backend independence:** the frontend is fully static and does not depend
   on the FastAPI backend or any runtime service.
 - **No-index protection:** active via `<meta name="robots">` and
@@ -98,18 +100,24 @@ migration. Do not create a sitemap until the final domain is active.
   review is a later production decision (documented, not changed in this step).
 - No patient data logged to console or stored.
 
-## Booking behavior (current step)
+## Booking behavior
 
 - All booking entry points open the same four-step modal.
 - Service preselection is preserved from the entry context.
-- Four-step navigation with progress indicator, back button, and review step.
-- Step 2 shows 16 time slots (8 visible by default) with "Show more slots"
-  button that reveals all 16.
-- On submit, the form POSTs to the staging API at
-  `https://api.staging.drfarah.proxbenovh.cloud/api/v1/bookings`.
-- On success, the booking reference ID and confirmation details are shown.
-- On failure, an error message with the clinic phone number is displayed.
-- The `/book` route and admin dashboard belong to later steps.
+- Step 1: service choices loaded dynamically from `GET /api/v1/services`.
+- Step 2: date picker (14-day rolling window) + slot grid loaded from
+  `GET /api/v1/availability`. Slots shown 8 at a time with "Show more
+  slots" toggle.
+- Step 3: patient contact form (name, email, phone, reason).
+- Step 4: review and submit.
+- On submit, the form POSTs to
+  `POST /api/v1/appointments` with the selected service and slot.
+- On 201: booking reference ID and confirmation details are shown.
+- On 409: "This slot was just taken" message with suggestion to pick another.
+- On other errors: error message with clinic phone number for fallback.
+- Duplicate submission prevention: submit button disabled during request.
+- Legacy `POST /api/v1/bookings` endpoint preserved but no longer used by
+  the frontend.
 
 ## Deployment
 

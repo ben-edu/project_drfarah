@@ -23,6 +23,8 @@ pipeline {
     HESTIA_SSH_USER = 'benweb'
     STAGING_FRONTEND_HOST = 'staging.drfarah.proxbenovh.cloud'
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html'
+
+    CLEANUP_TOKEN = 'staging-ci-cleanup-token-2026'
   }
 
   // =========================================================================
@@ -113,6 +115,24 @@ pipeline {
             api/app/services/email.py
             api/tests/test_booking.py
             api/tests/test_health.py
+            api/tests/conftest.py
+            api/tests/test_services.py
+            api/tests/test_availability.py
+            api/tests/test_appointments.py
+            api/tests/test_concurrency.py
+            api/app/models/service.py
+            api/app/models/working_hours.py
+            api/app/models/blocked_period.py
+            api/app/models/appointment.py
+            api/app/services/scheduling.py
+            api/app/schemas/service.py
+            api/app/schemas/availability.py
+            api/app/schemas/appointment.py
+            api/app/routers/appointments.py
+            api/alembic.ini
+            api/alembic/env.py
+            api/alembic/versions/0001_initial_bookings.py
+            api/alembic/versions/0002_add_scheduling_tables.py
             kubernetes/drfarah/README.md
             kubernetes/drfarah-staging/namespace.yaml
             kubernetes/drfarah-staging/postgres-statefulset.yaml
@@ -744,6 +764,7 @@ pipeline {
           kubectl set image \
             -f kubernetes/drfarah-staging/api-deployment.yaml \
             "api=$FULL_IMAGE" \
+            "db-migrate=$FULL_IMAGE" \
             --dry-run=client \
             -o yaml \
             | kubectl apply -f -
@@ -843,6 +864,69 @@ pipeline {
           fi
 
           echo ""
+          echo "=== CI cleanup ==="
+
+          CLEANUP_RESPONSE="$(mktemp)"
+
+          cleanup_status="$(
+            curl -sS \
+              -o "$CLEANUP_RESPONSE" \
+              -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Bearer ${CLEANUP_TOKEN}" \
+              "${STAGING_API_URL}/api/v1/internal/cleanup-ci" \
+              || true
+          )"
+
+          if [ "$cleanup_status" != "200" ]; then
+            echo "FAIL: CI cleanup returned HTTP $cleanup_status"
+            cat "$CLEANUP_RESPONSE"
+            rm -f "$CLEANUP_RESPONSE"
+            exit 1
+          fi
+
+          echo "CI cleanup returned HTTP 200."
+          rm -f "$CLEANUP_RESPONSE"
+
+          echo ""
+          echo "=== Staging services endpoint ==="
+
+          services_status="$(
+            curl -sS \
+              -o /dev/null \
+              -w '%{http_code}' \
+              "${STAGING_API_URL}/api/v1/services" \
+              || true
+          )"
+
+          if [ "$services_status" != "200" ]; then
+            echo "FAIL: services endpoint returned HTTP $services_status"
+            exit 1
+          fi
+
+          echo "Services endpoint returned HTTP 200."
+
+          echo ""
+          echo "=== Staging availability endpoint ==="
+
+          TOMORROW="$(date -d '+3 days' '+%Y-%m-%d' 2>/dev/null || date -v+3d '+%Y-%m-%d')"
+
+          availability_status="$(
+            curl -sS \
+              -o /dev/null \
+              -w '%{http_code}' \
+              "${STAGING_API_URL}/api/v1/availability?service_code=urgent-care&start_date=${TOMORROW}&end_date=${TOMORROW}" \
+              || true
+          )"
+
+          if [ "$availability_status" != "200" ]; then
+            echo "FAIL: availability endpoint returned HTTP $availability_status"
+            exit 1
+          fi
+
+          echo "Availability endpoint returned HTTP 200."
+
+          echo ""
           echo "=== Staging booking smoke test ==="
 
           RESPONSE_FILE="$(mktemp)"
@@ -895,6 +979,46 @@ pipeline {
           }
 
           echo "Booking response contains an id."
+
+          echo ""
+          echo "=== Staging appointment smoke test ==="
+
+          APPT_RESPONSE="$(mktemp)"
+
+          # Compute a future slot (4 days ahead, 10:00 AM Pacific).
+          APPT_DATE="$(date -d '+4 days' '+%Y-%m-%d' 2>/dev/null || date -v+4d '+%Y-%m-%d')"
+          APPT_STARTS="${APPT_DATE}T10:00:00-07:00"
+
+          appt_status="$(
+            curl -sS \
+              -o "$APPT_RESPONSE" \
+              -w '%{http_code}' \
+              -X POST \
+              -H 'Content-Type: application/json' \
+              -d "{
+                \"service_code\": \"urgent-care\",
+                \"starts_at\": \"${APPT_STARTS}\",
+                \"first_name\": \"Jenkins\",
+                \"last_name\": \"SmokeTest\",
+                \"email\": \"smoke-test@example.com\",
+                \"phone\": \"+1-555-000-0000\",
+                \"reason_category\": \"General appointment request\",
+                \"source\": \"ci\"
+              }" \
+              "${STAGING_API_URL}/api/v1/appointments" \
+              || true
+          )"
+
+          if [ "$appt_status" != "201" ]; then
+            echo "FAIL: appointment smoke test returned HTTP $appt_status"
+            echo "Response body:"
+            cat "$APPT_RESPONSE"
+            rm -f "$APPT_RESPONSE"
+            exit 1
+          fi
+
+          echo "Appointment endpoint returned HTTP 201."
+          rm -f "$APPT_RESPONSE"
 
           echo ""
           echo "=== Immutable image verification ==="
