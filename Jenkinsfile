@@ -8,49 +8,42 @@ pipeline {
   }
 
   environment {
-    PROJECT_SLUG      = 'drfarah'
+    PROJECT_SLUG = 'drfarah'
 
-    HARBOR_REGISTRY   = 'harbor.proxbenovh.cloud'
-    HARBOR_PROJECT    = 'devops-project-harbor'
-    API_IMAGE_NAME    = 'drfarah-api'
+    HARBOR_REGISTRY = 'harbor.proxbenovh.cloud'
+    HARBOR_PROJECT = 'devops-project-harbor'
+    API_IMAGE_NAME = 'drfarah-api'
 
-    KUBECONFIG        = '/var/lib/jenkins/.kube/config-afpa-k3s'
+    KUBECONFIG = '/var/lib/jenkins/.kube/config-afpa-k3s'
     STAGING_NAMESPACE = 'drfarah-staging'
-    STAGING_API_URL   = 'https://api.staging.drfarah.proxbenovh.cloud'
+    STAGING_API_URL = 'https://api.staging.drfarah.proxbenovh.cloud'
 
-    HESTIA_SSH_HOST   = '192.168.100.75'
-    HESTIA_SSH_PORT   = '2275'
-    HESTIA_SSH_USER   = 'benweb'
+    HESTIA_SSH_HOST = '192.168.100.75'
+    HESTIA_SSH_PORT = '2275'
+    HESTIA_SSH_USER = 'benweb'
     STAGING_FRONTEND_HOST = 'staging.drfarah.proxbenovh.cloud'
-    STAGING_DOCROOT   = '/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html'
+    STAGING_DOCROOT = '/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html'
   }
 
   // =========================================================================
-  // JENKINSFILE — Phase 1
-  //
   // All branches:
-  //   - Clean checkout
-  //   - Repository and secret-filename checks
+  //   - Checkout and repository validation
+  //   - Secret-filename detection
   //   - Markdown inventory
-  //   - API tests in an isolated Python container
-  //   - Production API image build/runtime validation
-  //   - Frontend syntax and static-serving validation
+  //   - API tests
+  //   - API Docker image/runtime validation
+  //   - Frontend validation
   //
   // dev only:
-  //   - Build and push API image to Harbor
-  //   - Apply/update staging Kubernetes resources
-  //   - Verify staging API and booking endpoint
-  //   - Deploy frontend to staging Hestia docroot
+  //   - Build and push API image
+  //   - Deploy API/PostgreSQL resources to staging
+  //   - Verify API and booking endpoint
+  //   - Deploy frontend to staging
   //
   // main:
-  //   - Validation only. Production deployment is intentionally disabled.
+  //   - Validation only
   //
-  // Hard rules:
-  //   - No secrets in Git or logs
-  //   - No manual deployment
-  //   - No production deployment in this phase
-  //   - Jenkins kubeconfig is a file on the agent, not a Jenkins credential
-  //   - Docker authentication is isolated per build
+  // Production deployment is intentionally disabled.
   // =========================================================================
 
   stages {
@@ -156,31 +149,19 @@ pipeline {
           set -eu
 
           hits="$(
-            find . \
-              \( \
-                -name '.env' \
-                -o -name 'secret.yaml' \
-                -o -name 'secrets.yaml' \
-                -o -name '*.tfstate' \
-                -o -name '*.tfvars' \
-                -o -name 'credentials.json' \
-                -o -name 'service-account-key.json' \
-                -o -name 'id_rsa' \
-                -o -name 'id_ed25519' \
-                -o -name '*.pem' \
-              \) \
-              -not -name '*.example' \
-              -not -path './.git/*' \
-              -print
+            git ls-files \
+              | grep -E '(^|/)([.]env|secret[.]yaml|secrets[.]yaml|[^/]*[.]tfstate|[^/]*[.]tfvars|credentials[.]json|service-account-key[.]json|id_rsa|id_ed25519|[^/]*[.]pem)$' \
+              | grep -Ev '[.]example$' \
+              || true
           )"
 
           if [ -n "$hits" ]; then
-            echo "FAIL: forbidden secret filenames found:"
+            echo "FAIL: forbidden committed secret filenames found:"
             echo "$hits"
             exit 1
           fi
 
-          echo "OK: no forbidden secret filenames detected."
+          echo "OK: no forbidden committed secret filenames detected."
         '''
       }
     }
@@ -258,6 +239,7 @@ pipeline {
               docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
               docker rmi "$IMAGE_NAME" >/dev/null 2>&1 || true
             }
+
             trap cleanup EXIT HUP INT TERM
 
             echo "=== Building production API image ==="
@@ -268,14 +250,17 @@ pipeline {
 
             echo ""
             echo "=== Starting isolated validation container ==="
+
             docker run -d \
               --name "$CONTAINER_NAME" \
               -P \
               -e ENVIRONMENT=test \
               -e DATABASE_URL='sqlite:////tmp/drfarah-validation.db' \
-              "$IMAGE_NAME" >/dev/null
+              "$IMAGE_NAME" \
+              >/dev/null
 
             HOST_PORT=""
+
             for attempt in $(seq 1 10); do
               HOST_PORT="$(
                 docker port "$CONTAINER_NAME" 8000/tcp 2>/dev/null \
@@ -293,9 +278,11 @@ pipeline {
             if [ -z "$HOST_PORT" ]; then
               echo "FAIL: Docker did not publish the validation port."
               docker ps -a --filter "name=$CONTAINER_NAME" || true
+
               docker inspect "$CONTAINER_NAME" \
                 --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
                 || true
+
               docker logs --tail 200 "$CONTAINER_NAME" || true
               exit 1
             fi
@@ -309,11 +296,14 @@ pipeline {
             for attempt in $(seq 1 30); do
               state="$(
                 docker inspect "$CONTAINER_NAME" \
-                  --format '{{.State.Status}}' 2>/dev/null \
+                  --format '{{.State.Status}}' \
+                  2>/dev/null \
                   || echo missing
               )"
 
-              if [ "$state" = "exited" ] || [ "$state" = "dead" ] || [ "$state" = "missing" ]; then
+              if [ "$state" = "exited" ] || \
+                 [ "$state" = "dead" ] || \
+                 [ "$state" = "missing" ]; then
                 echo "Container stopped before becoming healthy (state=$state)."
                 break
               fi
@@ -332,6 +322,7 @@ pipeline {
             if [ "$healthy" -ne 1 ]; then
               echo ""
               echo "=== FAILURE: validation container did not become healthy ==="
+
               echo "--- docker ps ---"
               docker ps -a --filter "name=$CONTAINER_NAME" || true
 
@@ -342,19 +333,22 @@ pipeline {
                 || true
 
               echo ""
-              echo "--- container logs (last 200 lines) ---"
+              echo "--- container logs ---"
               docker logs --tail 200 "$CONTAINER_NAME" || true
+
               exit 1
             fi
 
             echo ""
             echo "=== Liveness response ==="
-            curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/health/live"
+            curl -fsS \
+              "http://127.0.0.1:${HOST_PORT}/api/v1/health/live"
             echo ""
 
             echo ""
             echo "=== Readiness response ==="
-            curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/health/ready"
+            curl -fsS \
+              "http://127.0.0.1:${HOST_PORT}/api/v1/health/ready"
             echo ""
 
             echo ""
@@ -383,6 +377,7 @@ pipeline {
               echo "MISS  $file"
               exit 1
             fi
+
             echo "OK    $file"
           done
 
@@ -420,6 +415,7 @@ pipeline {
           cleanup_frontend() {
             docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
           }
+
           trap cleanup_frontend EXIT HUP INT TERM
 
           docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -458,10 +454,13 @@ pipeline {
           server_ready=0
 
           for attempt in $(seq 1 15); do
-            if curl -fsS "http://127.0.0.1:${HOST_PORT}/" >/dev/null 2>&1; then
+            if curl -fsS \
+              "http://127.0.0.1:${HOST_PORT}/" \
+              >/dev/null 2>&1; then
               server_ready=1
               break
             fi
+
             sleep 1
           done
 
@@ -491,7 +490,9 @@ pipeline {
 
           for path in $public_paths; do
             status="$(
-              curl -sS -o /dev/null -w '%{http_code}' \
+              curl -sS \
+                -o /dev/null \
+                -w '%{http_code}' \
                 "http://127.0.0.1:${HOST_PORT}${path}"
             )"
 
@@ -535,13 +536,16 @@ pipeline {
 
             cleanup_harbor() {
               rm -rf "$DOCKER_CONFIG"
-              docker rmi "$BUILD_IMAGE" "$DEV_IMAGE" >/dev/null 2>&1 || true
+              docker rmi "$BUILD_IMAGE" "$DEV_IMAGE" \
+                >/dev/null 2>&1 || true
             }
+
             trap cleanup_harbor EXIT HUP INT TERM
 
             mkdir -p "$DOCKER_CONFIG"
 
-            echo "=== Harbor login with isolated Docker configuration ==="
+            echo "=== Harbor login ==="
+
             printf '%s' "$HARBOR_PASS" \
               | docker login "$HARBOR_REGISTRY" \
                   --username "$HARBOR_USER" \
@@ -549,6 +553,7 @@ pipeline {
 
             echo ""
             echo "=== Building immutable and dev API tags ==="
+
             docker build \
               -t "$BUILD_IMAGE" \
               -t "$DEV_IMAGE" \
@@ -564,7 +569,7 @@ pipeline {
 
             echo ""
             echo "API image pushed:"
-            echo "  $BUILD_IMAGE"
+            echo "$BUILD_IMAGE"
           '''
         }
       }
@@ -582,14 +587,16 @@ pipeline {
           IMAGE_TAG="${GIT_COMMIT:-dev}"
           FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
 
-          echo "Using kubeconfig file: $KUBECONFIG"
+          echo "Using kubeconfig: $KUBECONFIG"
+
           test -r "$KUBECONFIG" || {
-            echo "FAIL: Jenkins kubeconfig is missing or unreadable: $KUBECONFIG"
+            echo "FAIL: kubeconfig missing or unreadable."
             exit 1
           }
 
           echo ""
           echo "=== Applying staging namespace ==="
+
           kubectl apply \
             -f kubernetes/drfarah-staging/namespace.yaml
 
@@ -603,7 +610,10 @@ pipeline {
           "
 
           for secret in $required_secrets; do
-            if kubectl -n "$STAGING_NAMESPACE" get secret "$secret" >/dev/null 2>&1; then
+            if kubectl \
+              -n "$STAGING_NAMESPACE" \
+              get secret "$secret" \
+              >/dev/null 2>&1; then
               echo "OK    Secret/$secret"
             else
               echo "FAIL  missing Secret/$secret"
@@ -625,14 +635,16 @@ pipeline {
           echo ""
           echo "=== Setting immutable API image ==="
 
-          kubectl -n "$STAGING_NAMESPACE" \
+          kubectl \
+            -n "$STAGING_NAMESPACE" \
             set image deployment/drfarah-staging-api \
             "api=$FULL_IMAGE"
 
           echo ""
           echo "=== Waiting for API rollout ==="
 
-          kubectl -n "$STAGING_NAMESPACE" \
+          kubectl \
+            -n "$STAGING_NAMESPACE" \
             rollout status deployment/drfarah-staging-api \
             --timeout=180s
 
@@ -657,10 +669,16 @@ pipeline {
 
           for attempt in $(seq 1 18); do
             live_status="$(
-              curl -sS -o /dev/null -w '%{http_code}' \
+              curl -sS \
+                -o /dev/null \
+                -w '%{http_code}' \
                 "${STAGING_API_URL}/api/v1/health/live" \
-                || echo 000
+                || true
             )"
+
+            if [ -z "$live_status" ]; then
+              live_status="000"
+            fi
 
             if [ "$live_status" = "200" ]; then
               echo "Liveness passed on attempt $attempt."
@@ -683,10 +701,16 @@ pipeline {
 
           for attempt in $(seq 1 12); do
             ready_status="$(
-              curl -sS -o /dev/null -w '%{http_code}' \
+              curl -sS \
+                -o /dev/null \
+                -w '%{http_code}' \
                 "${STAGING_API_URL}/api/v1/health/ready" \
-                || echo 000
+                || true
             )"
+
+            if [ -z "$ready_status" ]; then
+              ready_status="000"
+            fi
 
             if [ "$ready_status" = "200" ]; then
               echo "Readiness passed on attempt $attempt."
@@ -706,7 +730,12 @@ pipeline {
           echo "=== Staging booking smoke test ==="
 
           RESPONSE_FILE="$(mktemp)"
-          trap 'rm -f "$RESPONSE_FILE"' EXIT HUP INT TERM
+
+          cleanup_response() {
+            rm -f "$RESPONSE_FILE"
+          }
+
+          trap cleanup_response EXIT HUP INT TERM
 
           booking_status="$(
             curl -sS \
@@ -714,24 +743,29 @@ pipeline {
               -w '%{http_code}' \
               -X POST \
               -H 'Content-Type: application/json' \
-              -d "{
-                \"service_type\": \"CI smoke test\",
-                \"visit_type\": \"Clinic visit\",
-                \"preferred_day\": \"CI build ${BUILD_NUMBER}\",
-                \"preferred_time\": \"9:00 AM\",
-                \"time_window\": \"Morning\",
-                \"first_name\": \"Jenkins\",
-                \"last_name\": \"SmokeTest\",
-                \"email\": \"smoke-test@example.com\",
-                \"phone\": \"+1-555-000-0000\",
-                \"reason_category\": \"General appointment request\"
-              }" \
-              "${STAGING_API_URL}/api/v1/bookings"
+              -d '{
+                "service_type": "CI smoke test",
+                "visit_type": "Clinic visit",
+                "preferred_day": "Monday",
+                "preferred_time": "9:00 AM",
+                "time_window": "Morning",
+                "first_name": "Jenkins",
+                "last_name": "SmokeTest",
+                "email": "smoke-test@example.com",
+                "phone": "+1-555-000-0000",
+                "reason_category": "General appointment request"
+              }' \
+              "${STAGING_API_URL}/api/v1/bookings" \
+              || true
           )"
+
+          if [ -z "$booking_status" ]; then
+            booking_status="000"
+          fi
 
           if [ "$booking_status" != "201" ]; then
             echo "FAIL: booking smoke test returned HTTP $booking_status"
-            echo "Safe response body:"
+            echo "Response body:"
             cat "$RESPONSE_FILE"
             exit 1
           fi
@@ -774,6 +808,7 @@ pipeline {
               "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" \
               "
                 set -e
+
                 [ -d '$STAGING_DOCROOT' ] || {
                   echo 'ERROR: staging docroot is missing'
                   exit 1
@@ -786,7 +821,7 @@ pipeline {
                 }
 
                 rm -f '$STAGING_DOCROOT/.jenkins-write-test'
-                echo 'Write access confirmed as:' \$(whoami)
+                echo 'Write access confirmed.'
               "
 
             echo ""
@@ -806,10 +841,16 @@ pipeline {
 
             for attempt in $(seq 1 10); do
               frontend_status="$(
-                curl -sS -o /dev/null -w '%{http_code}' \
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
                   "https://${STAGING_FRONTEND_HOST}/" \
-                  || echo 000
+                  || true
               )"
+
+              if [ -z "$frontend_status" ]; then
+                frontend_status="000"
+              fi
 
               if [ "$frontend_status" = "200" ]; then
                 echo "Frontend reached HTTP 200 on attempt $attempt."
@@ -840,7 +881,8 @@ pipeline {
                 exit 1
               }
 
-            curl -fsS "https://${STAGING_FRONTEND_HOST}/robots.txt" \
+            curl -fsS \
+              "https://${STAGING_FRONTEND_HOST}/robots.txt" \
               | grep -q 'Disallow: /' || {
                 echo "FAIL: robots.txt Disallow rule is absent."
                 exit 1
@@ -856,9 +898,16 @@ pipeline {
 
             for path in $deployed_paths; do
               status="$(
-                curl -sS -o /dev/null -w '%{http_code}' \
-                  "https://${STAGING_FRONTEND_HOST}${path}"
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "https://${STAGING_FRONTEND_HOST}${path}" \
+                  || true
               )"
+
+              if [ -z "$status" ]; then
+                status="000"
+              fi
 
               if [ "$status" != "200" ]; then
                 echo "FAIL  $path -> $status"
@@ -878,7 +927,7 @@ pipeline {
 
   post {
     success {
-      echo 'SUCCESS — all stages required for this branch completed.'
+      echo 'SUCCESS — all required stages completed.'
     }
 
     failure {
@@ -887,7 +936,8 @@ pipeline {
 
     always {
       sh '''
-        rm -rf "$WORKSPACE"/.docker-auth-* >/dev/null 2>&1 || true
+        rm -rf "$WORKSPACE"/.docker-auth-* \
+          >/dev/null 2>&1 || true
       '''
     }
   }
