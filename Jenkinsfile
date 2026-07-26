@@ -177,24 +177,20 @@ pipeline {
           sh '''
             set -e
             # Agent has no python3-venv — run tests inside a container.
-            echo "Running API tests in python:3.12-slim container..."
+            # Read-only mount + PYTHONDONTWRITEBYTECODE prevents root-owned
+            # __pycache__ from contaminating the Jenkins workspace.
+            echo "Running API tests in python:3.12-slim container (read-only workspace)..."
             docker run --rm \
-              -v "$PWD":/app \
+              -v "$PWD":/app:ro \
               -w /app \
+              -e PYTHONDONTWRITEBYTECODE=1 \
+              -e PYTHONPYCACHEPREFIX=/tmp/pycache \
               python:3.12-slim \
               bash -c "
                 set -e
                 pip install -q -r requirements.txt -r requirements-dev.txt
-                PYTHONPATH=. python -m pytest -q tests/
+                PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/
               "
-
-            # Clean up root-owned __pycache__ so Jenkins workspace
-            # cleanup on the next build does not fail.
-            docker run --rm \
-              -v "$PWD":/app \
-              -w /app \
-              python:3.12-slim \
-              find /app -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
           '''
         }
       }
