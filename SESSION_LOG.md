@@ -63,6 +63,97 @@
 
 ---
 
+## 2026-07-26 — Session 04A: Integrate Approved Frontend Prototype
+
+### Source
+- Design prototype supplied by the design owner:
+  `project-sources/drfarah_design_prototype_v1.zip` (4 files, 50 KB).
+- Claude Code integrated the approved prototype faithfully — no redesign,
+  restyle, simplification, or framework migration.
+- Design ownership remains external to Claude Code.
+
+### Branch
+- Created `feature/frontend-prototype-integration` from `dev` (a8abb42).
+
+### Files created
+- `frontend/index.html` — homepage with integrated booking modal (prototype
+  content preserved; added `meta robots noindex,nofollow,noarchive`).
+- `frontend/styles.css` — complete responsive stylesheet (unchanged).
+- `frontend/app.js` — booking modal interaction, frontend-only (unchanged).
+- `frontend/robots.txt` — `Disallow: /` for temporary-domain protection.
+- `docs/design/DESIGN_SYSTEM_V1.md` — design system documentation (prototype
+  DESIGN_NOTES.md with integration header added).
+
+### Files updated
+- `frontend/README.md` — full documentation with unresolved placeholder list.
+- `docs/architecture/README.md` — added design document link, updated status.
+- `Jenkinsfile` — added frontend validation stage, updated required paths,
+  updated header comments.
+- `HANDOFF.md` — full session handoff.
+- `SESSION_LOG.md` — this entry.
+
+### Allowed corrections
+- Added `<meta name="robots" content="noindex,nofollow,noarchive">` to
+  `index.html` (temporary-domain indexing protection).
+- Created `robots.txt` with `Disallow: /`.
+- These must be removed or changed during final-domain migration.
+- No visual design, typography, color, spacing, layout, or interaction
+  changes were made.
+
+### Accessibility audit
+- Prototype already included: `lang="en"`, single logical `h1`, labeled form
+  controls, keyboard-operable buttons, Escape-to-close dialog, `role="dialog"`
+  with `aria-modal="true"`, skip link, no `outline: none` suppression
+  (browser focus rings preserved), touch targets >= 44px.
+- No accessibility defects requiring correction were found.
+
+### Booking behavior
+- Frontend-only modal preserved intact: four steps, service preselection,
+  progress indicator, review step, prototype success notice.
+- 12 booking entry points, all using the same `data-open-booking` handler.
+- No network requests, no API connection, no data storage, no
+  localStorage/sessionStorage.
+- The `/book` route and API integration belong to later steps.
+
+### Jenkinsfile — frontend validation stage
+- Runs on feature/*, dev, main.
+- Confirms `frontend/index.html`, `styles.css`, `app.js`, `robots.txt` exist.
+- JS syntax validation via `node:20-slim` container: `node --check
+  frontend/app.js`.
+- Grep-verifies no-index meta and robots Disallow rule.
+- Starts Python `http.server` on port 18900, validates HTTP 200 for `/`,
+  `/styles.css`, `/app.js`, `/robots.txt`.
+- Cleanup via `trap cleanup_server EXIT`.
+- No credentials, rsync, Hestia deploy, Docker push, or kubectl.
+
+### Local validation
+- `node --check frontend/app.js` — passed.
+- `diff` between prototype sources and repo copies — only robots meta
+  addition differs.
+- `python3 -m http.server` — all four assets HTTP 200.
+- Curl-verified no-index meta and robots Disallow rule.
+- `git diff --check` — clean.
+- No secrets, passwords, tokens, or keys in the diff.
+- `project-sources/` excluded by `.gitignore`.
+
+### Unresolved placeholders
+Documented in `frontend/README.md`: phone, email, address, office hours,
+legal text, portrait/clinic photography, appointment availability, verified
+reviews, final service list, credentials wording, logo.
+
+### What was NOT done
+- No redesign, restyle, or framework migration.
+- No API integration or `/book` route.
+- No deployment to any environment.
+- No data persistence.
+- No analytics, tracking, or cookie banner.
+- No sitemap or Google Fonts change.
+- No infrastructure changes (K3s, Harbor, DNS, HAProxy, Hestia).
+
+### No secrets were printed, copied, committed, or exposed.
+
+---
+
 ## 2026-07-26 — Session 02: Infrastructure Foundation
 
 ### TLS recheck
