@@ -207,7 +207,7 @@ pipeline {
       steps {
         dir('api') {
           sh '''
-            set -euo pipefail
+            set -eu
 
             CONTAINER_NAME="drfarah-api-validation-${BUILD_NUMBER}"
             IMAGE_NAME="drfarah-api:test-build"
