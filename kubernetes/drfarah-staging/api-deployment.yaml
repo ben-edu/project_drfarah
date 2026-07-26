@@ -1,0 +1,59 @@
+# API Deployment — drfarah staging environment.
+# Image tag is set by Jenkins at deploy time (e.g. :<git-sha> or :dev).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drfarah-staging-api
+  namespace: drfarah-staging
+  labels:
+    app: drfarah-staging-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drfarah-staging-api
+  template:
+    metadata:
+      labels:
+        app: drfarah-staging-api
+    spec:
+      imagePullSecrets:
+        - name: harbor-regcred
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+      containers:
+        - name: api
+          image: harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: drfarah-staging-api-config
+            - secretRef:
+                name: drfarah-staging-api-secret
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

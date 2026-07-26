@@ -2,10 +2,16 @@
 
 Architecture decisions and diagrams for the Dr. Farah VIP Urgent Care project.
 
+## Documents
+
+| File | Purpose |
+|---|---|
+| `ENVIRONMENT_ISOLATION.md` | Staging/production namespace separation rationale and mapping |
+| `INFRASTRUCTURE_FOUNDATION.md` | Step 02 provisioning record — domains, TLS, Hestia, K3s, Keycloak |
+
 ## Status
 
-Implementation has not started. Architecture documents will be added as
-design decisions are finalized.
+Phase 1: website + booking foundation. Application scaffold in progress.
 
 ## Reference documents (outside repository)
 

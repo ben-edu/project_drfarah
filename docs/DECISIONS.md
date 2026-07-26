@@ -39,3 +39,15 @@ Temporary development/staging/production domains under `proxbenovh.cloud`
 - No secrets in Git — `*.example` patterns only.
 - Credential IDs: `hestia-benweb-ssh`, `harbor-robot-devops-project-harbor`,
   `drfarah-postgres`, `drfarah-smtp`.
+
+## Environment isolation (2026-07-26)
+
+- **Separate Kubernetes namespaces** for staging and production:
+  - `drfarah` — production (reserved, not yet deployed).
+  - `drfarah-staging` — staging environment.
+- Separate Deployments, Services, Ingresses, Secrets, PVCs, and PostgreSQL
+  instances per environment.
+- Frontend staging and production already have separate Hestia docroots.
+- Jenkins mapping: `feature/*` → test only, `dev` → staging deploy,
+  `main` → production deploy (added after production readiness).
+- See `docs/architecture/ENVIRONMENT_ISOLATION.md` for full rationale.

@@ -109,3 +109,78 @@
 - Created: `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 03A: FastAPI Application Foundation
+
+### Application scaffold
+- Created FastAPI application in `api/`:
+  - `app/main.py` — app factory, CORS middleware, router registration.
+  - `app/core/config.py` — Pydantic Settings (APP_NAME, ENVIRONMENT, DATABASE_URL, CORS_ORIGINS, LOG_LEVEL).
+  - `app/core/database.py` — SQLAlchemy 2.x engine (lazy), session factory, connection check.
+  - `app/routers/health.py` — `/api/v1/health/live` and `/ready` endpoints.
+- `Dockerfile` — python:3.12-slim, non-root user (appuser), HEALTHCHECK.
+- `.dockerignore`, `requirements.txt`, `README.md`.
+- Tests: `tests/test_health.py` — 10 tests (liveness, readiness, CORS, safety).
+- All 10 tests pass locally (Python 3.11 venv).
+
+### Kubernetes staging templates
+- Created `kubernetes/drfarah-staging/` with 9 manifests:
+  namespace, configmap, secret.example.yaml, postgres-statefulset,
+  postgres-service, api-deployment, api-service, api-ingress, README.
+- Templates reference staging-specific names: `drfarah-staging-*`.
+- Image placeholder: `harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:dev`.
+- Probes use the implemented health endpoints.
+- Resource limits follow reference project values.
+
+### Environment isolation
+- Decision recorded: `drfarah` = production namespace (reserved), `drfarah-staging` = staging.
+- Documented in `docs/architecture/ENVIRONMENT_ISOLATION.md` and `docs/DECISIONS.md`.
+
+### Jenkinsfile
+- Removed "No application code guard" stage.
+- Added "API — tests" stage (containerized pytest in python:3.12-slim).
+- Added "API — Docker build validation" stage (build + run + health check + cleanup).
+- No credentials, no image push, no kubectl, no rsync, no deploy.
+
+### Documentation
+- Updated: `api/README.md`, `kubernetes/drfarah/README.md` (production-reserved note),
+  `docs/DECISIONS.md`, `docs/architecture/README.md`, `HANDOFF.md`, `SESSION_LOG.md`.
+- Created: `docs/architecture/ENVIRONMENT_ISOLATION.md`.
+
+### Tests
+- 10/10 passing: liveness (3), readiness (4), CORS (3).
+- Tests use SQLite for database-dependent checks.
+- No live cluster or PostgreSQL required.
+
+### Docker
+- Docker daemon not available on management VM.
+- Dockerfile validated via reference comparison with `project_toilettage`.
+- Jenkins agent has Docker — build validation stage will run there.
+
+### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 03A-FIX: Repair Jenkins API Test Pipeline
+
+### Problem
+- Jenkins branch build for `feature/api-foundation` (commit `acc2f98`)
+  failed in `API — tests` stage: `No module named pytest`.
+- Root cause: `pytest` correctly excluded from `requirements.txt` (keeps
+  production image lean), but Jenkins test stage only installed
+  `requirements.txt`.
+
+### Fix applied
+- Created `api/requirements-dev.txt` with `pytest==8.3.4`.
+- Updated Jenkins `API — tests` stage:
+  `pip install -q -r requirements.txt -r requirements-dev.txt`.
+- Updated `api/README.md` test instructions to include both files.
+- Reviewed Docker build validation stage — already correct: builds
+  production Dockerfile with only `requirements.txt`.
+
+### Local validation
+- All 10 tests pass in `.venv` (Python 3.11).
+
+### No secrets were printed, copied, committed, or exposed.

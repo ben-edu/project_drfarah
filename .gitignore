@@ -41,6 +41,7 @@ Thumbs.db
 
 # Build artifacts
 *.log
+*.db
 coverage/
 .coverage
 htmlcov/

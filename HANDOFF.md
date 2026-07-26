@@ -1,72 +1,90 @@
-# HANDOFF — 2026-07-26 (Step 02)
+# HANDOFF — 2026-07-26 (Step 03A-FIX)
 
 ## Current state
 
-- **Branch:** `feature/infrastructure-foundation`
+- **Branch:** `feature/api-foundation`
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
-- **Base:** `dev`
+- **Base:** `dev` (Step 02 infrastructure foundation merged).
 
-## Work completed (Step 02 — Infrastructure Foundation)
+## Work completed (Step 03A-FIX — Repair Jenkins API Test Pipeline)
 
-### TLS
-- Operator re-issued all certificates. All 6 hosts verified: ssl_verify=0,
-  matching SANs, valid until Oct 24 2026.
-- www → apex redirect NOT configured (both serve 200 — needs HAProxy/Hestia fix).
+### Fix: missing pytest in Jenkins test container
+- Created `api/requirements-dev.txt` with `pytest==8.3.4`.
+- Updated Jenkins `API — tests` stage to install both `requirements.txt`
+  and `requirements-dev.txt`.
+- Updated `api/README.md` test instructions.
+- All 10 tests pass locally (venv).
 
-### Hestia / BM1
-- Created `staging.drfarah.proxbenovh.cloud` vhost (was missing).
-- All 3 vhosts confirmed: `drfarah`, `staging`, `admin` — owner `benweb`,
-  `public_html/` writable.
-- Admin 503 resolved (now 200).
+### Docker build validation
+- Reviewed and confirmed correct: builds the production Dockerfile using
+  only `requirements.txt`. No dev dependencies are included in the image.
 
-### K3s / BM2
-- Created `drfarah` namespace with labels.
-- Copied Harbor pull secret (`harbor-regcred`) from `toilettage` namespace.
+## Work completed (Step 03A — FastAPI Application Foundation)
 
-### Keycloak
-- Realm `drfarah` NOT created — blocked on admin credentials (bootstrap
-  password was rotated).
-- Admin username confirmed: `admin`.
-- Configuration spec documented in `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
+### API application
+- FastAPI scaffold with two health endpoints:
+  - `GET /api/v1/health/live` — liveness probe.
+  - `GET /api/v1/health/ready` — readiness probe with database check.
+- Environment-based configuration (Pydantic Settings).
+- SQLAlchemy database abstraction (lazy engine, session management).
+- CORS middleware with configurable origins.
+- 10 passing tests (liveness, readiness, CORS, safety).
+- Dockerfile (python:3.12-slim, non-root user, healthcheck).
 
-### Harbor
-- Classified `drfarah-api` as NOT REQUIRED YET — auto-creates on first push.
+### Kubernetes staging templates
+- 9 non-secret manifests under `kubernetes/drfarah-staging/`:
+  namespace, ConfigMap, secret.example.yaml, PostgreSQL StatefulSet,
+  PostgreSQL Service, API Deployment, API Service, API Ingress, README.
 
-### PostgreSQL / SMTP / Backup
-- PostgreSQL pattern documented (follow `toilettage-postgres`).
-- SMTP pattern documented.
-- Backup identified as BLOCKER before production (no destination defined).
+### Environment isolation
+- `drfarah` = production namespace (reserved).
+- `drfarah-staging` = staging namespace (separate resources, DB, credentials).
+- Documented in `docs/architecture/ENVIRONMENT_ISOLATION.md` and `docs/DECISIONS.md`.
+
+### Jenkinsfile
+- Removed bootstrap "no application code" guard.
+- Added API test stage (containerized pytest).
+- Added Docker build validation stage.
+- Still no credentials, no image push, no deploy, no kubectl, no rsync.
 
 ### Documentation
-- Updated `docs/READINESS_AUDIT.md` with all Step 02 results.
-- Created `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
-- Updated `HANDOFF.md` and `SESSION_LOG.md`.
+- Updated: `api/README.md`, `kubernetes/drfarah/README.md`,
+  `docs/DECISIONS.md`, `docs/architecture/README.md`, `HANDOFF.md`,
+  `SESSION_LOG.md`.
+- Created: `docs/architecture/ENVIRONMENT_ISOLATION.md`.
+
+## What was NOT done (intentionally)
+
+- No booking entities or endpoints.
+- No database tables or seed data.
+- No Alembic migrations.
+- No PostreSQL StatefulSet applied to the cluster.
+- No Docker image pushed to Harbor.
+- No Kubernetes manifests applied.
+- No Jenkins credential binding.
+- No Keycloak, SMTP, or frontend code.
 
 ## Remaining blockers
 
-1. **Keycloak realm** — requires admin credentials. See config spec in
-   `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
-2. **www → apex redirect** — configure in HAProxy or Hestia.
-3. **Backup destination** — define before production.
+1. **Keycloak realm** — still blocked on admin credentials.
+2. **Backup destination** — blocker before production.
+3. **www → apex redirect** — not yet configured.
 
 ## Files the next session must read first
 
-1. `PROJECT.md`
-2. `docs/READINESS_AUDIT.md` (updated)
-3. `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`
-4. `docs/DECISIONS.md`
-5. `HANDOFF.md` (this file)
+1. `PROJECT.md` — approved product brief (booking scope, data model).
+2. `docs/READINESS_AUDIT.md` — current infrastructure readiness.
+3. `docs/architecture/ENVIRONMENT_ISOLATION.md` — staging/production design.
+4. `HANDOFF.md` — this file.
+5. `kubernetes/drfarah-staging/README.md` — staging manifest overview.
 
-## Recommended Step 03
+## Recommended Step 03B
 
-**Application skeleton and database provisioning.** With infrastructure ready:
-1. Create the Keycloak realm (requires admin — coordinate with operator).
-2. Create PostgreSQL StatefulSet, Service, PVC, and `drfarah-postgres-secret`
-   in the `drfarah` namespace.
-3. Create the `drfarah-postgres` Jenkins credential.
-4. Scaffold the FastAPI application (`api/`) with health endpoint, CORS, and
-   database connection.
-5. Scaffold the frontend (`frontend/`) with placeholder pages and booking
-   entry points.
-6. Update the Jenkinsfile with build/test stages (still no deployment to prod).
-7. Push first API image to Harbor.
+**Staging deployment and database provisioning:**
+1. Create the `drfarah-staging` namespace in K3s.
+2. Copy Harbor pull secret into the namespace.
+3. Create PostgreSQL credentials and apply the StatefulSet.
+4. Build and push the first API image to Harbor (`drfarah-api:dev`).
+5. Apply all staging Kubernetes manifests.
+6. Add deployment stages to the Jenkinsfile (API build/push, K3s deploy).
+7. Verify the API responds at `https://api.staging.drfarah.proxbenovh.cloud`.
