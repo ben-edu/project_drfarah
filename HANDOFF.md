@@ -1,64 +1,72 @@
-# HANDOFF — 2026-07-26
+# HANDOFF — 2026-07-26 (Step 02)
 
 ## Current state
 
-- **Branch:** `feature/bootstrap-readiness`
+- **Branch:** `feature/infrastructure-foundation`
 - **Commit:** see `SESSION_LOG.md` for the commit SHA after push.
-- **Base:** `dev` (created from `main`).
+- **Base:** `dev`
 
-## Work completed
+## Work completed (Step 02 — Infrastructure Foundation)
 
-1. Repository initialized and connected to `git@github.com:ben-edu/project_drfarah.git`.
-2. Branches created: `main`, `dev`, `feature/bootstrap-readiness`.
-3. Full read-only readiness audit performed:
-   - DNS resolution for all 6 temporary domains.
-   - TLS certificate inspection for all domains.
-   - Hestia vhost/docroot check via SSH.
-   - K3s cluster connectivity and namespace/resource inspection.
-   - Keycloak and Harbor endpoint availability.
-   - Jenkins multibranch job confirmed.
-4. Repository skeleton created with all required directories and files.
-5. Bootstrap Jenkinsfile added (safe, non-deploying).
-6. Source document `PROJECT_DRFARAH.md` copied into repository root as
-   `PROJECT.md`.
+### TLS
+- Operator re-issued all certificates. All 6 hosts verified: ssl_verify=0,
+  matching SANs, valid until Oct 24 2026.
+- www → apex redirect NOT configured (both serve 200 — needs HAProxy/Hestia fix).
 
-## Audit findings summary
+### Hestia / BM1
+- Created `staging.drfarah.proxbenovh.cloud` vhost (was missing).
+- All 3 vhosts confirmed: `drfarah`, `staging`, `admin` — owner `benweb`,
+  `public_html/` writable.
+- Admin 503 resolved (now 200).
 
-### Ready
-- Git repository, branches, remote.
-- DNS for all 6 domains.
-- TLS for apex domain `drfarah.proxbenovh.cloud`.
-- Hestia vhosts: `drfarah.proxbenovh.cloud` and `admin.drfarah.proxbenovh.cloud`.
-- K3s cluster connectivity.
-- Jenkins multibranch pipeline.
-- Keycloak and Harbor endpoints.
+### K3s / BM2
+- Created `drfarah` namespace with labels.
+- Copied Harbor pull secret (`harbor-regcred`) from `toilettage` namespace.
 
-### Blocked / Needs action before deployment
-- **staging.drfarah.proxbenovh.cloud Hestia vhost:** not created.
-- **drfarah K3s namespace:** not created.
-- **drfarah Keycloak realm:** not created.
-- **TLS cert mismatch:** domains other than the apex present `*.behnam.fr`
-  instead of `*.proxbenovh.cloud`.
+### Keycloak
+- Realm `drfarah` NOT created — blocked on admin credentials (bootstrap
+  password was rotated).
+- Admin username confirmed: `admin`.
+- Configuration spec documented in `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
 
-### NOT REQUIRED YET
-- PostgreSQL database, K3s resources, Harbor image repo, SMTP credentials,
-  backup configuration — all expected to be missing at this stage.
+### Harbor
+- Classified `drfarah-api` as NOT REQUIRED YET — auto-creates on first push.
 
-See `docs/READINESS_AUDIT.md` for the full table with evidence.
+### PostgreSQL / SMTP / Backup
+- PostgreSQL pattern documented (follow `toilettage-postgres`).
+- SMTP pattern documented.
+- Backup identified as BLOCKER before production (no destination defined).
+
+### Documentation
+- Updated `docs/READINESS_AUDIT.md` with all Step 02 results.
+- Created `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
+- Updated `HANDOFF.md` and `SESSION_LOG.md`.
+
+## Remaining blockers
+
+1. **Keycloak realm** — requires admin credentials. See config spec in
+   `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`.
+2. **www → apex redirect** — configure in HAProxy or Hestia.
+3. **Backup destination** — define before production.
 
 ## Files the next session must read first
 
-1. `PROJECT.md` — approved product brief.
-2. `docs/READINESS_AUDIT.md` — current infrastructure readiness.
-3. `HANDOFF.md` — this file.
+1. `PROJECT.md`
+2. `docs/READINESS_AUDIT.md` (updated)
+3. `docs/architecture/INFRASTRUCTURE_FOUNDATION.md`
+4. `docs/DECISIONS.md`
+5. `HANDOFF.md` (this file)
 
-## Recommended Step 02
+## Recommended Step 03
 
-**Infrastructure provisioning and TLS fix.** Before any application code:
-1. Create the missing `staging.drfarah.proxbenovh.cloud` Hestia vhost (owner:
-   `benweb`).
-2. Create the `drfarah` K3s namespace and copy the Harbor pull secret.
-3. Create the `drfarah` Keycloak realm with the admin client.
-4. Resolve TLS certificate mismatch for www, staging, admin, and API domains.
-5. Create the `drfarah-postgres` database, credentials, and Jenkins credential.
-6. Verify API endpoints respond (404 from Traefik is expected — confirms routing).
+**Application skeleton and database provisioning.** With infrastructure ready:
+1. Create the Keycloak realm (requires admin — coordinate with operator).
+2. Create PostgreSQL StatefulSet, Service, PVC, and `drfarah-postgres-secret`
+   in the `drfarah` namespace.
+3. Create the `drfarah-postgres` Jenkins credential.
+4. Scaffold the FastAPI application (`api/`) with health endpoint, CORS, and
+   database connection.
+5. Scaffold the frontend (`frontend/`) with placeholder pages and booking
+   entry points.
+6. Update the Jenkinsfile with build/test stages (still no deployment to prod).
+7. Push first API image to Harbor.
