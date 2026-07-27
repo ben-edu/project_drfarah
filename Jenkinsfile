@@ -314,6 +314,28 @@ pipeline {
             echo "Disposable migration test passed."
 
             echo ""
+            echo "=== Validating migration bootstrap ==="
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              test -f /app/app/migration_bootstrap.py
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              python -c "from app.migration_bootstrap import main; print('import OK')"
+
+            echo ""
+            echo "=== Fresh SQLite bootstrap ==="
+
+            docker run --rm \
+              -e ENVIRONMENT=test \
+              -e DATABASE_URL='sqlite:////tmp/bootstrap-test.db' \
+              "$IMAGE_NAME" \
+              python -m app.migration_bootstrap
+
+            echo "Fresh SQLite bootstrap passed."
+
+            echo ""
             echo "=== Starting isolated validation container ==="
 
             docker run -d \
