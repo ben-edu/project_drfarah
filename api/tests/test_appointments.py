@@ -23,6 +23,31 @@ def _days_ahead(n):
     return d.year, d.month, d.day
 
 
+def _next_working_day(db):
+    """Return (year, month, day) for a future date with active working hours.
+
+    Queries the first active WorkingHours record, finds the next occurrence
+    of its weekday, and returns the date. The returned date is always in the
+    future (next week if today matches the weekday).
+
+    Does not hard-code calendar dates or depend on the current weekday.
+    """
+    from app.models.working_hours import WorkingHours
+
+    wh = db.query(WorkingHours).filter(
+        WorkingHours.is_active == True
+    ).first()
+    assert wh is not None, "No active working hours in seed data"
+
+    today = datetime.datetime.now(CLINIC_TZ).date()
+    days_until = (wh.weekday - today.weekday()) % 7
+    if days_until == 0:
+        days_until = 7  # Use next week to avoid edge cases with today
+    target_date = today + datetime.timedelta(days=days_until)
+
+    return target_date.year, target_date.month, target_date.day
+
+
 @pytest.fixture(autouse=True)
 def test_app_setup():
     import importlib
@@ -48,7 +73,7 @@ VALID_APPOINTMENT = {
 class TestAppointmentCreate:
     def test_creates_appointment_returns_201(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -60,7 +85,7 @@ class TestAppointmentCreate:
 
     def test_response_contains_required_fields(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -78,7 +103,7 @@ class TestAppointmentCreate:
 
     def test_ends_at_derived_from_service_duration(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         starts_at = _slot_at(y, m, d, 10, 0)
         payload = {
             **VALID_APPOINTMENT,
@@ -95,7 +120,7 @@ class TestAppointmentCreate:
 
     def test_409_on_double_booking(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         starts_at = _slot_at(y, m, d, 10, 0)
         payload = {
             **VALID_APPOINTMENT,
@@ -121,7 +146,7 @@ class TestAppointmentCreate:
 
     def test_422_outside_working_hours(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -214,7 +239,7 @@ class TestAppointmentCreate:
         from app.models.appointment import Appointment
         from app.models.service import Service
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         svc = seeded_db.query(Service).filter(Service.code == "urgent-care").first()
 
         starts_utc = datetime.datetime.fromisoformat(_slot_at(y, m, d, 10, 0))
@@ -240,7 +265,7 @@ class TestAppointmentCreate:
 
     def test_no_sensitive_fields_in_response(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -293,7 +318,7 @@ class TestAppointmentCreate:
 
     def test_source_defaults_to_none(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -325,7 +350,7 @@ class TestAppointmentCreate:
     def test_vip_mobile_buffer_respected(self, seeded_db, test_app_setup):
         """VIP mobile visit has 15-min buffer before and after."""
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         # Book at 9:15 AM — the 15-min buffer before pushes occupied start to 9:00 AM,
         # which is exactly at opening time (valid).
         starts_at = _slot_at(y, m, d, 9, 15)
