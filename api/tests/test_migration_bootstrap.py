@@ -1,65 +1,38 @@
 """Integration tests for migration bootstrap against disposable PostgreSQL databases.
 
-Each test creates a unique temporary PostgreSQL database, constructs the
-required schema state, runs the bootstrap, and verifies the result.
+Each test creates a unique temporary PostgreSQL database on an externally
+provided server, constructs the required schema state, runs the bootstrap,
+and verifies the result.
 
-Databases are created via sudo -u postgres and dropped after each test.
+The PostgreSQL server is provided by the CI stage through the environment
+variable POSTGRES_TEST_DATABASE_URL. No host orchestration (sudo/docker/
+subprocess) happens here: databases are created and dropped via ordinary
+SQL on an AUTOCOMMIT connection (see tests/_pg_util.py). When the variable
+is absent, the whole module skips.
 """
 
-import datetime
 import os
-import re
-import subprocess
-import sys
-from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
-CLINIC_TZ = ZoneInfo("America/Los_Angeles")
+from tests._pg_util import (
+    create_db,
+    maintenance_url,
+    per_test_db_url,
+    terminate_and_drop,
+    unique_db_name,
+)
 
-# ---------------------------------------------------------------------------
-# Helpers — temporary PostgreSQL database management.
-# ---------------------------------------------------------------------------
+pytestmark = pytest.mark.postgresql
 
 _TEST_DB_PREFIX = "drfarah_migration_test_"
 
 
-def _run_psql(sql: str) -> None:
-    """Execute a SQL command against the test database."""
-    db_url = os.environ.get("DATABASE_URL", "")
-    engine = create_engine(db_url, connect_args={"connect_timeout": 5})
-    with engine.connect() as conn:
-        conn.execute(text(sql))
-        conn.commit()
-    engine.dispose()
-
-
-def _create_test_db(db_name: str) -> None:
-    subprocess.run(
-        ["sudo", "-u", "postgres", "createdb", "-O", "ben", db_name],
-        check=True,
-    )
-
-
-def _drop_test_db(db_name: str) -> None:
-    # Terminate any lingering connections before dropping.
-    subprocess.run(
-        [
-            "sudo", "-u", "postgres", "psql", "-c",
-            f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
-            f"FROM pg_stat_activity "
-            f"WHERE pg_stat_activity.datname = '{db_name}' "
-            f"AND pid <> pg_backend_pid()",
-        ],
-        check=False,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["sudo", "-u", "postgres", "dropdb", "--if-exists", db_name],
-        check=True,
-    )
+# ---------------------------------------------------------------------------
+# Inspection helpers (each opens and disposes its own engine).
+# ---------------------------------------------------------------------------
 
 
 def _table_exists(db_url: str, table_name: str) -> bool:
@@ -82,7 +55,7 @@ def _version_rows(db_url: str) -> int:
     return count
 
 
-def _get_revision(db_url: str) -> str | None:
+def _get_revision(db_url: str):
     engine = create_engine(db_url, connect_args={"connect_timeout": 5})
     with engine.connect() as conn:
         if "alembic_version" not in inspect(conn).get_table_names():
@@ -106,7 +79,7 @@ def _count_rows(db_url: str, table_name: str) -> int:
 
 
 def _run_bootstrap() -> None:
-    """Import and run the bootstrap.  Raises on failure."""
+    """Import and run the bootstrap. Raises on failure."""
     os.environ["SMTP_HOST"] = ""
     os.environ["SMTP_TEST_MODE"] = "true"
     os.environ["ENVIRONMENT"] = "test"
@@ -124,47 +97,50 @@ def _run_bootstrap() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Database fixtures — each test gets its own disposable PostgreSQL database.
+# Disposable-database fixture — each test gets its own PostgreSQL database.
 # ---------------------------------------------------------------------------
 
 
 @pytest.fixture
 def pg_db(request):
-    """Create a unique disposable PostgreSQL database.
+    """Create a unique disposable PostgreSQL database on the CI-provided server.
 
     Cleanup runs even if the test fails.
     """
-    test_name = re.sub(
-        r"[^a-z0-9_]",
-        "",
-        request.node.name.replace(" ", "_").lower(),
-    )
-    db_name = f"{_TEST_DB_PREFIX}{test_name}"
+    maintenance_url()  # triggers a clean skip if the server URL is absent.
 
-    # Ensure no leftover from a previous interrupted run.
-    _drop_test_db(db_name)
+    db_name = unique_db_name(_TEST_DB_PREFIX, request.node.name)
 
-    _create_test_db(db_name)
+    # Ensure no leftover from a previous interrupted run, then create fresh.
+    terminate_and_drop(db_name)
+    create_db(db_name)
 
-    # Set the environment so the bootstrap uses this database.
-    db_url = f"postgresql:///{db_name}?host=/var/run/postgresql"
-    os.environ["DATABASE_URL"] = db_url
-
-    yield db_name
-
-    # Close all connections so we can drop the database.
-    from app.core.database import reset_engine
-    reset_engine()
-
-    _drop_test_db(db_name)
-
-    os.environ.pop("DATABASE_URL", None)
+    os.environ["DATABASE_URL"] = per_test_db_url(db_name)
 
     from app.core.config import get_settings
     from app.core.database import reset_engine
 
     get_settings.cache_clear()
     reset_engine()
+
+    yield db_name
+
+    # Close all connections so we can drop the database.
+    from app.core.database import reset_engine as _reset
+
+    _reset()
+    os.environ.pop("DATABASE_URL", None)
+
+    from app.core.config import get_settings as _get_settings
+
+    _get_settings.cache_clear()
+
+    terminate_and_drop(db_name)
+
+
+# ---------------------------------------------------------------------------
+# Schema/data construction helpers.
+# ---------------------------------------------------------------------------
 
 
 def _legacy_booking_row(index: int):
@@ -185,9 +161,7 @@ def _legacy_booking_row(index: int):
 
 def _create_legacy_bookings_table(db_url: str) -> None:
     """Create a bookings table matching the application's original schema (0001)."""
-    from sqlalchemy import (
-        Column, DateTime, Integer, String, Text, func,
-    )
+    from sqlalchemy import Column, DateTime, Integer, String, func
     from sqlalchemy.orm import declarative_base
 
     Base = declarative_base()
@@ -205,9 +179,7 @@ def _create_legacy_bookings_table(db_url: str) -> None:
         email = Column(String(255), nullable=False)
         phone = Column(String(64), nullable=False)
         reason_category = Column(String(128), nullable=False)
-        status = Column(
-            String(32), nullable=False, server_default="requested",
-        )
+        status = Column(String(32), nullable=False, server_default="requested")
         created_at = Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False,
         )
@@ -271,7 +243,7 @@ class TestFreshDatabase:
 
         db_url = os.environ["DATABASE_URL"]
         for table in ("bookings", "services", "working_hours",
-                       "blocked_periods", "appointments", "alembic_version"):
+                      "blocked_periods", "appointments", "alembic_version"):
             assert _table_exists(db_url, table), f"Table '{table}' is missing"
 
     def test_seed_services_exist(self, pg_db):
@@ -295,9 +267,7 @@ class TestFreshDatabase:
         db_url = os.environ["DATABASE_URL"]
         engine = create_engine(db_url, connect_args={"connect_timeout": 5})
         with engine.connect() as conn:
-            result = conn.execute(
-                text("SELECT COUNT(*) FROM working_hours")
-            )
+            result = conn.execute(text("SELECT COUNT(*) FROM working_hours"))
             count = result.scalar()
         engine.dispose()
         assert count == 5  # Mon-Fri
@@ -312,7 +282,6 @@ class TestFreshDatabase:
 
     def test_second_bootstrap_is_idempotent(self, pg_db):
         _run_bootstrap()
-        # Second run should succeed without error.
         _run_bootstrap()
 
         db_url = os.environ["DATABASE_URL"]
@@ -331,18 +300,12 @@ class TestLegacyDatabase:
         db_url = os.environ["DATABASE_URL"]
         _insert_legacy_bookings(db_url, count=2)
 
-        # Verify no alembic_version before bootstrap.
         assert not _table_exists(db_url, "alembic_version")
 
         _run_bootstrap()
 
-        # alembic_version should exist with revision at head.
         assert _get_revision(db_url) == "0002"
-
-        # bookings table should still exist.
         assert _table_exists(db_url, "bookings")
-
-        # Scheduling tables should now exist.
         for table in ("services", "working_hours", "blocked_periods", "appointments"):
             assert _table_exists(db_url, table), f"'{table}' missing"
 
@@ -394,13 +357,12 @@ class TestLegacyDatabase:
         db_url = os.environ["DATABASE_URL"]
         _insert_legacy_bookings(db_url, count=1)
         _run_bootstrap()
-        # Second run should succeed.
         _run_bootstrap()
         assert _get_revision(db_url) == "0002"
 
 
 class TestEmptyAlembicVersion:
-    """booksings + empty alembic_version → treated as legacy (State 2)."""
+    """bookings + empty alembic_version → treated as legacy (State 2)."""
 
     @pytest.fixture(autouse=True)
     def setup_empty_version(self, pg_db):
@@ -428,7 +390,6 @@ class TestUnsafeIncompatibleSchema:
         db_url = os.environ["DATABASE_URL"]
         engine = create_engine(db_url, connect_args={"connect_timeout": 5})
 
-        # Create bookings with a missing required column.
         from sqlalchemy import Column, DateTime, Integer, String, func
         from sqlalchemy.orm import declarative_base
 
@@ -441,7 +402,6 @@ class TestUnsafeIncompatibleSchema:
             visit_type = Column(String(128), nullable=False)
             preferred_day = Column(String(64), nullable=False)
             preferred_time = Column(String(32), nullable=False)
-            # time_window omitted intentionally (it's optional, should be fine)
             first_name = Column(String(128), nullable=False)
             last_name = Column(String(128), nullable=False)
             email = Column(String(255), nullable=False)
@@ -458,11 +418,8 @@ class TestUnsafeIncompatibleSchema:
         with pytest.raises(Exception):
             _run_bootstrap()
 
-        # Verify no stamp occurred.
         assert _version_rows(db_url) == 0
         assert _get_revision(db_url) is None
-
-        # Booking table and rows should still exist.
         assert _table_exists(db_url, "bookings")
 
 
@@ -472,11 +429,9 @@ class TestAlreadyManaged:
     def test_upgrades_from_0001_to_head(self, pg_db):
         db_url = os.environ["DATABASE_URL"]
 
-        # Create the legacy bookings table first.
         _create_legacy_bookings_table(db_url)
         _insert_legacy_bookings(db_url, count=1)
 
-        # Run Alembic directly to stamp and run migration.
         from alembic import command
         from alembic.config import Config
         from app.core.config import get_settings
@@ -487,18 +442,14 @@ class TestAlreadyManaged:
         cfg = Config("alembic.ini")
         cfg.set_main_option("sqlalchemy.url", db_url)
 
-        # Stamp to 0001 (simulating a managed database at 0001).
         command.stamp(cfg, "0001")
-
         assert _get_revision(db_url) == "0001"
 
-        # Now run the bootstrap — it should upgrade from 0001 to head.
         _run_bootstrap()
 
         assert _get_revision(db_url) == "0002"
         assert _table_exists(db_url, "services")
         assert _table_exists(db_url, "working_hours")
-        # Existing data should be preserved.
         assert _count_rows(db_url, "bookings") == 1
 
     def test_already_at_head_passes(self, pg_db):
@@ -521,7 +472,6 @@ class TestAlreadyManaged:
 
         assert _get_revision(db_url) == "0002"
 
-        # Bootstrap should be a no-op.
         _run_bootstrap()
         assert _get_revision(db_url) == "0002"
         assert _count_rows(db_url, "bookings") == 1
