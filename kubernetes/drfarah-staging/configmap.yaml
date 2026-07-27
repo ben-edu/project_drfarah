@@ -22,4 +22,3 @@ data:
   SMTP_TO: "appointments@drfarah.proxbenovh.cloud"
   SMTP_USE_TLS: "true"
   SMTP_TEST_MODE: "true"
-  CLEANUP_TOKEN: "staging-ci-cleanup-token-2026"

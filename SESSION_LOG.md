@@ -831,3 +831,106 @@ prevention backed by PostgreSQL exclusion constraints.
 - No admin UI, Keycloak, HAProxy, DNS, or TLS changes
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-26 — Session 07-FIX: Repair Staging Deployment After Failed dev Merge
+
+### Incident
+
+Step 07 (Real Availability and Appointment Scheduling) was merged into `dev`
+(ad8b38a) before the pre-merge audit completed. The live `dev` staging
+deployment failed with 5 errors:
+
+1. **`kubectl set image` error:** "unable to find container named db-migrate"
+   — `kubectl set image` only targets `spec.containers`, not
+   `spec.initContainers`. The init container image was never updated.
+2. **Pipe masked the failure:** POSIX sh lacks `pipefail`. The failed
+   `kubectl set image` exit code was discarded — only `kubectl apply` (0)
+   mattered. The deployment was applied with the init container still on
+   `:dev`.
+3. **CI cleanup token exposed:** `CLEANUP_TOKEN = 'staging-ci-cleanup-token-2026'`
+   was hardcoded in the Jenkinsfile environment block and `configmap.yaml`.
+   Printed in Jenkins logs via the curl Authorization header.
+4. **Availability endpoint returned 404:** `GET /api/v1/availability?service_code=urgent-care`
+   returned 404 because the migration init container ran the old `:dev` image
+   (never migrated → no seed data).
+5. **Frontend staging deployment skipped:** the smoke test failure aborted
+   the pipeline before the frontend deploy stage.
+
+### Branch
+
+- Created `fix/scheduling-staging-deployment` from `dev` (ad8b38a).
+
+### Fix 1 — Deployment rendering
+
+Replaced the `kubectl set image ... | kubectl apply -f -` pipe with:
+- `sed` templating to a temp file (replaces `:dev` placeholder with
+  immutable SHA in all containers)
+- Validation: exact count of image lines = 2, no `:dev` remaining
+- Direct `kubectl apply -f "$RENDERED"` — no pipe
+- Temp file cleanup after apply
+- Post-rollout: verifies BOTH `api` AND `db-migrate` container images
+
+### Fix 2 — Compromised cleanup token
+
+- Removed `CLEANUP_TOKEN` from Jenkinsfile `environment` block.
+- CI cleanup now uses `withCredentials([string(...)])` with credential ID
+  `drfarah-staging-ci-cleanup-token`.
+- `set +x` / `set -x` around the authenticated curl prevents token in logs.
+- Removed `CLEANUP_TOKEN` from `configmap.yaml`.
+- Added `CLEANUP_TOKEN` to `secret.example.yaml` (the live
+  `drfarah-staging-api-secret` must be updated with a new token).
+- **Token rotation is mandatory** before next deploy.
+
+### Fix 3 — Availability smoke test
+
+- No longer hardcodes `urgent-care`.
+- Calls `GET /api/v1/services`, validates service count > 0, picks first
+  active service.
+- Queries availability over 14-day window.
+- Picks first returned slot for the appointment smoke test.
+- Uses `python3` for reliable JSON parsing.
+
+### Fix 4 — Root cause of 404
+
+The 404 was caused by Fix 1's root cause: the init container used the old
+`:dev` image, so Alembic never ran migration 0002, so the `services` table
+was never seeded. Fix 1 ensures the init container gets the immutable image.
+
+### Fix 5 — False success prevention
+
+The deployment rendering no longer pipes into `kubectl apply`. Any rendering
+failure stops the stage immediately.
+
+### Fix 6 — Cleanup endpoint security validated
+
+- Scope: only `source='ci'` records — confirmed safe.
+- Auth: 401 for wrong/missing token — correct.
+- Token not in logs: `set +x` protection added.
+- Constant-time comparison not required (operational token, not user auth).
+- Token moved to Secret (defense in depth).
+
+### Fix 7 — Documentation
+
+- Updated HANDOFF.md, SESSION_LOG.md, kubernetes/drfarah-staging/README.md.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `Jenkinsfile` | Deploy rendering (sed + validation, no pipe), token via withCredentials + set +x, dynamic service/slot discovery, init container image verification |
+| `kubernetes/drfarah-staging/configmap.yaml` | Removed CLEANUP_TOKEN |
+| `kubernetes/drfarah-staging/secret.example.yaml` | Added CLEANUP_TOKEN field |
+| `kubernetes/drfarah-staging/README.md` | Token rotation notice, corrected deployment docs |
+| `HANDOFF.md` | Rewritten for fix session |
+| `SESSION_LOG.md` | This entry |
+
+### What was NOT done
+
+- No live Kubernetes changes (Secret rotation requires operator).
+- No Jenkins credential creation (requires operator).
+- No PR merge (awaiting operator review).
+- No application code, SMTP, RBAC, production, frontend, or infra changes.
+
+### No secrets were printed, copied, committed, or exposed.

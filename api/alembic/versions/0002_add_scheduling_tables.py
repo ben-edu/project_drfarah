@@ -32,16 +32,16 @@ depends_on: Union[str, Sequence[str], None] = None
 SERVICES = [
     {"code": "urgent-care", "name": "Urgent or acute care",
      "description": "Same-day illness, injury, or immediate concern.",
-     "duration_minutes": 30, "buffer_before": 0, "buffer_after": 0},
+     "duration_minutes": 30, "buffer_before_minutes": 0, "buffer_after_minutes": 0},
     {"code": "vip-mobile", "name": "VIP or mobile visit",
      "description": "Discreet physician visits for hotels, offices, and residences.",
-     "duration_minutes": 45, "buffer_before": 15, "buffer_after": 15},
+     "duration_minutes": 45, "buffer_before_minutes": 15, "buffer_after_minutes": 15},
     {"code": "traveler-care", "name": "Traveler medical care",
      "description": "Care for tourists, executives, and business travelers.",
-     "duration_minutes": 30, "buffer_before": 0, "buffer_after": 0},
+     "duration_minutes": 30, "buffer_before_minutes": 0, "buffer_after_minutes": 0},
     {"code": "rejuvenation", "name": "Rejuvenation consultation",
      "description": "PRP, PRF, skin, hair, and recovery consultations.",
-     "duration_minutes": 60, "buffer_before": 15, "buffer_after": 15},
+     "duration_minutes": 60, "buffer_before_minutes": 15, "buffer_after_minutes": 15},
 ]
 
 # PROVISIONAL — placeholder hours. Monday-Friday, 9 AM – 5 PM Pacific.

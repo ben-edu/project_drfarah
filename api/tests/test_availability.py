@@ -21,6 +21,32 @@ def _days_from_now(n):
     return (now.date() + datetime.timedelta(days=n)).isoformat()
 
 
+def _next_working_date_str(db):
+    """Return an ISO date string (YYYY-MM-DD) for a future date with active
+    working hours.
+
+    Queries the first active WorkingHours record, finds the next occurrence
+    of its weekday, and returns the date as a string. The returned date is
+    always in the future (next week if today matches the weekday).
+
+    Does not hard-code calendar dates or depend on the current weekday.
+    """
+    from app.models.working_hours import WorkingHours
+
+    wh = db.query(WorkingHours).filter(
+        WorkingHours.is_active == True
+    ).first()
+    assert wh is not None, "No active working hours in seed data"
+
+    today = datetime.datetime.now(CLINIC_TZ).date()
+    days_until = (wh.weekday - today.weekday()) % 7
+    if days_until == 0:
+        days_until = 7  # Use next week to avoid edge cases with today
+    target_date = today + datetime.timedelta(days=days_until)
+
+    return target_date.isoformat()
+
+
 @pytest.fixture(autouse=True)
 def test_app_setup():
     import importlib
@@ -192,8 +218,8 @@ class TestAvailabilityEndpoint:
         from app.models.blocked_period import BlockedPeriod
         from app.models.service import Service
 
-        # Block the first 2 hours of the target day.
-        d = _days_from_now(4)
+        # Block the first 2 hours of a deterministic working day.
+        d = _next_working_date_str(seeded_db)
         day_dt = datetime.datetime.fromisoformat(d)
         local_start = datetime.datetime(day_dt.year, day_dt.month, day_dt.day,
                                         9, 0, tzinfo=CLINIC_TZ)

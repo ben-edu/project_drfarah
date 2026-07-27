@@ -23,6 +23,31 @@ def _days_ahead(n):
     return d.year, d.month, d.day
 
 
+def _next_working_day(db):
+    """Return (year, month, day) for a future date with active working hours.
+
+    Queries the first active WorkingHours record, finds the next occurrence
+    of its weekday, and returns the date. The returned date is always in the
+    future (next week if today matches the weekday).
+
+    Does not hard-code calendar dates or depend on the current weekday.
+    """
+    from app.models.working_hours import WorkingHours
+
+    wh = db.query(WorkingHours).filter(
+        WorkingHours.is_active == True
+    ).first()
+    assert wh is not None, "No active working hours in seed data"
+
+    today = datetime.datetime.now(CLINIC_TZ).date()
+    days_until = (wh.weekday - today.weekday()) % 7
+    if days_until == 0:
+        days_until = 7  # Use next week to avoid edge cases with today
+    target_date = today + datetime.timedelta(days=days_until)
+
+    return target_date.year, target_date.month, target_date.day
+
+
 @pytest.fixture(autouse=True)
 def test_app_setup():
     import importlib
@@ -48,7 +73,7 @@ VALID_APPOINTMENT = {
 class TestAppointmentCreate:
     def test_creates_appointment_returns_201(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -60,7 +85,7 @@ class TestAppointmentCreate:
 
     def test_response_contains_required_fields(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -78,7 +103,7 @@ class TestAppointmentCreate:
 
     def test_ends_at_derived_from_service_duration(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         starts_at = _slot_at(y, m, d, 10, 0)
         payload = {
             **VALID_APPOINTMENT,
@@ -95,7 +120,7 @@ class TestAppointmentCreate:
 
     def test_409_on_double_booking(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         starts_at = _slot_at(y, m, d, 10, 0)
         payload = {
             **VALID_APPOINTMENT,
@@ -121,7 +146,7 @@ class TestAppointmentCreate:
 
     def test_422_outside_working_hours(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -146,13 +171,53 @@ class TestAppointmentCreate:
     def test_409_blocked_period(self, seeded_db, test_app_setup):
         app = test_app_setup
         from app.models.blocked_period import BlockedPeriod
-        y, m, d = _days_ahead(5)
-        local_start = datetime.datetime(y, m, d, 10, 0, tzinfo=CLINIC_TZ)
-        local_end = datetime.datetime(y, m, d, 11, 0, tzinfo=CLINIC_TZ)
+        from app.models.working_hours import WorkingHours
+        from app.models.service import Service
+
+        # Query an active working-hour record from the seeded database.
+        wh = seeded_db.query(WorkingHours).filter(
+            WorkingHours.is_active == True
+        ).first()
+        assert wh is not None, "No active working hours in seed data"
+
+        # Get the urgent-care service for its duration.
+        svc = seeded_db.query(Service).filter(
+            Service.code == "urgent-care"
+        ).first()
+        assert svc is not None
+
+        # Find the next future occurrence of this working-hour weekday.
+        today = datetime.datetime.now(CLINIC_TZ).date()
+        days_until = (wh.weekday - today.weekday()) % 7
+        if days_until == 0:
+            days_until = 7  # Use next week to avoid edge cases with today
+        target_date = today + datetime.timedelta(days=days_until)
+
+        # Choose a slot one hour after opening.
+        slot_hour = wh.start_time.hour + 1
+        slot_minute = wh.start_time.minute
+
+        # Ensure the service duration fits before the working interval ends.
+        slot_end_minutes = slot_hour * 60 + slot_minute + svc.duration_minutes
+        interval_end_minutes = wh.end_time.hour * 60 + wh.end_time.minute
+        assert slot_end_minutes <= interval_end_minutes, (
+            "Service duration exceeds working hours interval"
+        )
+
+        local_start = datetime.datetime(
+            target_date.year, target_date.month, target_date.day,
+            slot_hour, slot_minute, tzinfo=CLINIC_TZ,
+        )
+        utc_start = local_start.astimezone(datetime.timezone.utc)
+
+        # Blocked period covers one hour from the slot start.
+        local_end = local_start + datetime.timedelta(hours=1)
+        utc_end = local_end.astimezone(datetime.timezone.utc)
+
         bp = BlockedPeriod(
-            starts_at=local_start.astimezone(datetime.timezone.utc),
-            ends_at=local_end.astimezone(datetime.timezone.utc),
-            reason="Test",
+            starts_at=utc_start,
+            ends_at=utc_end,
+            reason="Test blocked period",
             is_active=True,
         )
         seeded_db.add(bp)
@@ -161,18 +226,20 @@ class TestAppointmentCreate:
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
-            "starts_at": local_start.astimezone(datetime.timezone.utc).isoformat(),
+            "starts_at": utc_start.isoformat(),
         }
         with _client(app) as client:
             resp = client.post("/api/v1/appointments", json=payload)
             assert resp.status_code == 409, resp.text
+            body = resp.json()
+            assert "blocked" in body.get("detail", "").lower()
 
     def test_cancelled_appointment_does_not_block(self, seeded_db, test_app_setup):
         """A cancelled appointment should not block the same slot."""
         from app.models.appointment import Appointment
         from app.models.service import Service
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         svc = seeded_db.query(Service).filter(Service.code == "urgent-care").first()
 
         starts_utc = datetime.datetime.fromisoformat(_slot_at(y, m, d, 10, 0))
@@ -198,7 +265,7 @@ class TestAppointmentCreate:
 
     def test_no_sensitive_fields_in_response(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -251,7 +318,7 @@ class TestAppointmentCreate:
 
     def test_source_defaults_to_none(self, seeded_db, test_app_setup):
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         payload = {
             **VALID_APPOINTMENT,
             "service_code": "urgent-care",
@@ -283,7 +350,7 @@ class TestAppointmentCreate:
     def test_vip_mobile_buffer_respected(self, seeded_db, test_app_setup):
         """VIP mobile visit has 15-min buffer before and after."""
         app = test_app_setup
-        y, m, d = _days_ahead(4)
+        y, m, d = _next_working_day(seeded_db)
         # Book at 9:15 AM — the 15-min buffer before pushes occupied start to 9:00 AM,
         # which is exactly at opening time (valid).
         starts_at = _slot_at(y, m, d, 9, 15)
