@@ -64,16 +64,49 @@ The `:dev` placeholder is never applied to the cluster.
 After rollout, Jenkins verifies that the deployed image matches the expected
 commit SHA and fails the build if they differ.
 
-## Migration init container
+## Migration bootstrap init container
 
 The API Deployment includes a `db-migrate` init container that runs
-`python -m alembic upgrade head` before the main API container starts.
-This ensures database migrations execute exactly once, before the API
-begins serving traffic.
+`python -m app.migration_bootstrap` before the main API container starts.
+This ensures the database is safely brought under Alembic control, regardless
+of its current state.
 
-- If the migration succeeds: the main container starts, readiness probe
+### The legacy database problem
+
+The staging PostgreSQL database predates Alembic. The `bookings` table was
+created by `Base.metadata.create_all()` at application startup (before Alembic
+was introduced). Running `alembic upgrade head` directly fails because
+migration 0001 tries to CREATE TABLE bookings, but the table already exists.
+
+### Bootstrap state machine
+
+The bootstrap handles four database states on every pod creation:
+
+| State | Condition | Action |
+|---|---|---|
+| **Fresh** | No bookings, no Alembic version | `alembic upgrade head` (all migrations) |
+| **Legacy** | bookings exists, matches 0001 schema, unversioned | Validate schema, stamp 0001, upgrade head |
+| **Managed** | Valid Alembic revision present | `alembic upgrade head` (later migrations only) |
+| **Unsafe** | Schema mismatch or corrupt version table | Fail closed — no partial changes |
+
+### Key behaviors
+
+- **Existing bookings are preserved.** The legacy path stamps revision 0001
+  (marking it as already applied) and only runs later migrations. The table
+  is never dropped or recreated.
+- **Schema validation.** Before stamping, every column is checked against
+  the expected 0001 schema. If incompatible, the bootstrap fails with a
+  diagnostic log — no stamp, no partial migration, no data loss.
+- **Idempotent.** Running the bootstrap multiple times is safe. On a managed
+  database, it's a no-op (already at head).
+- **No manual stamping.** This is the normal, automated deployment procedure.
+  No manual `alembic stamp` on staging or production is needed.
+
+### Rollout behavior
+
+- If the bootstrap succeeds: the main container starts, readiness probe
   passes, old pod terminates.
-- If the migration fails: the init container exits non-zero, pod stays in
+- If the bootstrap fails: the init container exits non-zero, pod stays in
   Init phase, old pod keeps running. Rollout times out and Jenkins fails.
 
 The init container uses the same immutable image as the main container.

@@ -1,18 +1,96 @@
-# HANDOFF — 2026-07-26 (Step 07-FIX: Repair Staging Deployment)
+# HANDOFF — 2026-07-27 (Fix: Bootstrap Legacy Alembic State)
 
 ## Current state
 
-- **Branch:** `fix/scheduling-staging-deployment`
-- **Base:** `dev` (ad8b38a — Step 07 merged)
-- **Status:** fixes applied, awaiting operator review and push
+- **Branch:** `fix/bootstrap-legacy-alembic-state`
+- **Base:** `dev` (5a9aca2 — Step 07-FIX merged + Alembic-in-image fix)
+- **Status:** all code, tests, and docs complete; awaiting operator review and push
 
-## Previous state (Step 07)
+## Previous state
 
 Step 07 (Real Availability and Appointment Scheduling) was merged into `dev`
 (ad8b38a) but the live `dev` staging deployment failed with 5 errors.
 See SESSION_LOG.md for the full incident report.
 
-## Fixes applied on `fix/scheduling-staging-deployment`
+All 5 errors from Step 07-FIX were resolved. However, a separate problem
+remained: the Jenkins CI pipeline validates migrations against a clean SQLite
+database, but staging PostgreSQL already had a `bookings` table created by the
+application's `Base.metadata.create_all()` at startup. This legacy table
+predates Alembic — there is no Alembic revision and migration 0001 tries to
+CREATE the table that already exists.
+
+## Fix: Migration bootstrap state machine
+
+Created `api/app/migration_bootstrap.py` — a safe state machine that handles
+four database states:
+
+- **State 1 (Fresh):** No bookings table, no Alembic revision → `alembic upgrade head`
+- **State 2 (Legacy):** bookings table exists, matches 0001 schema, no Alembic
+  revision → validate schema, stamp 0001, upgrade head. Existing bookings are
+  **preserved** — the table is never dropped or recreated.
+- **State 3 (Managed):** Valid Alembic revision present → `alembic upgrade head`
+- **State 4 (Unsafe):** Schema mismatch, corrupt revision table, or other
+  inconsistent state → fail closed with diagnostic log. No partial changes.
+
+The K8s init container now runs `python -m app.migration_bootstrap` instead of
+`python -m alembic upgrade head`.
+
+This is NOT a manual one-time procedure — it runs as the init container on
+every pod creation and correctly handles all four states idempotently.
+
+## Legacy schema validation
+
+Before stamping 0001 on a legacy database, the bootstrap validates every
+column in the existing `bookings` table against the expected 0001 schema:
+column names, types, nullability, and primary key. If any required column is
+missing or incompatible, the bootstrap fails closed — no stamp, no partial
+migration, no data loss.
+
+## Tests (13 PostgreSQL integration tests)
+
+`api/tests/test_migration_bootstrap.py` — comprehensive integration tests
+against disposable PostgreSQL databases (`sudo -u postgres createdb/dropdb`):
+
+| Test class | State | Tests |
+|---|---|---|
+| `TestFreshDatabase` | State 1 | 5 — all tables created, seeds exist, head reached, idempotent |
+| `TestLegacyDatabase` | State 2 | 4 — stamped 0001, upgraded, rows preserved, not recreated, idempotent |
+| `TestEmptyAlembicVersion` | State 2 edge | 1 — empty version table treated as legacy |
+| `TestUnsafeIncompatibleSchema` | State 4 | 1 — missing required column rejected, no stamp |
+| `TestAlreadyManaged` | State 3 | 2 — upgrades from 0001, no-op at head |
+
+Full suite: **83 passed, 1 skipped** (137s).
+
+## CI validation
+
+Jenkinsfile "API — migration bootstrap validation" stage validates:
+- Bootstrap file and test file exist
+- Module imports cleanly
+- Bootstrap runs against a fresh SQLite database
+
+## Why plain `alembic upgrade head` failed
+
+The staging database had a `bookings` table created by
+`Base.metadata.create_all()` (from the application startup before Alembic
+existed). Migration 0001 tries to CREATE TABLE bookings — but the table
+already exists. PostgreSQL rejects the duplicate CREATE and the migration
+fails. The bootstrap detects this legacy state, validates the schema,
+stamps the migration, and applies only later migrations.
+
+## Manual stamping not required
+
+The bootstrap state machine is the normal, automated deployment procedure.
+No manual `alembic stamp` on staging or production is needed — the init
+container detects the state and applies the correct action automatically.
+
+## Recommended next steps
+
+1. Review the changes on this branch.
+2. Push and open a PR into `dev`.
+3. After merge, trigger a `dev` build and verify:
+   - Init container runs migration bootstrap successfully on staging PostgreSQL
+   - Staging API health check passes
+   - Existing bookings are preserved after bootstrap
 
 ### Fix 1 — Deployment rendering (CRITICAL)
 
@@ -103,3 +181,25 @@ was discarded — only `kubectl apply` exit code (0) mattered.
    - Services and availability endpoints return real data.
    - CI cleanup + dynamic appointment smoke test pass.
 5. Do not start Keycloak/admin UI until scheduling is verified end-to-end.
+
+## 2026-07-27 — PostgreSQL CI test architecture (fix/bootstrap-legacy-alembic-state)
+
+- Root cause of the Jenkins failure: `test_migration_bootstrap.py` orchestrated
+  host infrastructure from inside the `python:3.12-slim` test container, calling
+  `sudo -u postgres createdb/dropdb` and socket peer-auth. The container has no
+  `sudo` and no local PostgreSQL → `FileNotFoundError: 'sudo'` on all 13 tests.
+- Fix: tests no longer touch the host. PostgreSQL is provisioned by Jenkins as a
+  disposable container on an isolated Docker network; tests receive a maintenance
+  URL via `POSTGRES_TEST_DATABASE_URL` (tests/_pg_util.py) and create/drop
+  per-test databases with plain SQL on an AUTOCOMMIT connection.
+- Marker separation: `@pytest.mark.postgresql` (registered in api/pytest.ini).
+  SQLite stage runs `-m "not postgresql"`; the new "API — PostgreSQL integration
+  tests" stage runs `-m postgresql` (migration bootstrap + real concurrency).
+- Concurrency: the postgres test migrates via the bootstrap (creating the
+  `no_double_booking` exclusion constraint from migration 0002) and asserts two
+  concurrent requests yield exactly one 201 + one 409 and one active row.
+- Determinism: replaced weekend-prone `_days_ahead(4)` with next-Monday slots.
+- Cleanup: Jenkins stage uses a POSIX `trap cleanup EXIT INT TERM`; the
+  PostgreSQL container uses `--tmpfs` storage and is removed with its network.
+  No `sudo`, no `--privileged`, no Docker socket in the test container.
+- Branch policy unchanged: feature/fix are validation-only; push/deploy on `dev`.

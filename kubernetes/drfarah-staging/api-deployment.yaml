@@ -30,7 +30,7 @@ spec:
         - name: db-migrate
           image: harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:dev
           imagePullPolicy: IfNotPresent
-          command: ["python", "-m", "alembic", "upgrade", "head"]
+          command: ["python", "-m", "app.migration_bootstrap"]
           envFrom:
             - configMapRef:
                 name: drfarah-staging-api-config

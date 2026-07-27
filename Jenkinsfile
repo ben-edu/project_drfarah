@@ -104,6 +104,7 @@ pipeline {
             api/Dockerfile
             api/requirements.txt
             api/requirements-dev.txt
+            api/pytest.ini
             api/app/main.py
             api/app/core/config.py
             api/app/core/database.py
@@ -251,10 +252,99 @@ pipeline {
                   python -m pytest \
                   -q \
                   -p no:cacheprovider \
+                  -m "not postgresql" \
                   /app/tests/
               '
 
             echo "API tests passed."
+          '''
+        }
+      }
+    }
+
+    stage('API — PostgreSQL integration tests') {
+      steps {
+        dir('api') {
+          sh '''
+            set -eu
+
+            SUFFIX="${BUILD_NUMBER}-$$"
+            NET="drfarah-pgtest-net-${SUFFIX}"
+            PG="drfarah-pgtest-db-${SUFFIX}"
+            RUNNER="drfarah-pgtest-runner-${SUFFIX}"
+            PG_USER="drfarah_ci"
+            PG_MAINT_DB="postgres"
+            # Ephemeral, non-sensitive CI credential — never reused, dropped with the container.
+            PG_PASSWORD="ci_${BUILD_NUMBER}_$$"
+
+            cleanup() {
+              docker rm -f "$RUNNER" >/dev/null 2>&1 || true
+              docker rm -f "$PG" >/dev/null 2>&1 || true
+              docker network rm "$NET" >/dev/null 2>&1 || true
+            }
+            trap cleanup EXIT HUP INT TERM
+
+            echo "=== Creating isolated Docker network ==="
+            docker network create "$NET" >/dev/null
+
+            echo "=== Starting disposable PostgreSQL ==="
+            docker run -d \
+              --name "$PG" \
+              --network "$NET" \
+              -e POSTGRES_USER="$PG_USER" \
+              -e POSTGRES_PASSWORD="$PG_PASSWORD" \
+              -e POSTGRES_DB="$PG_MAINT_DB" \
+              --tmpfs /var/lib/postgresql/data \
+              postgres:16-alpine \
+              >/dev/null
+
+            echo "=== Waiting for PostgreSQL readiness ==="
+            ready=0
+            for attempt in $(seq 1 30); do
+              if docker exec "$PG" pg_isready -U "$PG_USER" -d "$PG_MAINT_DB" >/dev/null 2>&1; then
+                ready=1
+                echo "PostgreSQL ready on attempt $attempt."
+                break
+              fi
+              echo "  attempt $attempt/30 — PostgreSQL not ready yet"
+              sleep 1
+            done
+
+            if [ "$ready" -ne 1 ]; then
+              echo "FAIL: PostgreSQL did not become ready."
+              docker logs --tail 80 "$PG" || true
+              exit 1
+            fi
+
+            # Maintenance URL (reachable by container name over the private network).
+            MAINT_URL="postgresql+psycopg://${PG_USER}:${PG_PASSWORD}@${PG}:5432/${PG_MAINT_DB}"
+
+            echo "=== Running PostgreSQL-marked tests in an isolated runner ==="
+            docker run --rm \
+              --name "$RUNNER" \
+              --network "$NET" \
+              -v "$PWD":/app:ro \
+              -w /app \
+              -e ENVIRONMENT=test \
+              -e SMTP_TEST_MODE=true \
+              -e POSTGRES_TEST_DATABASE_URL="$MAINT_URL" \
+              -e PYTHONDONTWRITEBYTECODE=1 \
+              -e PYTHONPYCACHEPREFIX=/tmp/pycache \
+              python:3.12-slim \
+              bash -c '
+                set -e
+                pip install -q \
+                  -r /app/requirements.txt \
+                  -r /app/requirements-dev.txt
+                PYTHONPATH=/app \
+                  python -m pytest \
+                  -q \
+                  -p no:cacheprovider \
+                  -m postgresql \
+                  /app/tests/
+              '
+
+            echo "PostgreSQL integration tests passed."
           '''
         }
       }
@@ -312,6 +402,28 @@ pipeline {
               python -m alembic upgrade head
 
             echo "Disposable migration test passed."
+
+            echo ""
+            echo "=== Validating migration bootstrap ==="
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              test -f /app/app/migration_bootstrap.py
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              python -c "from app.migration_bootstrap import main; print('import OK')"
+
+            echo ""
+            echo "=== Fresh SQLite bootstrap ==="
+
+            docker run --rm \
+              -e ENVIRONMENT=test \
+              -e DATABASE_URL='sqlite:////tmp/bootstrap-test.db' \
+              "$IMAGE_NAME" \
+              python -m app.migration_bootstrap
+
+            echo "Fresh SQLite bootstrap passed."
 
             echo ""
             echo "=== Starting isolated validation container ==="
