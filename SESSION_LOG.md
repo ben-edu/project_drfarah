@@ -934,3 +934,133 @@ failure stops the stage immediately.
 - No application code, SMTP, RBAC, production, frontend, or infra changes.
 
 ### No secrets were printed, copied, committed, or exposed.
+
+---
+
+## 2026-07-27 — Session 08-FIX: Bootstrap Legacy Alembic State
+
+### Problem
+
+The staging PostgreSQL database predates Alembic. The `bookings` table was
+created by `Base.metadata.create_all()` at application startup (before Alembic
+was introduced in Step 07). When the K8s init container ran
+`python -m alembic upgrade head`, migration 0001 failed with
+"relation 'bookings' already exists" because the CREATE TABLE statement in
+0001 tried to create a table that was already there.
+
+### Branch
+
+- Created `fix/bootstrap-legacy-alembic-state` from `dev` (5a9aca2).
+
+### Fix: Migration bootstrap state machine
+
+Created `api/app/migration_bootstrap.py` — a safe state machine that handles
+four database states on every pod creation:
+
+- **State 1 (Fresh):** No bookings table, no Alembic revision → `alembic upgrade head`
+- **State 2 (Legacy):** bookings table exists, matches 0001 schema, no Alembic
+  revision → validate schema, stamp 0001, upgrade head. Existing bookings
+  **preserved** — table never dropped or recreated.
+- **State 3 (Managed):** Valid Alembic revision present → `alembic upgrade head`
+- **State 4 (Unsafe):** Schema mismatch, corrupt revision table, or other
+  inconsistent state → fail closed with diagnostic log. No partial changes.
+
+### Legacy schema validation
+
+Before stamping 0001 on a legacy database, the bootstrap validates every
+column in the existing `bookings` table: column names, types (with cross-
+dialect type matching — PostgreSQL reports `CHARACTER VARYING` while SQLite
+reports `VARCHAR`), nullability, and primary key.
+
+If any required column is missing or incompatible, the bootstrap fails
+closed — no stamp, no partial migration, no data loss, no scheduling tables
+created.
+
+### Tests — 13 PostgreSQL integration tests
+
+`api/tests/test_migration_bootstrap.py` — comprehensive integration tests
+against disposable PostgreSQL databases. Each test creates a unique temporary
+database via `sudo -u postgres createdb`, runs the bootstrap, verifies the
+result, and drops the database.
+
+Test coverage:
+- **TestFreshDatabase (5 tests):** all tables created, seed services exist
+  (4 codes), seed working hours exist (5 Mon-Fri), Alembic reaches head (0002),
+  second bootstrap is idempotent
+- **TestLegacyDatabase (4 tests + autouse fixture):** stamped 0001 and upgraded,
+  legacy rows preserved with exact field values, booking IDs unchanged (proof
+  table not recreated), second bootstrap idempotent
+- **TestEmptyAlembicVersion (1 test + autouse fixture):** bookings + empty
+  version table → treated as legacy (State 2)
+- **TestUnsafeIncompatibleSchema (1 test):** bookings missing required
+  `reason_category` column → BootstrapError raised, no stamp, no scheduling
+  tables created, original bookings preserved
+- **TestAlreadyManaged (2 tests):** upgrades from 0001 to head (data preserved),
+  already at head → no-op (data preserved)
+
+Full suite: **83 passed, 1 skipped** (136.36s).
+
+### Cross-dialect considerations
+
+PostgreSQL type names differ from SQLite:
+- `CHARACTER VARYING(128)` vs `VARCHAR(128)`
+- `TIMESTAMP WITH TIME ZONE` vs `DATETIME`
+
+The schema validator checks for any matching type substring from a tuple of
+acceptable type names (e.g., `("VARCHAR", "CHARACTER VARYING")` and
+`("DATETIME", "TIMESTAMP")`).
+
+### Settings caching issue
+
+`get_settings()` uses `@lru_cache` — when DATABASE_URL is changed between
+tests, the cached URL from a previous test is returned. The Alembic `env.py`
+calls `get_settings()` to override the SQLAlchemy URL in `alembic.ini`, so a
+cached SQLite URL causes "Context impl SQLiteImpl" errors on PostgreSQL tests.
+
+Fix: tests call `get_settings.cache_clear()` and `reset_engine()` before
+creating the Alembic Config.
+
+### Kubernetes init container
+
+Updated `kubernetes/drfarah-staging/api-deployment.yaml` — the `db-migrate`
+init container now runs `python -m app.migration_bootstrap` instead of
+`python -m alembic upgrade head`.
+
+### CI validation
+
+Added "API — migration bootstrap validation" stage to Jenkinsfile:
+1. Verify `api/app/migration_bootstrap.py` exists
+2. Verify `api/tests/test_migration_bootstrap.py` exists
+3. Verify `python -c "from app.migration_bootstrap import main"` succeeds
+4. Run bootstrap against a fresh SQLite database and verify exit code 0
+
+### Documentation updated
+
+- `HANDOFF.md` — full session handoff with state machine overview, schema
+  validation, test results, why plain Alembic failed
+- `SESSION_LOG.md` — this entry
+- `kubernetes/drfarah-staging/README.md` — migration init container docs
+  updated for bootstrap, legacy state documented
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `api/app/migration_bootstrap.py` | **New** — 4-state migration bootstrap |
+| `api/tests/test_migration_bootstrap.py` | **New** — 13 PostgreSQL integration tests |
+| `kubernetes/drfarah-staging/api-deployment.yaml` | Init container command: migration_bootstrap |
+| `Jenkinsfile` | Added migration bootstrap CI validation stage |
+| `HANDOFF.md` | Rewritten for bootstrap session |
+| `SESSION_LOG.md` | This entry |
+| `kubernetes/drfarah-staging/README.md` | Updated migration docs |
+
+### What was NOT done
+
+- No manual Alembic stamp on staging or production
+- No changes to existing migrations (0001, 0002)
+- No changes to application code (routers, models, services, schemas)
+- No live Kubernetes changes
+- No SMTP, secret, or password changes
+- No PR merge (awaiting operator review)
+
+### No secrets were printed, copied, committed, or exposed.
