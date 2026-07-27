@@ -286,6 +286,34 @@ pipeline {
             echo "Docker image build passed."
 
             echo ""
+            echo "=== Validating Alembic assets ==="
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              test -f /app/alembic.ini
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              test -f /app/alembic/env.py
+
+            docker run --rm \
+              "$IMAGE_NAME" \
+              python -m alembic --help
+
+            echo "Alembic assets present."
+
+            echo ""
+            echo "=== Running disposable migration test ==="
+
+            docker run --rm \
+              -e ENVIRONMENT=test \
+              -e DATABASE_URL='sqlite:////tmp/alembic-migration-test.db' \
+              "$IMAGE_NAME" \
+              python -m alembic upgrade head
+
+            echo "Disposable migration test passed."
+
+            echo ""
             echo "=== Starting isolated validation container ==="
 
             docker run -d \

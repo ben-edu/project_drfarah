@@ -18,6 +18,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY app ./app
 
+# Alembic migrations — required by the Kubernetes init container.
+COPY alembic.ini .
+COPY alembic ./alembic
+
 RUN useradd -m -u 10001 appuser
 USER appuser
 
