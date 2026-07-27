@@ -1064,3 +1064,26 @@ Added "API — migration bootstrap validation" stage to Jenkinsfile:
 - No PR merge (awaiting operator review)
 
 ### No secrets were printed, copied, committed, or exposed.
+
+
+## 2026-07-27 — PostgreSQL CI test architecture (fix/bootstrap-legacy-alembic-state)
+
+- Root cause of the Jenkins failure: `test_migration_bootstrap.py` orchestrated
+  host infrastructure from inside the `python:3.12-slim` test container, calling
+  `sudo -u postgres createdb/dropdb` and socket peer-auth. The container has no
+  `sudo` and no local PostgreSQL → `FileNotFoundError: 'sudo'` on all 13 tests.
+- Fix: tests no longer touch the host. PostgreSQL is provisioned by Jenkins as a
+  disposable container on an isolated Docker network; tests receive a maintenance
+  URL via `POSTGRES_TEST_DATABASE_URL` (tests/_pg_util.py) and create/drop
+  per-test databases with plain SQL on an AUTOCOMMIT connection.
+- Marker separation: `@pytest.mark.postgresql` (registered in api/pytest.ini).
+  SQLite stage runs `-m "not postgresql"`; the new "API — PostgreSQL integration
+  tests" stage runs `-m postgresql` (migration bootstrap + real concurrency).
+- Concurrency: the postgres test migrates via the bootstrap (creating the
+  `no_double_booking` exclusion constraint from migration 0002) and asserts two
+  concurrent requests yield exactly one 201 + one 409 and one active row.
+- Determinism: replaced weekend-prone `_days_ahead(4)` with next-Monday slots.
+- Cleanup: Jenkins stage uses a POSIX `trap cleanup EXIT INT TERM`; the
+  PostgreSQL container uses `--tmpfs` storage and is removed with its network.
+  No `sudo`, no `--privileged`, no Docker socket in the test container.
+- Branch policy unchanged: feature/fix are validation-only; push/deploy on `dev`.
