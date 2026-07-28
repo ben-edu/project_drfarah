@@ -1189,6 +1189,23 @@ pipeline {
           echo "=== Staging appointment smoke test ==="
 
           APPT_RESPONSE="$(mktemp)"
+          APPT_PAYLOAD="$(mktemp)"
+
+          # Build the JSON with python3 to avoid shell/Groovy quoting issues.
+          SERVICE_CODE="$SERVICE_CODE" SLOT_START="$SLOT_START" \
+            python3 -c '
+import json, os
+print(json.dumps({
+    "service_code": os.environ["SERVICE_CODE"],
+    "starts_at": os.environ["SLOT_START"],
+    "first_name": "Jenkins",
+    "last_name": "SmokeTest",
+    "email": "smoke-test@example.com",
+    "phone": "+1-555-000-0000",
+    "reason_category": "General appointment request",
+    "source": "ci",
+}))
+' > "$APPT_PAYLOAD"
 
           appt_status="$(
             curl -sS \
@@ -1196,19 +1213,12 @@ pipeline {
               -w '%{http_code}' \
               -X POST \
               -H 'Content-Type: application/json' \
-              -d "{
-                \"service_code\": \"${SERVICE_CODE}\",
-                \"starts_at\": \"${SLOT_START}\",
-                \"first_name\": \"Jenkins\",
-                \"last_name\": \"SmokeTest\",
-                \"email\": \"smoke-test@example.com\",
-                \"phone\": \"+1-555-000-0000\",
-                \"reason_category\": \"General appointment request\",
-                \"source\": \"ci\"
-              }" \
+              --data-binary "@$APPT_PAYLOAD" \
               "${STAGING_API_URL}/api/v1/appointments" \
               || true
           )"
+
+          rm -f "$APPT_PAYLOAD"
 
           if [ "$appt_status" != "201" ]; then
             echo "FAIL: appointment smoke test returned HTTP $appt_status"
