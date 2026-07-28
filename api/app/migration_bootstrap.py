@@ -1,6 +1,6 @@
 """Migration bootstrap — safely bring legacy databases under Alembic control.
 
-Handles four database states:
+Handles these database states:
 
   State 1 — Fresh:
     bookings absent, alembic_version absent or empty
@@ -12,10 +12,12 @@ Handles four database states:
 
   State 3 — Already managed:
     alembic_version contains a valid revision
-    → alembic upgrade head (no stamp, no reset)
+    → verify no future-revision tables already exist (inconsistent stamp),
+      then alembic upgrade head (no stamp, no reset)
 
   State 4 — Unsafe:
-    bookings schema incompatible, corrupt revision table, or other
+    bookings schema incompatible, corrupt revision table, an inconsistent
+    stamp (alembic_version behind tables that already exist), or any other
     inconsistent state
     → fail closed with non-zero exit, log diagnostic
 
@@ -69,6 +71,26 @@ BOOKINGS_0001_COLUMNS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Sentinel tables introduced by each migration AFTER 0001. Used in State 3 to
+# detect an inconsistent stamp: if alembic_version is at revision R but a table
+# introduced by a later revision already exists, the DB is in the broken state
+# we recovered from once (0002 tables present while stamped at 0001). Running
+# `upgrade` in that state crashes with "relation already exists"; instead we
+# fail closed with a clear, actionable message.
+#
+# Map: revision that MUST already be applied  ->  a table that revision creates.
+# If the DB is stamped BELOW `revision` but the sentinel table exists, that is
+# an inconsistent stamp.
+# ---------------------------------------------------------------------------
+REVISION_SENTINEL_TABLES = {
+    "0002": "services",
+}
+
+# Ordered list of known revisions, oldest first. Used to compare positions.
+REVISION_ORDER = ["0001", "0002"]
+
+
 def _get_alembic_config() -> Config:
     """Load Alembic configuration, overriding the database URL from settings."""
     config = Config("alembic.ini")
@@ -111,6 +133,52 @@ def _get_current_revision(conn) -> Optional[str]:
         return None
     except SQLAlchemyError:
         return None
+
+
+def _revision_index(revision: Optional[str]) -> int:
+    """Return the position of a revision in REVISION_ORDER, or -1 if unknown.
+
+    An unknown revision returns a sentinel of -1 so callers can treat it as
+    'not comparable' rather than silently mis-ordering.
+    """
+    if revision is None:
+        return -1
+    try:
+        return REVISION_ORDER.index(revision)
+    except ValueError:
+        return -1
+
+
+def _detect_inconsistent_stamp(conn, current_rev: str) -> Optional[str]:
+    """Detect a stamp that is behind tables that already exist.
+
+    For each revision whose sentinel table exists in the DB, if the current
+    stamp is BELOW that revision, the database is inconsistent: a later
+    migration's tables are present but alembic_version was never advanced.
+    Returns a human-readable reason, or None if consistent.
+    """
+    current_idx = _revision_index(current_rev)
+
+    for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
+        if not _table_exists(conn, sentinel_table):
+            continue
+        rev_idx = _revision_index(revision)
+        # If the sentinel table exists but the stamp is below the revision that
+        # creates it (or the stamp is an unknown revision), that's inconsistent.
+        if current_idx < rev_idx:
+            return (
+                f"inconsistent Alembic state: table '{sentinel_table}' "
+                f"(introduced by revision {revision}) already exists, but "
+                f"alembic_version is stamped at '{current_rev}', which is "
+                f"before {revision}. A previous migration left tables behind "
+                f"without advancing the revision. Running 'upgrade' would fail "
+                f"with 'relation already exists'. Manual intervention required: "
+                f"drop the orphaned tables from revision {revision} (if empty) "
+                f"so the upgrade can re-run, or stamp the correct revision after "
+                f"verifying the schema. Do not destroy data tables (e.g. bookings)."
+            )
+
+    return None
 
 
 def _validate_bookings_schema(conn) -> bool:
@@ -191,6 +259,13 @@ def main() -> None:
     # State 3 — Already managed.
     # ------------------------------------------------------------------
     if current_rev is not None and version_rows == 1:
+        # Guard against an inconsistent stamp (alembic_version behind tables
+        # that already exist) before attempting an upgrade that would crash.
+        with engine.connect() as conn:
+            inconsistent = _detect_inconsistent_stamp(conn, current_rev)
+        if inconsistent is not None:
+            _fail(inconsistent)
+
         logger.info(
             "Database already managed by Alembic (revision %s). "
             "Running upgrade to head.",
@@ -217,6 +292,21 @@ def main() -> None:
 
         logger.info("bookings schema validated — matches migration 0001.")
 
+        # A legacy DB must not already contain later-revision tables. If it
+        # does, this is the inconsistent-stamp state (without a stamp yet):
+        # fail closed rather than stamping 0001 and then crashing on upgrade.
+        with engine.connect() as conn:
+            for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
+                if _table_exists(conn, sentinel_table):
+                    _fail(
+                        f"legacy database also contains table "
+                        f"'{sentinel_table}' from revision {revision}; this is "
+                        f"an inconsistent state. Expected only the legacy "
+                        f"bookings table. Manual intervention required: drop the "
+                        f"orphaned revision {revision} tables (if empty) before "
+                        f"re-running the bootstrap."
+                    )
+
         # Stamp revision 0001 so Alembic knows this migration ran.
         logger.info("Stamping revision 0001 (bookings table already exists).")
         command.stamp(config, "0001")
@@ -238,9 +328,20 @@ def main() -> None:
 
     # ------------------------------------------------------------------
     # A previous failed attempt may have created an empty alembic_version
-    # table. This is still treated as State 1 (fresh).
+    # table. This is still treated as State 1 (fresh) — but only if no
+    # later-revision tables are lying around.
     # ------------------------------------------------------------------
     if not bookings_exists and version_rows == 0:
+        with engine.connect() as conn:
+            for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
+                if _table_exists(conn, sentinel_table):
+                    _fail(
+                        f"database has no bookings table and no revision, but "
+                        f"table '{sentinel_table}' from revision {revision} "
+                        f"exists; inconsistent state. Manual intervention "
+                        f"required before bootstrap can proceed."
+                    )
+
         logger.info("Fresh database — running all migrations from scratch.")
         command.upgrade(config, "head")
         logger.info("Bootstrap complete — fresh database created.")

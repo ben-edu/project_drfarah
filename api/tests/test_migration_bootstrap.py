@@ -475,3 +475,140 @@ class TestAlreadyManaged:
         _run_bootstrap()
         assert _get_revision(db_url) == "0002"
         assert _count_rows(db_url, "bookings") == 1
+
+
+class TestInconsistentStamp:
+    """State 4 — alembic_version behind tables that already exist.
+
+    Reproduces the staging incident: a partial prior run left the 0002 tables
+    in place but alembic_version stamped at 0001. The bootstrap must fail
+    closed with a clear message instead of crashing on 'relation already exists'.
+    """
+
+    def _create_0002_tables_manually(self, db_url: str) -> None:
+        """Create the 'services' sentinel table (and a couple more) directly."""
+        from sqlalchemy import (
+            Boolean, Column, DateTime, Integer, String, Text, func,
+        )
+        from sqlalchemy.orm import declarative_base
+
+        Base = declarative_base()
+
+        class Service(Base):
+            __tablename__ = "services"
+            id = Column(Integer, primary_key=True, index=True)
+            code = Column(String(64), unique=True, nullable=False)
+            name = Column(String(256), nullable=False)
+            description = Column(Text, nullable=True)
+            duration_minutes = Column(Integer, nullable=False)
+            buffer_before_minutes = Column(Integer, nullable=False, server_default="0")
+            buffer_after_minutes = Column(Integer, nullable=False, server_default="0")
+            is_active = Column(Boolean, nullable=False, server_default="true")
+            created_at = Column(
+                DateTime(timezone=True), server_default=func.now(), nullable=False,
+            )
+            updated_at = Column(
+                DateTime(timezone=True), server_default=func.now(), nullable=False,
+            )
+
+        engine = create_engine(db_url, connect_args={"connect_timeout": 5})
+        Base.metadata.create_all(bind=engine, tables=[Service.__table__])
+        engine.dispose()
+
+    def test_stamped_0001_with_0002_tables_fails_closed(self, pg_db):
+        """alembic_version=0001 + services table present → clean BootstrapError."""
+        from app.migration_bootstrap import BootstrapError
+
+        db_url = os.environ["DATABASE_URL"]
+
+        # Legacy bookings + stamp 0001 (simulate a managed DB at 0001).
+        _create_legacy_bookings_table(db_url)
+        _insert_legacy_bookings(db_url, count=2)
+
+        from alembic import command
+        from alembic.config import Config
+        from app.core.config import get_settings
+        from app.core.database import reset_engine
+
+        get_settings.cache_clear()
+        reset_engine()
+        cfg = Config("alembic.ini")
+        cfg.set_main_option("sqlalchemy.url", db_url)
+        command.stamp(cfg, "0001")
+        assert _get_revision(db_url) == "0001"
+
+        # Now create the orphaned 0002 'services' table manually.
+        self._create_0002_tables_manually(db_url)
+        assert _table_exists(db_url, "services")
+
+        # Bootstrap must fail closed with a BootstrapError (exit 1 path), NOT a
+        # raw 'relation already exists' ProgrammingError.
+        with pytest.raises(BootstrapError) as excinfo:
+            _run_bootstrap()
+
+        msg = str(excinfo.value).lower()
+        assert "inconsistent" in msg
+        assert "services" in msg
+
+        # No damage: revision unchanged, bookings intact.
+        assert _get_revision(db_url) == "0001"
+        assert _count_rows(db_url, "bookings") == 2
+
+    def test_legacy_bookings_with_orphan_0002_fails_closed(self, pg_db):
+        """bookings unversioned + services present → fail closed before stamping."""
+        from app.migration_bootstrap import BootstrapError
+
+        db_url = os.environ["DATABASE_URL"]
+
+        # Legacy bookings, NO alembic_version yet.
+        _create_legacy_bookings_table(db_url)
+        _insert_legacy_bookings(db_url, count=1)
+        # Orphaned 0002 table present.
+        self._create_0002_tables_manually(db_url)
+
+        assert not _table_exists(db_url, "alembic_version")
+        assert _table_exists(db_url, "services")
+
+        with pytest.raises(BootstrapError) as excinfo:
+            _run_bootstrap()
+
+        msg = str(excinfo.value).lower()
+        assert "services" in msg
+        assert "inconsistent" in msg
+
+        # Must NOT have stamped anything.
+        assert _get_revision(db_url) is None
+        assert _count_rows(db_url, "bookings") == 1
+
+    def test_exit_code_is_one_not_two(self, pg_db):
+        """The inconsistent-stamp path exits 1 (BootstrapError), not 2 (crash)."""
+        db_url = os.environ["DATABASE_URL"]
+
+        _create_legacy_bookings_table(db_url)
+        _insert_legacy_bookings(db_url, count=1)
+
+        from alembic import command
+        from alembic.config import Config
+        from app.core.config import get_settings
+        from app.core.database import reset_engine
+
+        get_settings.cache_clear()
+        reset_engine()
+        cfg = Config("alembic.ini")
+        cfg.set_main_option("sqlalchemy.url", db_url)
+        command.stamp(cfg, "0001")
+
+        self._create_0002_tables_manually(db_url)
+
+        # Drive the top-level _run() to confirm it maps BootstrapError -> exit 1.
+        from app import migration_bootstrap
+
+        get_settings.cache_clear()
+        reset_engine()
+        os.environ["ENVIRONMENT"] = "test"
+        os.environ["SMTP_TEST_MODE"] = "true"
+        os.environ["CLEANUP_TOKEN"] = "test-token"
+
+        with pytest.raises(SystemExit) as excinfo:
+            migration_bootstrap._run()
+        assert excinfo.value.code == 1
