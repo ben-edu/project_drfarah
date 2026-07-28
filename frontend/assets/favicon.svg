@@ -1,12 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Dr Farah logo mark">
-<defs>
-  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#173043"/>
-    <stop offset="1" stop-color="#a98453"/>
-  </linearGradient>
-</defs>
-<rect x="6" y="6" width="116" height="116" rx="30" fill="url(#g)"/>
-<circle cx="64" cy="64" r="42" fill="none" stroke="#f8f4ee" stroke-width="2.5" opacity=".45"/>
-<path d="M40 88V40h18c15 0 24 8 24 21 0 13-10 22-25 22H49v5H40Zm9-14h9c10 0 15-4 15-12 0-8-5-12-15-12h-9v24Z" fill="#f8f4ee"/>
-<path d="M64 40h24" stroke="#d8b98a" stroke-width="2" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="8" fill="#14303A"/>
+  <circle cx="24" cy="24" r="17" fill="none" stroke="#B08D57" stroke-width="1"/>
+  <path d="M18 15 h13 M18 15 v18 M18 24 h10" fill="none" stroke="#D9C4A3" stroke-width="2" stroke-linecap="round"/>
 </svg>

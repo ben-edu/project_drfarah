@@ -1,0 +1,285 @@
+/* Booking wizard — talks to the real appointments API.
+   Flow: choose service -> load availability -> pick slot -> details -> confirm.
+   Endpoints:
+     GET  {API_BASE}/services
+     GET  {API_BASE}/availability?service_code&start_date&end_date
+     POST {API_BASE}/appointments   (201 created | 409 slot taken | 422 invalid)
+*/
+(function () {
+  'use strict';
+
+  // Derive the API base from the current host so one file works on staging & prod.
+  var API_BASE = (function () {
+    var h = location.hostname;
+    if (h.indexOf('staging.') === 0) return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
+    if (h === 'drfarah.proxbenovh.cloud' || h.indexOf('www.') === 0) return 'https://api.drfarah.proxbenovh.cloud/api/v1';
+    // Fallback (local preview or unknown host): staging API.
+    return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
+  })();
+
+  var CLINIC_TZ = 'America/Los_Angeles';
+
+  var state = {
+    step: 1,
+    serviceCode: null,
+    serviceName: null,
+    slotStart: null,   // ISO string with offset
+    slotLabel: null,
+  };
+
+  var form = document.getElementById('bookingForm');
+  if (!form) return;
+
+  var panels = form.querySelectorAll('.wizard-panel');
+  var stepsEls = document.querySelectorAll('#wizardSteps li');
+
+  function show(step) {
+    state.step = step;
+    panels.forEach(function (p) {
+      p.classList.toggle('is-active', Number(p.dataset.panel) === step);
+    });
+    stepsEls.forEach(function (li) {
+      var n = Number(li.dataset.step);
+      li.classList.toggle('is-active', n === step);
+      li.classList.toggle('is-done', n < step);
+    });
+    window.scrollTo({ top: form.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+  }
+
+  // ---- Formatting helpers ----
+  function fmtDay(d) {
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', timeZone: CLINIC_TZ,
+    }).format(d);
+  }
+  function fmtTime(d) {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric', minute: '2-digit', timeZone: CLINIC_TZ,
+    }).format(d);
+  }
+  function isoDate(d) {
+    // YYYY-MM-DD in local terms is fine for the date-range query.
+    return d.toISOString().slice(0, 10);
+  }
+
+  // ---- Step 1: load services ----
+  var serviceChoices = document.getElementById('serviceChoices');
+  var serviceLoading = document.getElementById('serviceLoading');
+  var serviceError = document.getElementById('serviceError');
+  var toStep2 = document.getElementById('toStep2');
+
+  function loadServices() {
+    fetch(API_BASE + '/services', { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('services ' + r.status); return r.json(); })
+      .then(function (data) {
+        var services = (data && data.services) || [];
+        if (!services.length) throw new Error('no services');
+        serviceLoading.remove();
+        services.forEach(function (svc, i) {
+          var id = 'svc_' + svc.code;
+          var label = document.createElement('label');
+          label.className = 'choice';
+          label.innerHTML =
+            '<input type="radio" name="service" value="' + esc(svc.code) + '" id="' + id + '"' + (i === 0 ? '' : '') + '>' +
+            '<span>' +
+              '<span class="choice__title">' + esc(svc.name) + '</span>' +
+              (svc.description ? '<span class="choice__desc">' + esc(svc.description) + '</span>' : '') +
+              (svc.duration_minutes ? '<span class="choice__meta">' + svc.duration_minutes + ' min</span>' : '') +
+            '</span>';
+          serviceChoices.appendChild(label);
+          label.querySelector('input').addEventListener('change', function () {
+            state.serviceCode = svc.code;
+            state.serviceName = svc.name;
+            toStep2.disabled = false;
+          });
+        });
+      })
+      .catch(function () {
+        if (serviceLoading) serviceLoading.remove();
+        serviceError.classList.add('is-err');
+        serviceError.style.display = 'block';
+      });
+  }
+
+  // ---- Step 2: load availability ----
+  var slotsArea = document.getElementById('slotsArea');
+  var slotsLoading = document.getElementById('slotsLoading');
+  var slotsError = document.getElementById('slotsError');
+  var toStep3 = document.getElementById('toStep3');
+
+  function loadAvailability() {
+    // Reset
+    slotsArea.innerHTML = '<p class="booking-loading">Loading available times…</p>';
+    slotsError.style.display = 'none';
+    toStep3.disabled = true;
+    state.slotStart = null;
+
+    var start = new Date();
+    start.setDate(start.getDate() + 1);
+    var end = new Date();
+    end.setDate(end.getDate() + 14);
+
+    var url = API_BASE + '/availability?service_code=' + encodeURIComponent(state.serviceCode) +
+      '&start_date=' + isoDate(start) + '&end_date=' + isoDate(end);
+
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('availability ' + r.status); return r.json(); })
+      .then(function (data) {
+        var slots = (data && data.slots) || [];
+        if (!slots.length) throw new Error('no slots');
+        renderSlots(slots);
+      })
+      .catch(function () {
+        slotsArea.innerHTML = '';
+        slotsError.style.display = 'block';
+      });
+  }
+
+  function renderSlots(slots) {
+    slotsArea.innerHTML = '';
+    // Group by day (in clinic TZ).
+    var groups = {};
+    var order = [];
+    slots.forEach(function (s) {
+      var d = new Date(s.starts_at);
+      var key = fmtDay(d);
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push({ iso: s.starts_at, date: d });
+    });
+
+    order.forEach(function (day) {
+      var h = document.createElement('p');
+      h.className = 'slot-day';
+      h.textContent = day;
+      slotsArea.appendChild(h);
+
+      var grid = document.createElement('div');
+      grid.className = 'slots';
+      groups[day].forEach(function (item) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot';
+        btn.textContent = fmtTime(item.date);
+        btn.addEventListener('click', function () {
+          slotsArea.querySelectorAll('.slot').forEach(function (b) { b.classList.remove('is-selected'); });
+          btn.classList.add('is-selected');
+          state.slotStart = item.iso;
+          state.slotLabel = day + ' at ' + fmtTime(item.date);
+          toStep3.disabled = false;
+        });
+        grid.appendChild(btn);
+      });
+      slotsArea.appendChild(grid);
+    });
+  }
+
+  // ---- Step 4: recap ----
+  function buildRecap() {
+    var list = document.getElementById('recapList');
+    var rows = [
+      ['Care', state.serviceName || ''],
+      ['Time', state.slotLabel || ''],
+      ['Name', val('firstName') + ' ' + val('lastName')],
+      ['Email', val('email')],
+      ['Phone', val('phone')],
+      ['Reason', val('reason')],
+    ];
+    list.innerHTML = rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+    }).join('');
+  }
+
+  // ---- Submit ----
+  var submitError = document.getElementById('submitError');
+  var confirmBtn = document.getElementById('confirmBtn');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    submitError.style.display = 'none';
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Confirming…';
+
+    var payload = {
+      service_code: state.serviceCode,
+      starts_at: state.slotStart,
+      first_name: val('firstName'),
+      last_name: val('lastName'),
+      email: val('email'),
+      phone: val('phone'),
+      reason_category: val('reason'),
+      source: 'web',
+    };
+
+    fetch(API_BASE + '/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(function (r) {
+        if (r.status === 201) return r.json();
+        if (r.status === 409) { var e409 = new Error('taken'); e409.code = 409; throw e409; }
+        if (r.status === 422) { var e422 = new Error('invalid'); e422.code = 422; throw e422; }
+        throw new Error('http ' + r.status);
+      })
+      .then(function (data) {
+        var ref = data && (data.public_reference || data.id);
+        document.getElementById('successRef').textContent = ref ? ('Reference: ' + ref) : '';
+        show(5);
+      })
+      .catch(function (err) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm appointment';
+        if (err.code === 409) {
+          submitError.textContent = 'That time was just taken. Please choose another available time.';
+          submitError.style.display = 'block';
+          show(2);
+          loadAvailability();
+        } else if (err.code === 422) {
+          submitError.textContent = 'Some details need checking. Please review your information and try again.';
+          submitError.style.display = 'block';
+        } else {
+          submitError.textContent = 'We couldn\u2019t complete your booking. Please try again, or call 310-467-0101.';
+          submitError.style.display = 'block';
+        }
+      });
+  });
+
+  // ---- Navigation buttons ----
+  form.addEventListener('click', function (e) {
+    var next = e.target.closest('[data-next]');
+    var back = e.target.closest('[data-back]');
+    if (next) {
+      if (state.step === 1 && state.serviceCode) { show(2); loadAvailability(); }
+      else if (state.step === 2 && state.slotStart) { show(3); }
+      else if (state.step === 3) { if (validateDetails()) { buildRecap(); show(4); } }
+    }
+    if (back) { show(Math.max(1, state.step - 1)); }
+  });
+
+  function validateDetails() {
+    var required = ['firstName', 'lastName', 'email', 'phone', 'reason'];
+    var ok = true;
+    required.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el.value.trim()) { el.style.borderColor = 'var(--gold-deep)'; ok = false; }
+      else { el.style.borderColor = ''; }
+    });
+    var email = document.getElementById('email');
+    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { email.style.borderColor = 'var(--gold-deep)'; ok = false; }
+    var consent = document.getElementById('consent');
+    if (!consent.checked) { ok = false; consent.parentElement.style.color = 'var(--gold-deep)'; }
+    else { consent.parentElement.style.color = ''; }
+    return ok;
+  }
+
+  // ---- Small utils ----
+  function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Init
+  loadServices();
+})();

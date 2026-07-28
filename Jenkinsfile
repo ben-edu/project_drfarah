@@ -582,7 +582,8 @@ pipeline {
             -v "$PWD":/app:ro \
             -w /app \
             node:20-slim \
-            node --check frontend/app.js
+            node --check frontend/app.js && \
+            node --check frontend/booking.js
 
           echo "JavaScript syntax passed."
 
@@ -732,17 +733,14 @@ pipeline {
             /
             /styles.css
             /app.js
+            /booking.js
             /robots.txt
-            /assets/logo-mark.svg
+            /sitemap.xml
+            /assets/hero-treatment.jpg
+            /assets/consult-rejuvenation.jpg
+            /assets/mobile-visit.jpg
+            /assets/reception-vip.jpg
             /assets/favicon.svg
-            /assets/doctor-portrait.svg
-            /assets/hero-clinic.svg
-            /assets/urgent-care.svg
-            /assets/mobile-care.svg
-            /assets/traveler-care.svg
-            /assets/rejuvenation-main.svg
-            /assets/clinic-map.svg
-            /assets/og-preview.svg
           "
 
           for path in $public_paths; do
@@ -1392,8 +1390,13 @@ print(json.dumps({
             deployed_paths="
               /styles.css
               /app.js
+              /booking.js
               /robots.txt
-              /assets/logo-mark.svg
+              /sitemap.xml
+              /assets/hero-treatment.jpg
+              /assets/consult-rejuvenation.jpg
+              /assets/mobile-visit.jpg
+              /assets/reception-vip.jpg
               /assets/favicon.svg
           "
 

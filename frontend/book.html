@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book an Appointment — Dr. Farah VIP Urgent Care</title>
+<meta name="description" content="Book an appointment with Dr. Farah in Beverly Hills. Choose your care, pick a real available time, and confirm in a few steps.">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<link rel="canonical" href="https://drfarah.proxbenovh.cloud/book">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="topbar">
+  <div class="wrap topbar__inner">
+    <span class="topbar__text">Physician-led care in Beverly Hills — you always see the doctor.</span>
+    <a class="topbar__phone" href="tel:+13104670101">Call 310-467-0101</a>
+  </div>
+</div>
+
+<header class="site-header" id="siteHeader">
+  <div class="wrap site-header__inner">
+    <a class="brand" href="/" aria-label="Dr. Farah VIP Urgent Care — home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="40" height="40" role="img" aria-label="F monogram">
+          <circle cx="24" cy="24" r="23" fill="none" stroke="currentColor" stroke-width="1"/>
+          <path d="M18 15 h13 M18 15 v18 M18 24 h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <span class="brand__name">Dr. Farah</span>
+        <span class="brand__sub">VIP Urgent Care · Beverly Hills</span>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="/services">Services</a>
+      <a href="/about">Dr. Farah</a>
+      <a href="/#how">How it works</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <a class="btn btn--ghost" href="tel:+13104670101">Call now</a>
+      <a class="btn btn--solid" href="/book">Book</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-header">
+    <div class="wrap page-header__inner">
+      <p class="crumb"><a href="/">Home</a><span>/</span>Book</p>
+      <h1>Book an appointment</h1>
+      <p>Choose your care, pick a real available time, and confirm. You'll receive a confirmation by email. For a life-threatening emergency, call 911.</p>
+    </div>
+  </section>
+
+  <section class="booking">
+    <div class="wrap booking__inner">
+      <ol class="wizard-steps" id="wizardSteps">
+        <li class="is-active" data-step="1">Care</li>
+        <li data-step="2">Time</li>
+        <li data-step="3">Details</li>
+        <li data-step="4">Confirm</li>
+      </ol>
+
+      <form id="bookingForm" class="form" novalidate>
+
+        <!-- Step 1: choose service -->
+        <div class="wizard-panel is-active" data-panel="1">
+          <h2>Choose your care</h2>
+          <p class="step-intro">Select the type of visit you'd like to book.</p>
+          <div class="choice-grid" id="serviceChoices">
+            <p class="booking-loading" id="serviceLoading">Loading available services…</p>
+          </div>
+          <div class="form__msg is-err" id="serviceError">We couldn't load services right now. Please call 310-467-0101 to book.</div>
+          <div class="wizard-nav">
+            <span></span>
+            <button type="button" class="btn btn--solid btn--lg" data-next disabled id="toStep2">Continue</button>
+          </div>
+        </div>
+
+        <!-- Step 2: pick a slot -->
+        <div class="wizard-panel" data-panel="2">
+          <h2>Pick a time</h2>
+          <p class="step-intro">Real availability for the next two weeks. All times are Pacific (America/Los_Angeles).</p>
+          <div id="slotsArea">
+            <p class="booking-loading" id="slotsLoading">Loading available times…</p>
+          </div>
+          <div class="form__msg is-err" id="slotsError">No available times were found in the next two weeks. Please call 310-467-0101 and we'll find a time for you.</div>
+          <div class="wizard-nav">
+            <button type="button" class="btn btn--ghost btn--lg" data-back>Back</button>
+            <button type="button" class="btn btn--solid btn--lg" data-next disabled id="toStep3">Continue</button>
+          </div>
+        </div>
+
+        <!-- Step 3: contact details -->
+        <div class="wizard-panel" data-panel="3">
+          <h2>Your details</h2>
+          <p class="step-intro">We only ask for what we need to confirm your appointment. Please don't include detailed medical information here.</p>
+          <div class="form__row">
+            <div class="field">
+              <label for="firstName">First name <span class="req">*</span></label>
+              <input id="firstName" name="firstName" type="text" autocomplete="given-name" required>
+            </div>
+            <div class="field">
+              <label for="lastName">Last name <span class="req">*</span></label>
+              <input id="lastName" name="lastName" type="text" autocomplete="family-name" required>
+            </div>
+          </div>
+          <div class="form__row">
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="phone">Phone <span class="req">*</span></label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="reason">Reason for visit <span class="req">*</span></label>
+            <select id="reason" name="reason" required>
+              <option value="">Select a category…</option>
+              <option>Acute illness or injury</option>
+              <option>IV hydration or recovery</option>
+              <option>Traveler or same-day care</option>
+              <option>Follow-up visit</option>
+              <option>Rejuvenation consultation</option>
+              <option>General appointment request</option>
+            </select>
+            <span class="field__hint">A general category only — no symptoms or medical details.</span>
+          </div>
+          <label class="form__consent">
+            <input type="checkbox" id="consent" required>
+            <span>I understand this is an appointment request and agree to the <a href="/privacy">privacy policy</a> and <a href="/terms">terms of use</a>. I will not share detailed medical information through this form.</span>
+          </label>
+          <div class="wizard-nav">
+            <button type="button" class="btn btn--ghost btn--lg" data-back>Back</button>
+            <button type="button" class="btn btn--solid btn--lg" data-next id="toStep4">Review</button>
+          </div>
+        </div>
+
+        <!-- Step 4: review + confirm -->
+        <div class="wizard-panel" data-panel="4">
+          <h2>Review &amp; confirm</h2>
+          <p class="step-intro">Please check the details below before confirming.</p>
+          <div class="recap">
+            <dl id="recapList"></dl>
+          </div>
+          <div class="form__msg is-err" id="submitError"></div>
+          <label class="form__consent" style="margin-bottom:4px">
+            <span>By confirming, you request this appointment. We'll email you a confirmation or, if the time needs review, next steps.</span>
+          </label>
+          <div class="wizard-nav">
+            <button type="button" class="btn btn--ghost btn--lg" data-back>Back</button>
+            <button type="submit" class="btn btn--gold btn--lg" id="confirmBtn">Confirm appointment</button>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div class="wizard-panel" data-panel="5">
+          <div class="booking-success">
+            <div class="booking-success__mark" aria-hidden="true">✓</div>
+            <h2>Appointment requested</h2>
+            <p class="step-intro" style="text-align:center">Thank you. We've received your request and sent a confirmation to your email.</p>
+            <p class="ref" id="successRef"></p>
+            <p style="color:var(--muted); font-size:15px">If you need to change anything, call <a href="tel:+13104670101" style="color:var(--gold-deep)">310-467-0101</a>.</p>
+            <p style="margin-top:24px"><a class="btn btn--solid btn--lg" href="/">Return home</a></p>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </section>
+
+  <aside class="emergency" role="note">
+    <div class="wrap emergency__inner">
+      <span class="emergency__icon" aria-hidden="true">✚</span>
+      <p><strong>In an emergency, call 911.</strong> This booking is for urgent and private care, not emergency-room services.</p>
+    </div>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer__base" style="border-top:none">
+    <p>© 2026 Dr. Farah VIP Urgent Care. All rights reserved.</p>
+    <p class="site-footer__disclaimer"><a href="/" style="color:var(--muted)">Home</a> · <a href="/privacy" style="color:var(--muted)">Privacy</a> · <a href="/terms" style="color:var(--muted)">Terms</a></p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+<script src="booking.js" defer></script>
+</body>
+</html>
