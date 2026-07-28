@@ -1087,3 +1087,62 @@ Added "API — migration bootstrap validation" stage to Jenkinsfile:
   PostgreSQL container uses `--tmpfs` storage and is removed with its network.
   No `sudo`, no `--privileged`, no Docker socket in the test container.
 - Branch policy unchanged: feature/fix are validation-only; push/deploy on `dev`.
+
+## 2026-07-28 — Inconsistent Alembic stamp recovery and bootstrap hardening
+
+### Staging incident: alembic_version=0001 with orphaned 0002 tables
+
+A partial prior migration run left the `services`, `working_hours`,
+`blocked_periods`, and `appointments` tables from revision 0002 in the staging
+database while `alembic_version` was still stamped at 0001. When the init
+container's migration bootstrap hit State 3 (already managed at 0001) and ran
+`alembic upgrade head`, it crashed with `relation "services" already exists`
+because the upgrade tried to recreate tables that were already present.
+
+### Recovery procedure
+
+All four 0002 tables were confirmed empty (0 rows each). `bookings` (4 rows,
+legacy) and `alembic_version` (0001) were verified intact. The empty orphan
+tables were dropped (FK-safe order: appointments, blocked_periods, working_hours,
+services) in a single transaction. The init container retried on its own backoff,
+ran upgrade 0001 → 0002 cleanly (creating tables, installing btree_gist, seeding
+services and working_hours, creating the no_double_booking constraint), and the
+new pod became Ready. Legacy bookings preserved (4 rows). Staging confirmed healthy.
+
+### Hardening: fail-closed guards in migration_bootstrap.py
+
+To prevent this class of failure from recurring, the bootstrap now detects
+inconsistent-stamp states and fails closed with an actionable message instead of
+crashing on raw `relation already exists`:
+
+- `REVISION_SENTINEL_TABLES` — maps each post-0001 revision to a sentinel table
+  that revision introduces (currently `{"0002": "services"}`).
+- `_detect_inconsistent_stamp()` — checks whether the current alembic_version
+  stamp is behind a sentinel table that already exists.
+- **State 3 guard** (already managed): before `command.upgrade`, verifies the
+  stamp is consistent with existing tables; if a sentinel table exists but the
+  stamp is behind, raises a `BootstrapError` with a diagnostic message naming the
+  offending table and revision.
+- **State 2 guard** (legacy bookings, no stamp): before stamping 0001, verifies
+  no later-revision tables are already present.
+- **Fresh-path guard**: verifies no later-revision tables are present before
+  running migrations from scratch.
+
+### New tests (TestInconsistentStamp, 3 tests, postgresql-marked)
+
+- `test_stamped_0001_with_0002_tables_fails_closed` — reproduces the exact
+  staging incident: bookings + alembic_version=0001 + orphaned services table
+  → clean `BootstrapError`, not a ProgrammingError. Verifies revision unchanged
+  and bookings intact.
+- `test_legacy_bookings_with_orphan_0002_fails_closed` — unversioned legacy
+  bookings with orphaned services → fails before stamping, no stamp written.
+- `test_exit_code_is_one_not_two` — confirms the inconsistent-stamp path exits
+  with code 1 (BootstrapError), not code 2 (crash).
+
+### Jenkinsfix: appointment smoke-test payload quoting
+
+The staging health-check stage's appointment smoke test had a shell-quoting bug:
+a double-quoted multi-line heredoc for the JSON `-d` body inside a Jenkins
+`sh '''...'''` block mangled inner JSON quotes. Fixed by building the JSON with
+`python3` into a temp file and POSTing with `--data-binary`; no new dependency.
+Committed on `fix/appointment-smoke-test-quoting`.
