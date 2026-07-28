@@ -1,0 +1,22 @@
+# Dr. Farah frontend — static hosting rules (Apache).
+Options -Indexes
+
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # If request maps to an existing file or directory, serve it as-is.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Otherwise, if "<name>.html" exists, serve it for the extensionless URL.
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+</IfModule>
+
+# Do not serve the raw .htaccess or dotfiles.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
