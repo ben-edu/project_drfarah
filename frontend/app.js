@@ -1,7 +1,6 @@
 (function () {
   'use strict';
-
-  // Header shadow on scroll.
+  // Header scroll state
   var header = document.getElementById('siteHeader');
   if (header) {
     var onScroll = function () {
@@ -11,33 +10,23 @@
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
   }
-
-  // Cookie notice — necessary-only, choice stored in a first-party cookie.
+  // Cookie notice — necessary-only, stored in a first-party cookie.
   var COOKIE_NAME = 'drfarah_cookie_ack';
-
   function hasAck() {
-    return document.cookie.split('; ').some(function (c) {
-      return c.indexOf(COOKIE_NAME + '=') === 0;
-    });
+    return document.cookie.split('; ').some(function (c) { return c.indexOf(COOKIE_NAME + '=') === 0; });
   }
-  function setAck() {
-    var oneYear = 60 * 60 * 24 * 365;
-    document.cookie = COOKIE_NAME + '=1; Max-Age=' + oneYear + '; Path=/; SameSite=Lax';
-  }
-
   var banner = document.getElementById('cookie');
   var okBtn = document.getElementById('cookieOk');
   if (banner && okBtn) {
     if (!hasAck()) banner.hidden = false;
     okBtn.addEventListener('click', function () {
-      setAck();
+      document.cookie = COOKIE_NAME + '=1; Max-Age=' + (60 * 60 * 24 * 365) + '; Path=/; SameSite=Lax';
       banner.hidden = true;
     });
   }
 })();
 
-/* Contact form — graceful handling until the ContactRequest API exists.
-   Validates client-side and shows a clear next step (call the clinic). */
+/* Contact form — graceful handling until the ContactRequest API exists. */
 (function () {
   'use strict';
   var f = document.getElementById('contactForm');
@@ -45,26 +34,15 @@
   var msg = document.getElementById('contactMsg');
   f.addEventListener('submit', function (e) {
     e.preventDefault();
-    var name = document.getElementById('cname');
-    var email = document.getElementById('cemail');
-    var cat = document.getElementById('ccat');
-    var body = document.getElementById('cmsg');
-    var consent = document.getElementById('cconsent');
-    var ok = true;
-    [name, email, cat, body].forEach(function (el) {
-      if (!el.value.trim()) { el.style.borderColor = 'var(--gold-deep)'; ok = false; }
-      else { el.style.borderColor = ''; }
-    });
-    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { email.style.borderColor = 'var(--gold-deep)'; ok = false; }
-    if (!consent.checked) ok = false;
-    if (!ok) {
-      msg.className = 'form__msg is-err';
-      msg.textContent = 'Please complete the required fields and agree to the privacy policy.';
-      return;
-    }
-    // No ContactRequest endpoint yet: acknowledge and direct to phone.
-    msg.className = 'form__msg is-ok';
-    msg.textContent = 'Thank you. Your message is noted. For anything time-sensitive, please call 310-467-0101 and we\u2019ll help right away.';
+    var name=document.getElementById('cname'),email=document.getElementById('cemail'),
+        cat=document.getElementById('ccat'),body=document.getElementById('cmsg'),consent=document.getElementById('cconsent');
+    var ok=true;
+    [name,email,cat,body].forEach(function(el){ if(!el.value.trim()){el.style.borderColor='var(--gold)';ok=false;}else{el.style.borderColor='';} });
+    if(email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)){email.style.borderColor='var(--gold)';ok=false;}
+    if(!consent.checked) ok=false;
+    if(!ok){ msg.className='form__msg is-err'; msg.textContent='Please complete the required fields and agree to the privacy policy.'; return; }
+    msg.className='form__msg is-ok';
+    msg.textContent='Thank you. Your message is noted. For anything time-sensitive, please call 310\u00b7467\u00b70101 and we\u2019ll help right away.';
     f.reset();
   });
 })();
