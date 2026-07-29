@@ -21,4 +21,4 @@ data:
   SMTP_FROM: "contact@soria-academie.fr"
   SMTP_TO: "appointments@drfarah.proxbenovh.cloud"
   SMTP_USE_TLS: "true"
-  SMTP_TEST_MODE: "true"
+  SMTP_TEST_MODE: "false"
