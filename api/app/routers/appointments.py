@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.database import get_db
+from app.emails.appointment import send_appointment_emails
 from app.models.appointment import Appointment
 from app.models.service import Service
 from app.schemas.appointment import AppointmentCreate, AppointmentResponse
@@ -198,6 +199,13 @@ def create_appointment(
             raise HTTPException(status_code=409, detail="Slot is no longer available")
         logger.error("Unexpected error creating appointment: %s", str(exc)[:200])
         raise HTTPException(status_code=500, detail="Could not create appointment")
+
+    # Best-effort confirmation + notification emails.
+    # Failure here must NOT affect the 201 response.
+    try:
+        send_appointment_emails(appointment, service.name)
+    except Exception:
+        logger.warning("Appointment %s created but email delivery failed", appointment.id)
 
     return _appointment_response(appointment, service)
 
