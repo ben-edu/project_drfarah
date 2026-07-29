@@ -1219,21 +1219,15 @@ print(json.dumps({
           rm -f "$APPT_PAYLOAD"
           if [ "$appt_status" = "201" ]; then
             echo "Appointment smoke test: HTTP 201 (created)"
-            # Tear down the CI appointment we just created so the slot is freed
-            # and repeated dev builds stay idempotent.
-            APPT_ID="$(python3 -c 'import json,sys;
-try:
-    print(json.load(open(sys.argv[1])).get("id",""))
-except Exception:
-    print("")' "$APPT_RESPONSE" 2>/dev/null || true)"
-            if [ -n "$APPT_ID" ]; then
-              del_code="$(curl -sS -o /dev/null -w '%{http_code}' \
-                -X POST \
-                -H 'Content-Type: application/json' \
-                -H "X-Cleanup-Token: ${CLEANUP_TOKEN}" \
-                "${STAGING_API_URL}/api/v1/appointments/cleanup" || true)"
-              echo "Post-smoke CI cleanup returned HTTP $del_code"
-            fi
+            # Tear down CI appointments so the slot is freed and repeated dev
+            # builds stay idempotent. The cleanup endpoint removes all source=ci
+            # appointments, so no id lookup is needed.
+            del_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+              -X POST \
+              -H 'Content-Type: application/json' \
+              -H "X-Cleanup-Token: ${CLEANUP_TOKEN}" \
+              "${STAGING_API_URL}/api/v1/appointments/cleanup" || true)"
+            echo "Post-smoke CI cleanup returned HTTP $del_code"
           elif [ "$appt_status" = "409" ]; then
             # 409 proves the endpoint is live and the double-booking exclusion
             # constraint is working. A prior CI appointment still holds the slot;
