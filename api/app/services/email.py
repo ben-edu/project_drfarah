@@ -43,38 +43,30 @@ Review the request and follow the clinic's standard confirmation process.
     return subject, body
 
 
-def send_booking_notification(booking: dict) -> bool:
-    """Send a booking notification email to the clinic mailbox.
+def _send_email_message(to_email: str, subject: str, body: str) -> bool:
+    """Low-level send — one email, one recipient. Respects SMTP_TEST_MODE.
 
     Returns True if the email was sent (or test-logged), False on failure.
-    Does NOT raise exceptions — failures are logged, not propagated.
+    Does NOT raise exceptions.
     """
     if not settings.SMTP_HOST:
-        logger.warning("SMTP not configured — skipping booking notification.")
+        logger.warning("SMTP not configured — skipping email.")
         return False
 
     if settings.SMTP_TEST_MODE:
-        subject, body = _build_notification_body(booking)
         logger.info(
-            "SMTP TEST MODE — would send: subject=%r recipient=%s", subject, settings.SMTP_TO
+            "SMTP TEST MODE — would send: subject=%r to=%s", subject, to_email
         )
         return True
 
     try:
-        subject, body = _build_notification_body(booking)
-
         msg = EmailMessage()
         msg["Subject"] = subject
         msg["From"] = settings.SMTP_FROM
-        msg["To"] = settings.SMTP_TO
+        msg["To"] = to_email
         msg.set_content(body)
 
-        if settings.SMTP_USE_TLS:
-            context = None
-            port = settings.SMTP_PORT
-        else:
-            context = None
-            port = settings.SMTP_PORT
+        port = settings.SMTP_PORT
 
         with smtplib.SMTP(settings.SMTP_HOST, port, timeout=15) as server:
             if settings.SMTP_USE_TLS:
@@ -83,9 +75,19 @@ def send_booking_notification(booking: dict) -> bool:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
 
-        logger.info("Booking notification sent for %s %s", booking.get("first_name"), booking.get("last_name"))
+        logger.info("Email sent: subject=%r to=%s", subject, to_email)
         return True
 
     except Exception:
-        logger.exception("Failed to send booking notification — request was saved")
+        logger.exception("Failed to send email — subject=%r", subject)
         return False
+
+
+def send_booking_notification(booking: dict) -> bool:
+    """Send a booking notification email to the clinic mailbox.
+
+    Returns True if the email was sent (or test-logged), False on failure.
+    Does NOT raise exceptions — failures are logged, not propagated.
+    """
+    subject, body = _build_notification_body(booking)
+    return _send_email_message(settings.SMTP_TO, subject, body)
