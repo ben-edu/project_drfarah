@@ -1219,26 +1219,15 @@ print(json.dumps({
           rm -f "$APPT_PAYLOAD"
           if [ "$appt_status" = "201" ]; then
             echo "Appointment smoke test: HTTP 201 (created)"
-            # Tear down CI appointments so the slot is freed and repeated dev
-            # builds stay idempotent. The cleanup endpoint removes all source=ci
-            # appointments, so no id lookup is needed.
-            del_code="$(curl -sS -o /dev/null -w '%{http_code}' \
-              -X POST \
-              -H 'Content-Type: application/json' \
-              -H "X-Cleanup-Token: ${CLEANUP_TOKEN}" \
-              "${STAGING_API_URL}/api/v1/appointments/cleanup" || true)"
-            echo "Post-smoke CI cleanup returned HTTP $del_code"
+            # The CI appointment carries source=ci and is removed by the
+            # cleanup step at the start of the next health-check run, keeping
+            # repeated dev builds idempotent. No teardown needed here.
           elif [ "$appt_status" = "409" ]; then
             # 409 proves the endpoint is live and the double-booking exclusion
             # constraint is working. A prior CI appointment still holds the slot;
-            # this is a healthy signal, not a failure. Trigger a cleanup so the
-            # next run starts clean.
+            # this is a healthy signal, not a failure. The start-of-run cleanup
+            # frees source=ci appointments on the next build.
             echo "Appointment smoke test: HTTP 409 (slot held by exclusion constraint) — treated as PASS"
-            curl -sS -o /dev/null -w 'Cleanup after 409: HTTP %{http_code}\n' \
-              -X POST \
-              -H 'Content-Type: application/json' \
-              -H "X-Cleanup-Token: ${CLEANUP_TOKEN}" \
-              "${STAGING_API_URL}/api/v1/appointments/cleanup" || true
           else
             echo "FAIL: appointment smoke test returned HTTP $appt_status"
             echo "Response body:"
