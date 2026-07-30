@@ -61,6 +61,22 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = Field(default=True)
     SMTP_TEST_MODE: bool = Field(default=True)
 
+    # --- Keycloak / OIDC ---
+    # Non-secret values; safe in ConfigMap.
+    KEYCLOAK_ISSUER: str = Field(
+        default="https://keycloak.soria-academie.fr/realms/drfarah"
+    )
+    KEYCLOAK_JWKS_URL: str = Field(
+        default="https://keycloak.soria-academie.fr/realms/drfarah/protocol/openid-connect/certs"
+    )
+    KEYCLOAK_AUDIENCE: str = Field(
+        default="drfarah-admin"
+    )
+    # Keycloak public clients often omit the standard "aud" claim and rely on
+    # "azp" (authorized party) instead.  Start lenient and enforce azp match
+    # only when this flag is explicitly turned on.
+    KEYCLOAK_VERIFY_AUD: bool = Field(default=False)
+
     # --- Internal operations ---
     CLEANUP_TOKEN: str = Field(
         default="",
