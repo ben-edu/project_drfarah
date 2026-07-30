@@ -174,12 +174,14 @@ class TestSendAppointmentEmails:
             mod.send_appointment_emails(appt, "Urgent care")
 
             assert mock_send.call_count == 2
-            # First call: patient confirmation
-            patient_to = mock_send.call_args_list[0][0][0]
-            assert patient_to == "patient@test.com"
-            # Second call: clinic notification (sent to SMTP_FROM address)
-            clinic_to = mock_send.call_args_list[1][0][0]
-            assert "@" in clinic_to  # any valid email
+            # First call: patient confirmation (4 args: to, subj, text, html)
+            patient_args = mock_send.call_args_list[0][0]
+            assert patient_args[0] == "patient@test.com"
+            assert len(patient_args) == 4  # text + html both passed
+            # Second call: clinic notification — must go to SMTP_TO, not SMTP_FROM
+            clinic_args = mock_send.call_args_list[1][0]
+            assert clinic_args[0] == settings.SMTP_TO
+            assert len(clinic_args) == 4  # text + html both passed
 
     def test_patient_failure_does_not_block_clinic(self):
         from app.emails import appointment as mod
@@ -301,3 +303,119 @@ class TestEmailTriggeredOnAppointmentCreate:
                 r2 = client.post("/api/v1/appointments", json=payload)
                 assert r2.status_code == 409
                 assert mock_send.call_count == 1  # still 1, not 2
+
+
+# ---------------------------------------------------------------------------
+# Unit tests: _send_email_message multipart/alternative behaviour
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def _smtp_env_for_multipart():
+    """Temporarily set SMTP env so _send_email_message runs the real path."""
+    import os
+    saved = {}
+    for k in (
+        "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
+        "SMTP_FROM", "SMTP_TO", "SMTP_USE_TLS", "SMTP_TEST_MODE",
+    ):
+        saved[k] = os.environ.get(k)
+    os.environ["SMTP_HOST"] = "mail.soria-academie.fr"
+    os.environ["SMTP_PORT"] = "587"
+    os.environ["SMTP_USER"] = "contact@soria-academie.fr"
+    os.environ["SMTP_PASSWORD"] = "test-password"
+    os.environ["SMTP_FROM"] = "contact@soria-academie.fr"
+    os.environ["SMTP_TO"] = "appointments@drfarah.proxbenovh.cloud"
+    os.environ["SMTP_USE_TLS"] = "true"
+    os.environ["SMTP_TEST_MODE"] = "false"
+
+    from app.core.config import get_settings
+    get_settings.cache_clear()
+
+    import importlib
+    import app.services.email
+    importlib.reload(app.services.email)
+
+    yield
+
+    for k, v in saved.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+    get_settings.cache_clear()
+    importlib.reload(app.services.email)
+
+
+class TestSendEmailMessageMultipart:
+    def test_multipart_alternative_when_html_given(self, _smtp_env_for_multipart):
+        """When html_body is provided the message must be multipart/alternative."""
+        from unittest.mock import MagicMock, patch
+        from app.services.email import _send_email_message
+
+        with patch("app.services.email.smtplib.SMTP") as mock_smtp:
+            mock_server = MagicMock()
+            mock_smtp.return_value.__enter__.return_value = mock_server
+
+            _send_email_message(
+                "to@example.com",
+                "Test subject",
+                "Plain text body",
+                "<p>HTML body</p>",
+            )
+
+            sent_msg = mock_server.send_message.call_args[0][0]
+            # Must be multipart/alternative with two sub-parts.
+            assert sent_msg.get_content_type() == "multipart/alternative"
+            parts = list(sent_msg.walk())
+            # parts[0] is the top-level multipart/alternative; parts[1:] are leaves.
+            subtypes = {p.get_content_type() for p in parts[1:]}
+            assert "text/plain" in subtypes
+            assert "text/html" in subtypes
+
+    def test_plain_only_when_no_html(self, _smtp_env_for_multipart):
+        """When html_body is None the message stays text/plain."""
+        from unittest.mock import MagicMock, patch
+        from app.services.email import _send_email_message
+
+        with patch("app.services.email.smtplib.SMTP") as mock_smtp:
+            mock_server = MagicMock()
+            mock_smtp.return_value.__enter__.return_value = mock_server
+
+            _send_email_message(
+                "to@example.com",
+                "Test subject",
+                "Plain text only",
+            )
+
+            sent_msg = mock_server.send_message.call_args[0][0]
+            assert sent_msg.get_content_type() == "text/plain"
+            assert sent_msg.get_content() == "Plain text only\n"
+
+    def test_legacy_caller_still_works(self, _smtp_env_for_multipart):
+        """send_booking_notification (3-arg call) still sends plain-text only."""
+        from unittest.mock import MagicMock, patch
+        from app.services.email import send_booking_notification
+
+        booking = {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "service_type": "Urgent or acute care",
+            "visit_type": "Clinic visit",
+            "preferred_day": "Monday, July 27",
+            "preferred_time": "10:00 AM",
+            "time_window": "Late morning",
+            "reason_category": "General appointment request",
+            "email": "jane@example.com",
+            "phone": "+1-310-555-0189",
+        }
+
+        with patch("app.services.email.smtplib.SMTP") as mock_smtp:
+            mock_server = MagicMock()
+            mock_smtp.return_value.__enter__.return_value = mock_server
+
+            result = send_booking_notification(booking)
+            assert result is True
+
+            sent_msg = mock_server.send_message.call_args[0][0]
+            assert sent_msg.get_content_type() == "text/plain"
+            assert "Jane" in sent_msg.get_content()
