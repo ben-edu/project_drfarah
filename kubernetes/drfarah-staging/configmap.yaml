@@ -19,6 +19,6 @@ data:
   SMTP_HOST: "mail.soria-academie.fr"
   SMTP_PORT: "587"
   SMTP_FROM: "contact@soria-academie.fr"
-  SMTP_TO: "appointments@drfarah.proxbenovh.cloud"
+  SMTP_TO: "appointment@soria-academie.fr"
   SMTP_USE_TLS: "true"
   SMTP_TEST_MODE: "false"
