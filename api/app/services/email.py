@@ -43,8 +43,13 @@ Review the request and follow the clinic's standard confirmation process.
     return subject, body
 
 
-def _send_email_message(to_email: str, subject: str, body: str) -> bool:
+def _send_email_message(
+    to_email: str, subject: str, text_body: str, html_body: str | None = None
+) -> bool:
     """Low-level send — one email, one recipient. Respects SMTP_TEST_MODE.
+
+    When html_body is given the message is sent as multipart/alternative
+    (text/plain + text/html).  Otherwise it is plain-text only.
 
     Returns True if the email was sent (or test-logged), False on failure.
     Does NOT raise exceptions.
@@ -64,7 +69,9 @@ def _send_email_message(to_email: str, subject: str, body: str) -> bool:
         msg["Subject"] = subject
         msg["From"] = settings.SMTP_FROM
         msg["To"] = to_email
-        msg.set_content(body)
+        msg.set_content(text_body)
+        if html_body:
+            msg.add_alternative(html_body, subtype="html")
 
         port = settings.SMTP_PORT
 
