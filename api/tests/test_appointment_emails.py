@@ -304,6 +304,50 @@ class TestEmailTriggeredOnAppointmentCreate:
                 assert r2.status_code == 409
                 assert mock_send.call_count == 1  # still 1, not 2
 
+    def test_no_email_for_ci_source(self, seeded_db, test_app_setup):
+        """source="ci" appointments must NOT trigger email."""
+        from tests.test_appointments import (
+            _next_working_day, _slot_at, VALID_APPOINTMENT,
+        )
+        from fastapi.testclient import TestClient
+
+        app = test_app_setup
+        y, m, d = _next_working_day(seeded_db)
+        payload = {
+            **VALID_APPOINTMENT,
+            "service_code": "urgent-care",
+            "starts_at": _slot_at(y, m, d, 10, 0),
+            "source": "ci",
+        }
+
+        with patch("app.routers.appointments.send_appointment_emails") as mock_send:
+            with TestClient(app) as client:
+                resp = client.post("/api/v1/appointments", json=payload)
+                assert resp.status_code == 201, resp.text
+                mock_send.assert_not_called()
+
+    def test_email_still_fires_for_normal_source(self, seeded_db, test_app_setup):
+        """Non-CI appointments (source omitted or "web") must trigger email."""
+        from tests.test_appointments import (
+            _next_working_day, _slot_at, VALID_APPOINTMENT,
+        )
+        from fastapi.testclient import TestClient
+
+        app = test_app_setup
+        y, m, d = _next_working_day(seeded_db)
+        # No source field — defaults to None, treated as normal booking.
+        payload = {
+            **VALID_APPOINTMENT,
+            "service_code": "urgent-care",
+            "starts_at": _slot_at(y, m, d, 10, 0),
+        }
+
+        with patch("app.routers.appointments.send_appointment_emails") as mock_send:
+            with TestClient(app) as client:
+                resp = client.post("/api/v1/appointments", json=payload)
+                assert resp.status_code == 201, resp.text
+                mock_send.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # Unit tests: _send_email_message multipart/alternative behaviour

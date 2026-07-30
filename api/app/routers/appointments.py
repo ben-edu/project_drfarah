@@ -201,11 +201,15 @@ def create_appointment(
         raise HTTPException(status_code=500, detail="Could not create appointment")
 
     # Best-effort confirmation + notification emails.
+    # Skip for CI smoke-test appointments (source="ci") to avoid bounce spam.
     # Failure here must NOT affect the 201 response.
-    try:
-        send_appointment_emails(appointment, service.name)
-    except Exception:
-        logger.warning("Appointment %s created but email delivery failed", appointment.id)
+    if appointment.source != "ci":
+        try:
+            send_appointment_emails(appointment, service.name)
+        except Exception:
+            logger.warning("Appointment %s created but email delivery failed", appointment.id)
+    else:
+        logger.info("Skipping email for CI smoke-test appointment %s", appointment.id)
 
     return _appointment_response(appointment, service)
 
