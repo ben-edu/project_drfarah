@@ -23,6 +23,8 @@ pipeline {
     HESTIA_SSH_USER = 'benweb'
     STAGING_FRONTEND_HOST = 'staging.drfarah.proxbenovh.cloud'
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html'
+    ADMIN_FRONTEND_HOST = 'admin.drfarah.proxbenovh.cloud'
+    ADMIN_DOCROOT = '/home/benweb/web/admin.drfarah.proxbenovh.cloud/public_html'
 
   }
 
@@ -583,7 +585,8 @@ pipeline {
             -w /app \
             node:20-slim \
             node --check frontend/app.js && \
-            node --check frontend/booking.js
+            node --check frontend/booking.js && \
+            node --check admin/app.js
 
           echo "JavaScript syntax passed."
 
@@ -1433,6 +1436,94 @@ print(json.dumps({
 
             echo ""
             echo "Frontend staging deployment passed."
+          '''
+        }
+      }
+    }
+
+    stage('Admin SPA — deploy staging') {
+      when {
+        branch 'dev'
+      }
+
+      steps {
+        withCredentials([
+          sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+
+            echo "=== Admin SPA preflight ==="
+
+            ssh $SSH_OPTS \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" \
+              "
+                set -e
+
+                [ -d '$ADMIN_DOCROOT' ] || {
+                  echo 'ERROR: admin docroot is missing'
+                  exit 1
+                }
+
+                touch '$ADMIN_DOCROOT/.jenkins-write-test' 2>/dev/null || {
+                  echo 'ERROR: no write access'
+                  ls -ld '$ADMIN_DOCROOT'
+                  exit 1
+                }
+
+                rm -f '$ADMIN_DOCROOT/.jenkins-write-test'
+                echo 'Write access confirmed.'
+              "
+
+            echo ""
+            echo "=== Deploying admin SPA to staging ==="
+
+            rsync -av --delete \
+              --exclude='.env' \
+              --exclude='.well-known' \
+              -e "ssh $SSH_OPTS" \
+              admin/ \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$ADMIN_DOCROOT/"
+
+            echo ""
+            echo "=== Admin SPA smoke test ==="
+
+            admin_paths="
+              /
+              /index.html
+              /app.js
+              /config.js
+              /styles.css
+            "
+
+            for path in $admin_paths; do
+              status="$(
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "https://${ADMIN_FRONTEND_HOST}${path}" \
+                  || true
+              )"
+
+              if [ -z "$status" ]; then
+                status="000"
+              fi
+
+              if [ "$status" != "200" ]; then
+                echo "FAIL  $path -> $status"
+                exit 1
+              fi
+
+              echo "OK    $path -> $status"
+            done
+
+            echo ""
+            echo "Admin SPA staging deployment passed."
           '''
         }
       }
