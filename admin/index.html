@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dr. Farah — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Dr. Farah <span>&mdash; Admin</span></h1>
+  </header>
+
+  <main>
+    <!-- Logged-out state -->
+    <div id="logged-out" class="card text-center">
+      <p style="color:var(--bone-dim); margin-bottom:1.25rem;">Sign in with your staff account to access the admin panel.</p>
+      <button id="btn-login" class="btn btn-primary">Sign in with Keycloak</button>
+      <div id="login-error" class="error-box hidden"></div>
+    </div>
+
+    <!-- Logged-in state -->
+    <div id="logged-in" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <p style="color:var(--gold); font-weight:500;">Authenticated</p>
+        <button id="btn-logout" class="btn btn-ghost">Sign out</button>
+      </div>
+
+      <div id="loading-indicator" class="text-center mt-1">
+        <span class="spinner"></span>
+        <span style="color:var(--muted); margin-left:0.5rem;">Loading identity&hellip;</span>
+      </div>
+
+      <dl id="identity-panel" class="identity hidden"></dl>
+
+      <div id="api-error" class="error-box hidden"></div>
+    </div>
+  </main>
+
+  <footer>Dr. Farah Admin &middot; staff access only</footer>
+
+  <!-- Runtime config (no secrets) -->
+  <script src="config.js"></script>
+  <!-- Keycloak JS adapter — pinned version, UMD build -->
+  <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.5/dist/keycloak.js"></script>
+  <!-- Application logic -->
+  <script src="app.js"></script>
+</body>
+</html>

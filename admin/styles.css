@@ -1,0 +1,164 @@
+/* Dr. Farah — Admin SPA
+   Dark, warm-noir theme matching the public site's brand vocabulary.
+   Gold used sparingly as accent, never as decoration. */
+
+:root {
+  --ink:       #070D0F;
+  --noir:      #0C1518;
+  --noir-2:    #10201F;
+  --noir-3:    #16292A;
+  --bone:      #ECE4D6;
+  --bone-dim:  #C9C2B4;
+  --gold:      #C6A15B;
+  --gold-lite: #E4CE9E;
+  --gold-deep: #A07E42;
+  --muted:     #7E8E8C;
+  --line:      rgba(198,161,91,.20);
+  --line-soft: rgba(236,228,214,.10);
+  --danger:    #D4736B;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--ink);
+  color: var(--bone);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Header ── */
+header {
+  width: 100%;
+  max-width: 720px;
+  padding: 2.5rem 1.5rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+header h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  color: var(--bone);
+}
+header h1 span { color: var(--gold); }
+
+/* ── Main card ── */
+main {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 1.5rem 3rem;
+}
+.card {
+  background: var(--noir);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--ink);
+}
+.btn-primary:hover { background: var(--gold-lite); }
+.btn-ghost {
+  background: transparent;
+  color: var(--bone-dim);
+  border: 1px solid var(--line-soft);
+}
+.btn-ghost:hover { background: var(--noir-2); color: var(--bone); }
+
+/* ── Identity panel ── */
+.identity {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line-soft);
+}
+.identity dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-top: 0.75rem;
+}
+.identity dd {
+  font-size: 1rem;
+  color: var(--bone);
+  margin-top: 0.15rem;
+  word-break: break-all;
+}
+.roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+.role-tag {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--noir-3);
+  color: var(--gold-lite);
+  border: 1px solid var(--line);
+}
+.no-roles {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── Errors ── */
+.error-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(212,115,107,.12);
+  border: 1px solid rgba(212,115,107,.30);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+/* ── Loading ── */
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--line-soft);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Footer ── */
+footer {
+  margin-top: auto;
+  padding: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── Utility ── */
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.mt-1 { margin-top: 1rem; }
