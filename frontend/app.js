@@ -35,19 +35,59 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // Cookie notice — necessary-only, stored in a first-party cookie.
-  var COOKIE_NAME = 'drfarah_cookie_ack';
-  function hasAck() {
-    return document.cookie.split('; ').some(function (c) { return c.indexOf(COOKIE_NAME + '=') === 0; });
-  }
+  // Cookie notice.
+  // The site currently uses only essential first-party cookies. The notice is
+  // still dismissible in both directions because users must never be trapped by
+  // a persistent overlay. The preference itself is stored in localStorage so a
+  // "Decline" choice does not need to create an additional cookie.
+  var STORAGE_KEY = 'drfarah_cookie_choice';
   var banner = document.getElementById('cookie');
-  var okBtn = document.getElementById('cookieOk');
-  if (banner && okBtn) {
-    if (!hasAck()) banner.hidden = false;
-    okBtn.addEventListener('click', function () {
-      document.cookie = COOKIE_NAME + '=1; Max-Age=' + (60 * 60 * 24 * 365) + '; Path=/; SameSite=Lax';
-      banner.hidden = true;
-    });
+  var acceptBtn = document.getElementById('cookieOk');
+
+  function getChoice() {
+    try {
+      return window.localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveChoice(choice) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, choice);
+    } catch (e) {
+      // Storage can be unavailable in hardened/private browsing contexts.
+      // The banner still closes for the current page session.
+    }
+  }
+
+  function closeBanner(choice) {
+    saveChoice(choice);
+    if (banner) banner.hidden = true;
+  }
+
+  if (banner) {
+    if (!getChoice()) banner.hidden = false;
+
+    var actions = banner.querySelector('.cookie__actions');
+    if (acceptBtn) {
+      acceptBtn.textContent = 'Accept';
+      acceptBtn.addEventListener('click', function () {
+        closeBanner('accepted');
+      });
+    }
+
+    if (actions && !document.getElementById('cookieDecline')) {
+      var declineBtn = document.createElement('button');
+      declineBtn.className = 'btn btn--outline btn--sm';
+      declineBtn.id = 'cookieDecline';
+      declineBtn.type = 'button';
+      declineBtn.textContent = 'Decline';
+      declineBtn.addEventListener('click', function () {
+        closeBanner('declined');
+      });
+      actions.appendChild(declineBtn);
+    }
   }
 })();
 
