@@ -1,15 +1,19 @@
 (function () {
   'use strict';
 
-  // Replace the retired AI/placeholder image references with approved real
-  // Dr. Farah / clinic photography. Several static pages still use the legacy
-  // semantic filenames, so keep this mapping centralized until their HTML is
-  // cleaned up in a later content-only pass.
+  // Load a small refinement layer without changing the established design system.
+  if (!document.querySelector('link[data-drfarah-refinement]')) {
+    var refinement = document.createElement('link');
+    refinement.rel = 'stylesheet';
+    refinement.href = 'refinement.css?v=20260817-1';
+    refinement.setAttribute('data-drfarah-refinement', 'true');
+    document.head.appendChild(refinement);
+  }
+
+  // Replace retired AI/placeholder image references with approved real Dr. Farah
+  // / clinic photography. Keep the homepage hero as-is until a stronger source
+  // photograph is supplied.
   var realPhotoMap = {
-    'assets/hero-treatment.jpg': {
-      src: 'assets/hero-real.webp',
-      alt: 'Dr. Farah consulting with a patient in her Beverly Hills clinic'
-    },
     'assets/consult-rejuvenation.jpg': {
       src: 'assets/dr-farah-portrait.webp',
       alt: 'Portrait of Dr. Farah'
@@ -32,6 +36,136 @@
     img.setAttribute('alt', replacement.alt);
   });
 
+  // Make the Services hero explicitly use a real clinic photograph rather than
+  // relying on legacy image-name replacement.
+  var servicesHeroImage = document.querySelector('.services-hero__media img');
+  if (servicesHeroImage) {
+    servicesHeroImage.setAttribute('src', 'assets/dr-farah-clinic.webp');
+    servicesHeroImage.setAttribute('alt', 'Dr. Farah in her Beverly Hills clinic');
+    servicesHeroImage.setAttribute('decoding', 'async');
+    servicesHeroImage.classList.add('services-hero__image--ready');
+  }
+
+  // Add a compact jump navigation to the long Services page so patients can
+  // reach the relevant service family without scanning the full page.
+  var servicesHero = document.querySelector('.services-hero');
+  if (servicesHero && !document.querySelector('.service-jump')) {
+    var sectionConfig = [
+      { match: 'Urgent, traveler', id: 'care-now', label: 'Care Now' },
+      { match: 'Pre-Operative', id: 'pre-op', label: 'Pre-Op' },
+      { match: 'Virtual urgent care', id: 'virtual-care', label: 'Virtual Care' },
+      { match: 'Personal Injury', id: 'personal-injury', label: 'Personal Injury' },
+      { match: 'Additional physician services', id: 'additional-services', label: 'More Services' },
+      { match: 'Rejuvenation consultation', id: 'rejuvenation', label: 'Rejuvenation' }
+    ];
+
+    var links = [];
+    document.querySelectorAll('section.svc').forEach(function (section) {
+      var heading = section.querySelector('h2');
+      if (!heading) return;
+      var headingText = heading.textContent.trim();
+      sectionConfig.forEach(function (item) {
+        if (headingText.indexOf(item.match) !== -1) {
+          section.id = item.id;
+          links.push('<a href="#' + item.id + '">' + item.label + '</a>');
+        }
+      });
+    });
+
+    if (links.length) {
+      var jump = document.createElement('nav');
+      jump.className = 'service-jump';
+      jump.setAttribute('aria-label', 'Services on this page');
+      jump.innerHTML = '<div class="wrap service-jump__inner"><span class="service-jump__label">Explore services</span><div class="service-jump__links">' + links.join('') + '</div></div>';
+      servicesHero.insertAdjacentElement('afterend', jump);
+    }
+  }
+
+  // Use the actual insurer artwork already published by the clinic on its legacy
+  // public website. This avoids misleading text-only substitutes on staging.
+  // These should be localized into the new repository before final production
+  // cutover so the new site does not depend on legacy WordPress asset URLs.
+  var insuranceGrid = document.querySelector('.insurance__logos');
+  if (insuranceGrid) {
+    var insurerLogos = [
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/6.png',
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/14.png',
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/3.png',
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/21.png',
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/aetna.jpg',
+      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/22.png'
+    ];
+
+    insuranceGrid.innerHTML = '';
+    insuranceGrid.classList.add('insurance__logos--artwork');
+
+    insurerLogos.forEach(function (src) {
+      var card = document.createElement('div');
+      card.className = 'insurance-logo insurance-logo--artwork';
+
+      var img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Insurance plan logo accepted or referenced by Dr. Farah VIP Urgent Care';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+
+      var fallback = document.createElement('span');
+      fallback.className = 'insurance-logo__fallback';
+      fallback.textContent = 'Insurance plan';
+      fallback.hidden = true;
+
+      img.addEventListener('error', function () {
+        img.hidden = true;
+        fallback.hidden = false;
+        card.classList.add('insurance-logo--fallback');
+      });
+
+      card.appendChild(img);
+      card.appendChild(fallback);
+      insuranceGrid.appendChild(card);
+    });
+
+    var insuranceAction = document.querySelector('.insurance__action');
+    if (insuranceAction) {
+      insuranceAction.textContent = 'Call 310-467-0101 to verify coverage';
+      insuranceAction.setAttribute('aria-label', 'Call Dr. Farah VIP Urgent Care at 310-467-0101 to verify insurance coverage');
+      insuranceAction.setAttribute('title', 'Calls the clinic directly');
+    }
+  }
+
+  // Remove ambiguity from pre-op scheduling CTAs. Until dedicated online pre-op
+  // slots are configured, these actions intentionally call the clinic directly.
+  if (window.location.pathname.indexOf('/pre-op-clearance') !== -1) {
+    var preOpHeroCall = document.querySelector('.landing-hero__actions a[href^="tel:"]');
+    if (preOpHeroCall) {
+      preOpHeroCall.textContent = 'Call 310-467-0101 to schedule';
+      preOpHeroCall.setAttribute('title', 'Calls the clinic directly');
+
+      var heroHelper = document.createElement('p');
+      heroHelper.className = 'cta-helper';
+      heroHelper.textContent = 'Pre-op scheduling is currently handled by phone so the clinic can confirm the surgical requirements and timing.';
+      preOpHeroCall.parentNode.insertAdjacentElement('afterend', heroHelper);
+    }
+
+    var preOpBottomCall = document.querySelector('.cta-band__actions a[href^="tel:"]');
+    if (preOpBottomCall) {
+      preOpBottomCall.textContent = 'Call 310-467-0101 to schedule';
+      preOpBottomCall.setAttribute('title', 'Calls the clinic directly');
+    }
+
+    var mobileSchedule = document.querySelector('.mobilebar__btn--book[href^="tel:"]');
+    if (mobileSchedule) mobileSchedule.textContent = 'Call to schedule';
+  }
+
+  // Make other ambiguous phone-based scheduling labels explicit where they exist.
+  document.querySelectorAll('a[href^="tel:+13104670101"]').forEach(function (link) {
+    if (link.textContent.trim().toLowerCase() === 'schedule by phone') {
+      link.textContent = 'Call 310-467-0101';
+      link.setAttribute('title', 'Calls the clinic directly');
+    }
+  });
+
   // Keep the compact Dr. Farah brand treatment consistent on pages whose
   // hand-authored header/footer omits the decorative mark.
   document.querySelectorAll('.brand').forEach(function (brand) {
@@ -44,8 +178,7 @@
   });
 
   // Keep primary navigation consistent across legacy static pages during the
-  // incremental marketing-alignment rollout. Existing HTML remains a no-JS
-  // fallback; the runtime navigation reflects the current business priorities.
+  // incremental marketing-alignment rollout.
   document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
     nav.innerHTML =
       '<a href="/services">Services</a>' +
@@ -55,7 +188,7 @@
       '<a href="/contact">Contact</a>';
   });
 
-  // Header scroll state
+  // Header scroll state.
   var header = document.getElementById('siteHeader');
   if (header) {
     var onScroll = function () {
@@ -66,11 +199,8 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // Cookie notice.
-  // The site currently uses only essential first-party cookies. The notice is
-  // still dismissible in both directions because users must never be trapped by
-  // a persistent overlay. The preference itself is stored in localStorage so a
-  // "Decline" choice does not need to create an additional cookie.
+  // Cookie notice. The site currently uses only essential first-party cookies.
+  // Both choices dismiss the overlay and the preference is kept in localStorage.
   var STORAGE_KEY = 'drfarah_cookie_choice';
   var banner = document.getElementById('cookie');
   var acceptBtn = document.getElementById('cookieOk');
@@ -88,7 +218,6 @@
       window.localStorage.setItem(STORAGE_KEY, choice);
     } catch (e) {
       // Storage can be unavailable in hardened/private browsing contexts.
-      // The banner still closes for the current page session.
     }
   }
 
