@@ -25,13 +25,15 @@
     return String(value).toLowerCase().replace(/[^a-z0-9._:-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   }
 
+  /* appointments.source is currently VARCHAR(32) in the deployed schema.
+     Keep browser-generated attribution markers inside that real DB boundary. */
   function attributionSource() {
     var partner = safeMarker(params.get('partner'));
-    if (partner) return ('hotel:' + partner).slice(0, 64);
+    if (partner) return ('hotel:' + partner).slice(0, 32);
     var source = safeMarker(params.get('source'));
-    if (source) return source.slice(0, 64);
+    if (source) return source.slice(0, 32);
     var utm = safeMarker(params.get('utm_source'));
-    if (utm) return ('utm:' + utm).slice(0, 64);
+    if (utm) return ('utm:' + utm).slice(0, 32);
     return 'web';
   }
 
