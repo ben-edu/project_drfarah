@@ -1,6 +1,15 @@
 /* Focused UI refinement — August 17, 2026.
    Keeps the existing quiet-luxury / clinical-authority system intact. */
 
+/* Preserve the current deployed hero treatment until a stronger source photo is
+   supplied. The original HTML image remains as a no-CSS fallback. */
+.hero__media{
+  background:url('assets/hero-real.webp') center center / cover no-repeat;
+}
+.hero__media > img{
+  opacity:0;
+}
+
 /* Services hero: make the real image unmistakably visible and intentional. */
 .services-hero__media{
   position:relative;
