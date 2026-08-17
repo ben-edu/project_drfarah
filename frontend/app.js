@@ -12,6 +12,18 @@
     brand.insertBefore(mark, brand.querySelector('.brand__text'));
   });
 
+  // Keep primary navigation consistent across legacy static pages during the
+  // incremental marketing-alignment rollout. Existing HTML remains a no-JS
+  // fallback; the runtime navigation reflects the current business priorities.
+  document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
+    nav.innerHTML =
+      '<a href="/services">Services</a>' +
+      '<a href="/hotel-traveler-care">Hotel &amp; Traveler</a>' +
+      '<a href="/pre-op-clearance">Pre-Op Clearance</a>' +
+      '<a href="/about">The Physician</a>' +
+      '<a href="/contact">Contact</a>';
+  });
+
   // Header scroll state
   var header = document.getElementById('siteHeader');
   if (header) {
