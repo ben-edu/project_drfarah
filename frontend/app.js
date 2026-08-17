@@ -1,6 +1,37 @@
 (function () {
   'use strict';
 
+  // Replace the retired AI/placeholder image references with approved real
+  // Dr. Farah / clinic photography. Several static pages still use the legacy
+  // semantic filenames, so keep this mapping centralized until their HTML is
+  // cleaned up in a later content-only pass.
+  var realPhotoMap = {
+    'assets/hero-treatment.jpg': {
+      src: 'assets/hero-real.webp',
+      alt: 'Dr. Farah consulting with a patient in her Beverly Hills clinic'
+    },
+    'assets/consult-rejuvenation.jpg': {
+      src: 'assets/dr-farah-portrait.webp',
+      alt: 'Portrait of Dr. Farah'
+    },
+    'assets/mobile-visit.jpg': {
+      src: 'assets/clinic-exterior.webp',
+      alt: 'Exterior of Dr. Farah VIP Urgent Care at 9229 Wilshire Boulevard in Beverly Hills'
+    },
+    'assets/reception-vip.jpg': {
+      src: 'assets/dr-farah-clinic.webp',
+      alt: 'Dr. Farah in her Beverly Hills clinic'
+    }
+  };
+
+  document.querySelectorAll('img[src]').forEach(function (img) {
+    var currentSrc = img.getAttribute('src');
+    var replacement = realPhotoMap[currentSrc];
+    if (!replacement) return;
+    img.setAttribute('src', replacement.src);
+    img.setAttribute('alt', replacement.alt);
+  });
+
   // Keep the compact Dr. Farah brand treatment consistent on pages whose
   // hand-authored header/footer omits the decorative mark.
   document.querySelectorAll('.brand').forEach(function (brand) {
