@@ -18,7 +18,10 @@ This iteration aligns the public website with Dr. Farah's requested changes and 
 - Virtual refill copy is deliberately framed as a clinical evaluation rather than guaranteed prescribing.
 - Public virtual-refill copy states the clinic's stricter policy not to prescribe controlled substances through this service while acknowledging that legal eligibility also depends on patient location, licensure, federal/state rules, pharmacy rules, and clinical judgment.
 - Public booking remains minimum-necessary and does not accept medication images, prescription labels, or medical-document uploads.
-- Booking reason categories and first-party acquisition-context support are prepared separately; no clinical narrative is added for marketing attribution.
+- Booking reason categories and first-party acquisition-context support are added without collecting a clinical narrative for marketing attribution.
+- Browser-generated acquisition markers are constrained to the real `appointments.source` VARCHAR(32) database boundary, and the API validation now matches that boundary.
+- Primary navigation is normalized across the static pages at runtime during this incremental rollout.
+- The existing general contact form no longer displays a false success message: until a real ContactRequest backend exists, it clearly states that the message was not transmitted and directs the user to phone/booking.
 
 ## Deliberately not implemented yet
 
@@ -33,7 +36,7 @@ Their duration, buffers, booking mode, and availability have not yet been confir
 
 ### Real photography
 
-The current staging image files remain placeholders until the project owner supplies approved real photography. Replace them before production publication and update alt text to describe the actual image truthfully.
+The current staging image files remain placeholders until approved real photography is available to the repository as file assets. Replace them before production publication and update alt text to describe the actual image truthfully.
 
 ### Insurance logo binaries
 
@@ -51,7 +54,7 @@ Review excerpts must be checked against the current Google Business Profile befo
 4. Confirm Personal Injury/MVA starting price and public scope.
 5. Confirm virtual-care/refill clinical policy, patient-location restrictions, secure medication-verification workflow, and final legal/compliance wording.
 6. Confirm service durations, buffers, booking modes, and availability before adding new services to the scheduling API.
-7. Supply and approve real physician/clinic photography.
+7. Supply and approve real physician/clinic photography as repository-ready files.
 8. Verify patient review excerpts and display permissions/source.
 
 ## Production boundary
