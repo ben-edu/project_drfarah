@@ -60,9 +60,13 @@ class AppointmentCreate(BaseModel):
     )
     source: str | None = Field(
         default=None,
-        max_length=64,
+        max_length=32,
         examples=[None],
-        description="Internal marker (e.g. 'ci' for CI smoke tests). Not exposed to patients.",
+        description=(
+            "Non-clinical acquisition/internal marker (for example 'web', 'ci', "
+            "or a compact partner marker). Matches the appointments.source VARCHAR(32) "
+            "database boundary and must never contain medical information."
+        ),
     )
 
 

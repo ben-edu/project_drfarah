@@ -1,30 +1,52 @@
 /* Booking wizard — talks to the real appointments API.
    Flow: choose service -> load availability -> pick slot -> details -> confirm.
-   Endpoints:
-     GET  {API_BASE}/services
-     GET  {API_BASE}/availability?service_code&start_date&end_date
-     POST {API_BASE}/appointments   (201 created | 409 slot taken | 422 invalid)
+   Query parameters supported:
+     ?service=<service-code>    preselects a service when it exists in the API
+     ?reason=<reason-category>  prefills the structured reason category
+     ?source=<source>           first-party acquisition marker
+     ?partner=<partner-code>    hotel/referral partner attribution marker
+     ?utm_source=<source>       marketing source attribution marker
 */
 (function () {
   'use strict';
 
-  // Derive the API base from the current host so one file works on staging & prod.
   var API_BASE = (function () {
     var h = location.hostname;
     if (h.indexOf('staging.') === 0) return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
     if (h === 'drfarah.proxbenovh.cloud' || h.indexOf('www.') === 0) return 'https://api.drfarah.proxbenovh.cloud/api/v1';
-    // Fallback (local preview or unknown host): staging API.
     return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
   })();
 
   var CLINIC_TZ = 'America/Los_Angeles';
+  var params = new URLSearchParams(window.location.search);
+
+  function safeMarker(value) {
+    if (!value) return '';
+    return String(value).toLowerCase().replace(/[^a-z0-9._:-]/g, '-').replace(/-+/g, '-').slice(0, 48);
+  }
+
+  /* appointments.source is currently VARCHAR(32) in the deployed schema.
+     Keep browser-generated attribution markers inside that real DB boundary. */
+  function attributionSource() {
+    var partner = safeMarker(params.get('partner'));
+    if (partner) return ('hotel:' + partner).slice(0, 32);
+    var source = safeMarker(params.get('source'));
+    if (source) return source.slice(0, 32);
+    var utm = safeMarker(params.get('utm_source'));
+    if (utm) return ('utm:' + utm).slice(0, 32);
+    return 'web';
+  }
+
+  var requestedService = safeMarker(params.get('service'));
+  var requestedReason = params.get('reason') || '';
 
   var state = {
     step: 1,
     serviceCode: null,
     serviceName: null,
-    slotStart: null,   // ISO string with offset
+    slotStart: null,
     slotLabel: null,
+    source: attributionSource()
   };
 
   var form = document.getElementById('bookingForm');
@@ -46,27 +68,33 @@
     window.scrollTo({ top: form.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
   }
 
-  // ---- Formatting helpers ----
   function fmtDay(d) {
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', timeZone: CLINIC_TZ,
     }).format(d);
   }
+
   function fmtTime(d) {
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric', minute: '2-digit', timeZone: CLINIC_TZ,
     }).format(d);
   }
+
   function isoDate(d) {
-    // YYYY-MM-DD in local terms is fine for the date-range query.
     return d.toISOString().slice(0, 10);
   }
 
-  // ---- Step 1: load services ----
   var serviceChoices = document.getElementById('serviceChoices');
   var serviceLoading = document.getElementById('serviceLoading');
   var serviceError = document.getElementById('serviceError');
   var toStep2 = document.getElementById('toStep2');
+
+  function selectServiceInput(input, svc) {
+    input.checked = true;
+    state.serviceCode = svc.code;
+    state.serviceName = svc.name;
+    toStep2.disabled = false;
+  }
 
   function loadServices() {
     fetch(API_BASE + '/services', { headers: { 'Accept': 'application/json' } })
@@ -74,25 +102,42 @@
       .then(function (data) {
         var services = (data && data.services) || [];
         if (!services.length) throw new Error('no services');
-        serviceLoading.remove();
-        services.forEach(function (svc, i) {
+        if (serviceLoading) serviceLoading.remove();
+
+        var matchedRequestedService = false;
+
+        services.forEach(function (svc) {
           var id = 'svc_' + svc.code;
           var label = document.createElement('label');
           label.className = 'choice';
           label.innerHTML =
-            '<input type="radio" name="service" value="' + esc(svc.code) + '" id="' + id + '"' + (i === 0 ? '' : '') + '>' +
+            '<input type="radio" name="service" value="' + esc(svc.code) + '" id="' + id + '">' +
             '<span>' +
               '<span class="choice__title">' + esc(svc.name) + '</span>' +
               (svc.description ? '<span class="choice__desc">' + esc(svc.description) + '</span>' : '') +
               (svc.duration_minutes ? '<span class="choice__meta">' + svc.duration_minutes + ' min</span>' : '') +
             '</span>';
+
           serviceChoices.appendChild(label);
-          label.querySelector('input').addEventListener('change', function () {
+          var input = label.querySelector('input');
+
+          input.addEventListener('change', function () {
             state.serviceCode = svc.code;
             state.serviceName = svc.name;
             toStep2.disabled = false;
           });
+
+          if (requestedService && svc.code === requestedService) {
+            selectServiceInput(input, svc);
+            matchedRequestedService = true;
+          }
         });
+
+        /* A stale/unknown service query parameter never silently maps to
+           another service. The user must choose an API-configured service. */
+        if (requestedService && !matchedRequestedService) {
+          requestedService = '';
+        }
       })
       .catch(function () {
         if (serviceLoading) serviceLoading.remove();
@@ -101,14 +146,11 @@
       });
   }
 
-  // ---- Step 2: load availability ----
   var slotsArea = document.getElementById('slotsArea');
-  var slotsLoading = document.getElementById('slotsLoading');
   var slotsError = document.getElementById('slotsError');
   var toStep3 = document.getElementById('toStep3');
 
   function loadAvailability() {
-    // Reset
     slotsArea.innerHTML = '<p class="booking-loading">Loading available times…</p>';
     slotsError.style.display = 'none';
     toStep3.disabled = true;
@@ -137,9 +179,9 @@
 
   function renderSlots(slots) {
     slotsArea.innerHTML = '';
-    // Group by day (in clinic TZ).
     var groups = {};
     var order = [];
+
     slots.forEach(function (s) {
       var d = new Date(s.starts_at);
       var key = fmtDay(d);
@@ -155,6 +197,7 @@
 
       var grid = document.createElement('div');
       grid.className = 'slots';
+
       groups[day].forEach(function (item) {
         var btn = document.createElement('button');
         btn.type = 'button';
@@ -169,11 +212,20 @@
         });
         grid.appendChild(btn);
       });
+
       slotsArea.appendChild(grid);
     });
   }
 
-  // ---- Step 4: recap ----
+  function prefillReason() {
+    if (!requestedReason) return;
+    var reason = document.getElementById('reason');
+    if (!reason) return;
+    var options = Array.prototype.slice.call(reason.options);
+    var match = options.find(function (opt) { return opt.value === requestedReason || opt.text === requestedReason; });
+    if (match) reason.value = match.value;
+  }
+
   function buildRecap() {
     var list = document.getElementById('recapList');
     var rows = [
@@ -189,7 +241,6 @@
     }).join('');
   }
 
-  // ---- Submit ----
   var submitError = document.getElementById('submitError');
   var confirmBtn = document.getElementById('confirmBtn');
 
@@ -207,7 +258,7 @@
       email: val('email'),
       phone: val('phone'),
       reason_category: val('reason'),
-      source: 'web',
+      source: state.source,
     };
 
     fetch(API_BASE + '/appointments', {
@@ -244,7 +295,6 @@
       });
   });
 
-  // ---- Navigation buttons ----
   form.addEventListener('click', function (e) {
     var next = e.target.closest('[data-next]');
     var back = e.target.closest('[data-back]');
@@ -264,22 +314,35 @@
       if (!el.value.trim()) { el.style.borderColor = 'var(--gold-deep)'; ok = false; }
       else { el.style.borderColor = ''; }
     });
+
     var email = document.getElementById('email');
-    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { email.style.borderColor = 'var(--gold-deep)'; ok = false; }
+    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+      email.style.borderColor = 'var(--gold-deep)';
+      ok = false;
+    }
+
     var consent = document.getElementById('consent');
-    if (!consent.checked) { ok = false; consent.parentElement.style.color = 'var(--gold-deep)'; }
-    else { consent.parentElement.style.color = ''; }
+    if (!consent.checked) {
+      ok = false;
+      consent.parentElement.style.color = 'var(--gold-deep)';
+    } else {
+      consent.parentElement.style.color = '';
+    }
+
     return ok;
   }
 
-  // ---- Small utils ----
-  function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
-  // Init
+  prefillReason();
   loadServices();
 })();
