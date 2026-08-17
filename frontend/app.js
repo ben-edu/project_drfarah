@@ -1,5 +1,17 @@
 (function () {
   'use strict';
+
+  // Keep the compact Dr. Farah brand treatment consistent on pages whose
+  // hand-authored header/footer omits the decorative mark.
+  document.querySelectorAll('.brand').forEach(function (brand) {
+    if (brand.querySelector('.brand__mark') || !brand.querySelector('.brand__text')) return;
+    var mark = document.createElement('span');
+    mark.className = 'brand__mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.innerHTML = '<svg viewBox="0 0 44 44" width="38" height="38" fill="none"><circle cx="22" cy="22" r="21" stroke="currentColor" stroke-width="1" opacity=".5"/><circle cx="22" cy="22" r="16.5" stroke="currentColor" stroke-width="1"/><path d="M17.5 14.5h9M17.5 14.5v15M17.5 22h6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    brand.insertBefore(mark, brand.querySelector('.brand__text'));
+  });
+
   // Header scroll state
   var header = document.getElementById('siteHeader');
   if (header) {
