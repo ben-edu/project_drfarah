@@ -5,7 +5,7 @@
   if (!document.querySelector('link[data-drfarah-refinement]')) {
     var refinement = document.createElement('link');
     refinement.rel = 'stylesheet';
-    refinement.href = 'refinement.css?v=20260817-1';
+    refinement.href = 'refinement.css?v=20260825-1';
     refinement.setAttribute('data-drfarah-refinement', 'true');
     document.head.appendChild(refinement);
   }
@@ -79,6 +79,25 @@
       jump.innerHTML = '<div class="wrap service-jump__inner"><span class="service-jump__label">Explore services</span><div class="service-jump__links">' + links.join('') + '</div></div>';
       servicesHero.insertAdjacentElement('afterend', jump);
     }
+  }
+
+  // Give the existing IV hydration service a stable deep-link target. This keeps
+  // the new header item tied to the real Services content without inventing a
+  // standalone IV page that does not exist yet.
+  var ivTreatmentCard = null;
+  document.querySelectorAll('.svc-card__title').forEach(function (title) {
+    if (title.textContent.trim().toLowerCase() === 'iv hydration & recovery') {
+      ivTreatmentCard = title.closest('.svc-card');
+      if (ivTreatmentCard) ivTreatmentCard.id = 'iv-treatment';
+    }
+  });
+
+  // When arriving from another page with /services#iv-treatment, the target ID
+  // is added by this script, so explicitly complete the hash navigation.
+  if (ivTreatmentCard && window.location.hash === '#iv-treatment') {
+    window.requestAnimationFrame(function () {
+      ivTreatmentCard.scrollIntoView({ block: 'start' });
+    });
   }
 
   // Use the actual insurer artwork already published by the clinic on its legacy
@@ -182,6 +201,8 @@
   document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
     nav.innerHTML =
       '<a href="/services">Services</a>' +
+      '<a href="/virtual-urgent-care">Telehealth / Virtual Visit</a>' +
+      '<a href="/services#iv-treatment">IV Treatment</a>' +
       '<a href="/hotel-traveler-care">Hotel &amp; Traveler</a>' +
       '<a href="/pre-op-clearance">Pre-Op Clearance</a>' +
       '<a href="/about">The Physician</a>' +
