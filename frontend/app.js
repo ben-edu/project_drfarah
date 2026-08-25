@@ -1,13 +1,31 @@
 (function () {
   'use strict';
 
+  var IMAGE_REVISION = '20260825-3';
+
   // Load a small refinement layer without changing the established design system.
+  // The revision is intentionally bumped so intermediaries cannot keep serving the
+  // earlier stylesheet that hid the homepage and Services images.
   if (!document.querySelector('link[data-drfarah-refinement]')) {
     var refinement = document.createElement('link');
     refinement.rel = 'stylesheet';
-    refinement.href = 'refinement.css?v=20260825-2';
+    refinement.href = 'refinement.css?v=' + IMAGE_REVISION;
     refinement.setAttribute('data-drfarah-refinement', 'true');
     document.head.appendChild(refinement);
+  }
+
+  function versionedAsset(path) {
+    return path + '?v=' + IMAGE_REVISION;
+  }
+
+  function forceVisibleImage(img, src, alt) {
+    if (!img) return;
+    img.setAttribute('src', versionedAsset(src));
+    if (typeof alt === 'string') img.setAttribute('alt', alt);
+    img.setAttribute('decoding', 'async');
+    img.style.setProperty('opacity', '1', 'important');
+    img.style.setProperty('visibility', 'visible', 'important');
+    img.style.setProperty('display', 'block', 'important');
   }
 
   // Replace retired placeholder image references with the current approved real
@@ -35,32 +53,46 @@
     img.setAttribute('alt', replacement.alt);
   });
 
-  // The homepage uses two approved AI-assisted illustrative Dr. Farah images:
-  // a broad hero treatment and a dedicated physician portrait lower on the page.
-  // Keep their alt text explicit so they are not presented as documentary photos
-  // of a real patient encounter or the real clinic interior.
-  var homepageHeroImage = document.querySelector('.hero__media img');
-  if (homepageHeroImage) {
-    homepageHeroImage.setAttribute('src', 'assets/home-hero-doctor.webp');
-    homepageHeroImage.setAttribute('alt', '');
-    homepageHeroImage.setAttribute('decoding', 'async');
+  // Critical imagery is page-scoped and forced visible with versioned asset URLs.
+  // This makes the result independent of stale CSS/background rules.
+  var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
+
+  if (pagePath === '/') {
+    forceVisibleImage(
+      document.querySelector('.hero__media img'),
+      'assets/home-hero-doctor.webp',
+      ''
+    );
+
+    forceVisibleImage(
+      document.querySelector('.doctor__media img'),
+      'assets/dr-farah-portrait.webp',
+      'Portrait of Dr. Farah'
+    );
   }
 
-  var homepageDoctorImage = document.querySelector('.doctor__media img');
-  if (homepageDoctorImage) {
-    homepageDoctorImage.setAttribute('src', 'assets/home-doctor-portrait.webp');
-    homepageDoctorImage.setAttribute('alt', 'Illustrative portrait of Dr. Farah in a clinic setting');
-    homepageDoctorImage.setAttribute('decoding', 'async');
+  if (pagePath === '/services') {
+    var servicesHeroImage = document.querySelector('.services-hero__media img');
+    forceVisibleImage(
+      servicesHeroImage,
+      'assets/service-iv-treatment.webp',
+      'Illustrative physician-supervised IV treatment in a clinic setting'
+    );
+    if (servicesHeroImage) servicesHeroImage.classList.add('services-hero__image--ready');
   }
 
-  // Keep the Services overview intentionally restrained: one illustrative IV
-  // treatment hero only, rather than adding an image to every service card.
-  var servicesHeroImage = document.querySelector('.services-hero__media img');
-  if (servicesHeroImage) {
-    servicesHeroImage.setAttribute('src', 'assets/service-iv-treatment.webp');
-    servicesHeroImage.setAttribute('alt', 'Illustrative physician-supervised IV treatment in a clinic setting');
-    servicesHeroImage.setAttribute('decoding', 'async');
-    servicesHeroImage.classList.add('services-hero__image--ready');
+  if (pagePath === '/about') {
+    forceVisibleImage(
+      document.querySelector('.about-lead__media img'),
+      'assets/dr-farah-portrait.webp',
+      'Portrait of Dr. Farah'
+    );
+
+    forceVisibleImage(
+      document.querySelector('.doctor__media img'),
+      'assets/dr-farah-clinic.webp',
+      'Dr. Farah in her Beverly Hills clinic'
+    );
   }
 
   // Add a compact jump navigation to the long Services page so patients can
