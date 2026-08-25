@@ -3,8 +3,37 @@ Options -Indexes
 
 ErrorDocument 404 /404.html
 
+# Staging is an active review environment. Avoid stale HTML/CSS/JS and critical
+# image responses while visual QA is in progress. Production cache policy can be
+# tightened separately at cutover.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?:html|css|js)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+  <FilesMatch "^(?:hero-treatment\.jpg|consult-rejuvenation\.jpg|reception-vip\.jpg|home-hero-doctor\.webp|dr-farah-portrait\.webp|dr-farah-clinic\.webp|service-iv-treatment\.webp)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # Critical image fallbacks. These rules make the intended imagery work even
+  # when an older HTML/JS response still references the retired asset names.
+  RewriteRule ^assets/hero-treatment\.jpg$ assets/home-hero-doctor.webp [L]
+  RewriteRule ^assets/consult-rejuvenation\.jpg$ assets/dr-farah-portrait.webp [L]
+
+  # reception-vip.jpg is still referenced by two legacy templates. Resolve it to
+  # the correct page-specific image based on the same-origin referring page.
+  RewriteCond %{HTTP_REFERER} /services(?:$|[/?#]) [NC]
+  RewriteRule ^assets/reception-vip\.jpg$ assets/service-iv-treatment.webp [L]
+
+  RewriteCond %{HTTP_REFERER} /about(?:$|[/?#]) [NC]
+  RewriteRule ^assets/reception-vip\.jpg$ assets/dr-farah-clinic.webp [L]
 
   # If request maps to an existing file or directory, serve it as-is.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
