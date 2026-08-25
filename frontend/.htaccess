@@ -18,11 +18,20 @@ ErrorDocument 404 /404.html
 
   # Serve the byte-safe v5 runtime for the existing app.js URL. Keeping the
   # public URL stable avoids editing every static template, while replacing the
-  # fragile runtime that swapped critical images to unreliable binary assets.
+  # fragile runtime that swaps critical imagery only after a successful decode.
   RewriteRule ^app\.js$ app-v5.js [L]
 
-  # Do not rewrite legacy image URLs. The original HTML image remains visible
-  # until app-v5 has reconstructed and successfully decoded the approved image.
+  # Prevent a flash of the retired first-generation imagery before app-v5 has
+  # reconstructed the approved image. The user sees only a neutral background
+  # matching the site's dark visual system during those few milliseconds.
+  RewriteRule ^assets/hero-treatment\.jpg$ assets/critical-image-placeholder.svg [L]
+  RewriteRule ^assets/home-hero-doctor\.webp$ assets/critical-image-placeholder.svg [L]
+
+  # reception-vip.jpg is also used on About, so only suppress it when the
+  # requesting document is the Services overview. About keeps its existing
+  # fallback behavior until its approved image has decoded.
+  RewriteCond %{HTTP_REFERER} /services(?:$|[/?#]) [NC]
+  RewriteRule ^assets/reception-vip\.jpg$ assets/critical-image-placeholder.svg [L]
 
   # If request maps to an existing file or directory, serve it as-is.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
