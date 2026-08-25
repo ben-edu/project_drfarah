@@ -1,102 +1,127 @@
 (function () {
   'use strict';
 
-  var IMAGE_REVISION = '20260825-3';
+  var REVISION = '20260825-5';
+  var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
-  // Load a small refinement layer without changing the established design system.
-  // The revision is intentionally bumped so intermediaries cannot keep serving the
-  // earlier stylesheet that hid the homepage and Services images.
+  // Keep the approved refinement layer, but load a new revision so staging
+  // cannot reuse the earlier image-handling CSS response.
   if (!document.querySelector('link[data-drfarah-refinement]')) {
     var refinement = document.createElement('link');
     refinement.rel = 'stylesheet';
-    refinement.href = 'refinement.css?v=' + IMAGE_REVISION;
+    refinement.href = '/refinement.css?v=' + REVISION;
     refinement.setAttribute('data-drfarah-refinement', 'true');
     document.head.appendChild(refinement);
   }
 
-  function versionedAsset(path) {
-    return path + '?v=' + IMAGE_REVISION;
+  // Critical imagery is stored as exact base64 text chunks because the previous
+  // binary upload path changed the image bytes. Never clear the existing image
+  // first: replace it only after the reconstructed WebP has decoded successfully.
+  var reliableImages = {
+    '/': [
+      {
+        selector: '.hero__media img',
+        parts: ['/image-data-v5/home-01.txt', '/image-data-v5/home-02.txt', '/image-data-v5/home-03.txt'],
+        alt: ''
+      },
+      {
+        selector: '.doctor__media img',
+        parts: ['/image-data-v5/portrait-01.txt', '/image-data-v5/portrait-02.txt', '/image-data-v5/portrait-03.txt'],
+        alt: 'Portrait of Dr. Farah'
+      }
+    ],
+    '/services': [
+      {
+        selector: '.services-hero__media img',
+        parts: ['/image-data-v5/iv-01.txt', '/image-data-v5/iv-02.txt'],
+        alt: 'Illustrative physician-supervised IV treatment in a clinic setting'
+      }
+    ],
+    '/about': [
+      {
+        selector: '.about-lead__media img',
+        parts: ['/image-data-v5/portrait-01.txt', '/image-data-v5/portrait-02.txt', '/image-data-v5/portrait-03.txt'],
+        alt: 'Portrait of Dr. Farah'
+      },
+      {
+        selector: '.doctor__media img',
+        parts: ['/image-data-v5/about-01.txt', '/image-data-v5/about-02.txt', '/image-data-v5/about-03.txt'],
+        alt: 'Dr. Farah in her clinic'
+      }
+    ]
+  };
+
+  function fetchChunk(url) {
+    return fetch(url + '?v=' + REVISION, { cache: 'no-store' }).then(function (response) {
+      if (!response.ok) throw new Error('Image chunk failed: ' + url + ' (' + response.status + ')');
+      return response.text();
+    });
   }
 
-  function forceVisibleImage(img, src, alt) {
-    if (!img) return;
-    img.setAttribute('src', versionedAsset(src));
-    if (typeof alt === 'string') img.setAttribute('alt', alt);
-    img.setAttribute('decoding', 'async');
-    img.style.setProperty('opacity', '1', 'important');
-    img.style.setProperty('visibility', 'visible', 'important');
-    img.style.setProperty('display', 'block', 'important');
+  function replaceAfterDecode(spec) {
+    var target = document.querySelector(spec.selector);
+    if (!target) return;
+
+    var originalSrc = target.getAttribute('src');
+    var originalAlt = target.getAttribute('alt') || '';
+
+    Promise.all(spec.parts.map(fetchChunk))
+      .then(function (parts) {
+        var base64 = parts.join('').replace(/\s+/g, '');
+        var dataUrl = 'data:image/webp;base64,' + base64;
+        var probe = new Image();
+
+        probe.onload = function () {
+          target.setAttribute('src', dataUrl);
+          target.setAttribute('alt', spec.alt || '');
+          target.setAttribute('decoding', 'async');
+          target.style.setProperty('display', 'block', 'important');
+          target.style.setProperty('visibility', 'visible', 'important');
+          target.style.setProperty('opacity', '1', 'important');
+          target.setAttribute('data-image-revision', REVISION);
+        };
+
+        probe.onerror = function () {
+          // Preserve the original HTML image on any reconstruction/decoding error.
+          target.setAttribute('src', originalSrc);
+          target.setAttribute('alt', originalAlt);
+          target.style.setProperty('display', 'block', 'important');
+          target.style.setProperty('visibility', 'visible', 'important');
+          target.style.setProperty('opacity', '1', 'important');
+          console.error('Dr. Farah image decode failed for ' + spec.selector);
+        };
+
+        probe.src = dataUrl;
+      })
+      .catch(function (error) {
+        target.setAttribute('src', originalSrc);
+        target.setAttribute('alt', originalAlt);
+        target.style.setProperty('display', 'block', 'important');
+        target.style.setProperty('visibility', 'visible', 'important');
+        target.style.setProperty('opacity', '1', 'important');
+        console.error(error);
+      });
   }
 
-  // Replace retired placeholder image references with the current approved real
-  // Dr. Farah / clinic photography where those real photographs remain in use.
+  (reliableImages[pagePath] || []).forEach(replaceAfterDecode);
+
+  // Replace only non-critical legacy placeholders. Critical homepage, Services,
+  // and About imagery is intentionally excluded from this map.
   var realPhotoMap = {
-    'assets/consult-rejuvenation.jpg': {
-      src: 'assets/dr-farah-portrait.webp',
-      alt: 'Portrait of Dr. Farah'
-    },
     'assets/mobile-visit.jpg': {
       src: 'assets/clinic-exterior.webp',
       alt: 'Exterior of Dr. Farah VIP Urgent Care at 9229 Wilshire Boulevard in Beverly Hills'
-    },
-    'assets/reception-vip.jpg': {
-      src: 'assets/dr-farah-clinic.webp',
-      alt: 'Dr. Farah in her Beverly Hills clinic'
     }
   };
 
   document.querySelectorAll('img[src]').forEach(function (img) {
-    var currentSrc = img.getAttribute('src');
-    var replacement = realPhotoMap[currentSrc];
+    var replacement = realPhotoMap[img.getAttribute('src')];
     if (!replacement) return;
     img.setAttribute('src', replacement.src);
     img.setAttribute('alt', replacement.alt);
   });
 
-  // Critical imagery is page-scoped and forced visible with versioned asset URLs.
-  // This makes the result independent of stale CSS/background rules.
-  var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
-
-  if (pagePath === '/') {
-    forceVisibleImage(
-      document.querySelector('.hero__media img'),
-      'assets/home-hero-doctor.webp',
-      ''
-    );
-
-    forceVisibleImage(
-      document.querySelector('.doctor__media img'),
-      'assets/dr-farah-portrait.webp',
-      'Portrait of Dr. Farah'
-    );
-  }
-
-  if (pagePath === '/services') {
-    var servicesHeroImage = document.querySelector('.services-hero__media img');
-    forceVisibleImage(
-      servicesHeroImage,
-      'assets/service-iv-treatment.webp',
-      'Illustrative physician-supervised IV treatment in a clinic setting'
-    );
-    if (servicesHeroImage) servicesHeroImage.classList.add('services-hero__image--ready');
-  }
-
-  if (pagePath === '/about') {
-    forceVisibleImage(
-      document.querySelector('.about-lead__media img'),
-      'assets/dr-farah-portrait.webp',
-      'Portrait of Dr. Farah'
-    );
-
-    forceVisibleImage(
-      document.querySelector('.doctor__media img'),
-      'assets/dr-farah-clinic.webp',
-      'Dr. Farah in her Beverly Hills clinic'
-    );
-  }
-
-  // Add a compact jump navigation to the long Services page so patients can
-  // reach the relevant service family without scanning the full page.
+  // Compact jump navigation for the Services overview.
   var servicesHero = document.querySelector('.services-hero');
   if (servicesHero && !document.querySelector('.service-jump')) {
     var sectionConfig = [
@@ -107,20 +132,18 @@
       { match: 'Additional physician services', id: 'additional-services', label: 'More Services' },
       { match: 'Rejuvenation consultation', id: 'rejuvenation', label: 'Rejuvenation' }
     ];
-
     var links = [];
     document.querySelectorAll('section.svc').forEach(function (section) {
       var heading = section.querySelector('h2');
       if (!heading) return;
-      var headingText = heading.textContent.trim();
+      var text = heading.textContent.trim();
       sectionConfig.forEach(function (item) {
-        if (headingText.indexOf(item.match) !== -1) {
+        if (text.indexOf(item.match) !== -1) {
           section.id = item.id;
           links.push('<a href="#' + item.id + '">' + item.label + '</a>');
         }
       });
     });
-
     if (links.length) {
       var jump = document.createElement('nav');
       jump.className = 'service-jump';
@@ -130,9 +153,7 @@
     }
   }
 
-  // Give the existing IV hydration service a stable deep-link target. This keeps
-  // the header item tied to the real Services content without inventing a
-  // standalone IV page that does not exist yet.
+  // Stable direct target for the real IV hydration service.
   var ivTreatmentCard = null;
   document.querySelectorAll('.svc-card__title').forEach(function (title) {
     if (title.textContent.trim().toLowerCase() === 'iv hydration & recovery') {
@@ -140,19 +161,13 @@
       if (ivTreatmentCard) ivTreatmentCard.id = 'iv-treatment';
     }
   });
-
-  // When arriving from another page with /services#iv-treatment, the target ID
-  // is added by this script, so explicitly complete the hash navigation.
   if (ivTreatmentCard && window.location.hash === '#iv-treatment') {
     window.requestAnimationFrame(function () {
       ivTreatmentCard.scrollIntoView({ block: 'start' });
     });
   }
 
-  // Use the actual insurer artwork already published by the clinic on its legacy
-  // public website. This avoids misleading text-only substitutes on staging.
-  // These should be localized into the new repository before final production
-  // cutover so the new site does not depend on legacy WordPress asset URLs.
+  // Use insurer artwork from the clinic's legacy public site during staging.
   var insuranceGrid = document.querySelector('.insurance__logos');
   if (insuranceGrid) {
     var insurerLogos = [
@@ -163,37 +178,30 @@
       'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/aetna.jpg',
       'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/22.png'
     ];
-
     insuranceGrid.innerHTML = '';
     insuranceGrid.classList.add('insurance__logos--artwork');
-
     insurerLogos.forEach(function (src) {
       var card = document.createElement('div');
       card.className = 'insurance-logo insurance-logo--artwork';
-
       var img = document.createElement('img');
       img.src = src;
       img.alt = 'Insurance plan logo accepted or referenced by Dr. Farah VIP Urgent Care';
       img.loading = 'lazy';
       img.decoding = 'async';
       img.referrerPolicy = 'no-referrer';
-
       var fallback = document.createElement('span');
       fallback.className = 'insurance-logo__fallback';
       fallback.textContent = 'Insurance plan';
       fallback.hidden = true;
-
       img.addEventListener('error', function () {
         img.hidden = true;
         fallback.hidden = false;
         card.classList.add('insurance-logo--fallback');
       });
-
       card.appendChild(img);
       card.appendChild(fallback);
       insuranceGrid.appendChild(card);
     });
-
     var insuranceAction = document.querySelector('.insurance__action');
     if (insuranceAction) {
       insuranceAction.textContent = 'Call 310-467-0101 to verify coverage';
@@ -202,31 +210,28 @@
     }
   }
 
-  // Remove ambiguity from pre-op scheduling CTAs. Until dedicated online pre-op
-  // slots are configured, these actions intentionally call the clinic directly.
-  if (window.location.pathname.indexOf('/pre-op-clearance') !== -1) {
+  // Make pre-op phone scheduling explicit until dedicated online slots exist.
+  if (pagePath === '/pre-op-clearance') {
     var preOpHeroCall = document.querySelector('.landing-hero__actions a[href^="tel:"]');
     if (preOpHeroCall) {
       preOpHeroCall.textContent = 'Call 310-467-0101 to schedule';
       preOpHeroCall.setAttribute('title', 'Calls the clinic directly');
-
-      var heroHelper = document.createElement('p');
-      heroHelper.className = 'cta-helper';
-      heroHelper.textContent = 'Pre-op scheduling is currently handled by phone so the clinic can confirm the surgical requirements and timing.';
-      preOpHeroCall.parentNode.insertAdjacentElement('afterend', heroHelper);
+      if (!document.querySelector('.landing-hero__actions + .cta-helper')) {
+        var helper = document.createElement('p');
+        helper.className = 'cta-helper';
+        helper.textContent = 'Pre-op scheduling is currently handled by phone so the clinic can confirm the surgical requirements and timing.';
+        preOpHeroCall.parentNode.insertAdjacentElement('afterend', helper);
+      }
     }
-
     var preOpBottomCall = document.querySelector('.cta-band__actions a[href^="tel:"]');
     if (preOpBottomCall) {
       preOpBottomCall.textContent = 'Call 310-467-0101 to schedule';
       preOpBottomCall.setAttribute('title', 'Calls the clinic directly');
     }
-
     var mobileSchedule = document.querySelector('.mobilebar__btn--book[href^="tel:"]');
     if (mobileSchedule) mobileSchedule.textContent = 'Call to schedule';
   }
 
-  // Make other ambiguous phone-based scheduling labels explicit where they exist.
   document.querySelectorAll('a[href^="tel:+13104670101"]').forEach(function (link) {
     if (link.textContent.trim().toLowerCase() === 'schedule by phone') {
       link.textContent = 'Call 310-467-0101';
@@ -234,8 +239,7 @@
     }
   });
 
-  // Keep the compact Dr. Farah brand treatment consistent on pages whose
-  // hand-authored header/footer omits the decorative mark.
+  // Brand mark consistency on legacy static pages.
   document.querySelectorAll('.brand').forEach(function (brand) {
     if (brand.querySelector('.brand__mark') || !brand.querySelector('.brand__text')) return;
     var mark = document.createElement('span');
@@ -245,8 +249,7 @@
     brand.insertBefore(mark, brand.querySelector('.brand__text'));
   });
 
-  // Keep primary navigation consistent across legacy static pages during the
-  // incremental marketing-alignment rollout.
+  // Primary navigation including the two direct entries requested for staging.
   document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
     nav.innerHTML =
       '<a href="/services">Services</a>' +
@@ -258,7 +261,6 @@
       '<a href="/contact">Contact</a>';
   });
 
-  // Header scroll state.
   var header = document.getElementById('siteHeader');
   if (header) {
     var onScroll = function () {
@@ -269,98 +271,66 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // Cookie notice. The site currently uses only essential first-party cookies.
-  // Both choices dismiss the overlay and the preference is kept in localStorage.
+  // Cookie preference banner.
   var STORAGE_KEY = 'drfarah_cookie_choice';
   var banner = document.getElementById('cookie');
   var acceptBtn = document.getElementById('cookieOk');
-
   function getChoice() {
-    try {
-      return window.localStorage.getItem(STORAGE_KEY);
-    } catch (e) {
-      return null;
-    }
+    try { return window.localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
   }
-
   function saveChoice(choice) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, choice);
-    } catch (e) {
-      // Storage can be unavailable in hardened/private browsing contexts.
-    }
+    try { window.localStorage.setItem(STORAGE_KEY, choice); } catch (e) {}
   }
-
   function closeBanner(choice) {
     saveChoice(choice);
     if (banner) banner.hidden = true;
   }
-
   if (banner) {
     if (!getChoice()) banner.hidden = false;
-
     var actions = banner.querySelector('.cookie__actions');
     if (acceptBtn) {
       acceptBtn.textContent = 'Accept';
-      acceptBtn.addEventListener('click', function () {
-        closeBanner('accepted');
-      });
+      acceptBtn.addEventListener('click', function () { closeBanner('accepted'); });
     }
-
     if (actions && !document.getElementById('cookieDecline')) {
       var declineBtn = document.createElement('button');
       declineBtn.className = 'btn btn--outline btn--sm';
       declineBtn.id = 'cookieDecline';
       declineBtn.type = 'button';
       declineBtn.textContent = 'Decline';
-      declineBtn.addEventListener('click', function () {
-        closeBanner('declined');
-      });
+      declineBtn.addEventListener('click', function () { closeBanner('declined'); });
       actions.appendChild(declineBtn);
     }
   }
 })();
 
-/* Contact form — do not pretend to transmit a message until the ContactRequest
-   API exists. The public booking workflow is real; general contact submission is
-   not yet wired to a backend. */
+// Contact form: never pretend to transmit until a ContactRequest API exists.
 (function () {
   'use strict';
   var f = document.getElementById('contactForm');
   if (!f) return;
-
   var msg = document.getElementById('contactMsg');
   f.addEventListener('submit', function (e) {
     e.preventDefault();
-
     var name = document.getElementById('cname');
     var email = document.getElementById('cemail');
     var cat = document.getElementById('ccat');
     var body = document.getElementById('cmsg');
     var consent = document.getElementById('cconsent');
     var ok = true;
-
     [name, email, cat, body].forEach(function (el) {
-      if (!el.value.trim()) {
-        el.style.borderColor = 'var(--gold)';
-        ok = false;
-      } else {
-        el.style.borderColor = '';
-      }
+      if (!el.value.trim()) { el.style.borderColor = 'var(--gold)'; ok = false; }
+      else el.style.borderColor = '';
     });
-
     if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-      email.style.borderColor = 'var(--gold)';
-      ok = false;
+      email.style.borderColor = 'var(--gold)'; ok = false;
     }
     if (!consent.checked) ok = false;
-
     if (!ok) {
       msg.className = 'form__msg is-err';
       msg.textContent = 'Please complete the required fields and agree to the privacy policy.';
       return;
     }
-
     msg.className = 'form__msg is-err';
     msg.textContent = 'Online general messaging is not enabled yet. Your message was not sent. Please call 310-467-0101, or use online booking for an appointment.';
   });
