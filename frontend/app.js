@@ -5,14 +5,13 @@
   if (!document.querySelector('link[data-drfarah-refinement]')) {
     var refinement = document.createElement('link');
     refinement.rel = 'stylesheet';
-    refinement.href = 'refinement.css?v=20260825-1';
+    refinement.href = 'refinement.css?v=20260825-2';
     refinement.setAttribute('data-drfarah-refinement', 'true');
     document.head.appendChild(refinement);
   }
 
-  // Replace retired AI/placeholder image references with approved real Dr. Farah
-  // / clinic photography. Keep the homepage hero as-is until a stronger source
-  // photograph is supplied.
+  // Replace retired placeholder image references with the current approved real
+  // Dr. Farah / clinic photography where those real photographs remain in use.
   var realPhotoMap = {
     'assets/consult-rejuvenation.jpg': {
       src: 'assets/dr-farah-portrait.webp',
@@ -36,12 +35,30 @@
     img.setAttribute('alt', replacement.alt);
   });
 
-  // Make the Services hero explicitly use a real clinic photograph rather than
-  // relying on legacy image-name replacement.
+  // The homepage uses two approved AI-assisted illustrative Dr. Farah images:
+  // a broad hero treatment and a dedicated physician portrait lower on the page.
+  // Keep their alt text explicit so they are not presented as documentary photos
+  // of a real patient encounter or the real clinic interior.
+  var homepageHeroImage = document.querySelector('.hero__media img');
+  if (homepageHeroImage) {
+    homepageHeroImage.setAttribute('src', 'assets/home-hero-doctor.webp');
+    homepageHeroImage.setAttribute('alt', '');
+    homepageHeroImage.setAttribute('decoding', 'async');
+  }
+
+  var homepageDoctorImage = document.querySelector('.doctor__media img');
+  if (homepageDoctorImage) {
+    homepageDoctorImage.setAttribute('src', 'assets/home-doctor-portrait.webp');
+    homepageDoctorImage.setAttribute('alt', 'Illustrative portrait of Dr. Farah in a clinic setting');
+    homepageDoctorImage.setAttribute('decoding', 'async');
+  }
+
+  // Keep the Services overview intentionally restrained: one illustrative IV
+  // treatment hero only, rather than adding an image to every service card.
   var servicesHeroImage = document.querySelector('.services-hero__media img');
   if (servicesHeroImage) {
-    servicesHeroImage.setAttribute('src', 'assets/dr-farah-clinic.webp');
-    servicesHeroImage.setAttribute('alt', 'Dr. Farah in her Beverly Hills clinic');
+    servicesHeroImage.setAttribute('src', 'assets/service-iv-treatment.webp');
+    servicesHeroImage.setAttribute('alt', 'Illustrative physician-supervised IV treatment in a clinic setting');
     servicesHeroImage.setAttribute('decoding', 'async');
     servicesHeroImage.classList.add('services-hero__image--ready');
   }
@@ -82,7 +99,7 @@
   }
 
   // Give the existing IV hydration service a stable deep-link target. This keeps
-  // the new header item tied to the real Services content without inventing a
+  // the header item tied to the real Services content without inventing a
   // standalone IV page that does not exist yet.
   var ivTreatmentCard = null;
   document.querySelectorAll('.svc-card__title').forEach(function (title) {
