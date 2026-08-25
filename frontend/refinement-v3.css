@@ -1,0 +1,42 @@
+/* Dr. Farah image visibility hotfix v3 — 2026-08-25 */
+/* This file intentionally uses page-shape selectors so the critical imagery does not depend on runtime image swapping. */
+
+body:has(.hero) .hero__media > img {
+  content: url('assets/home-hero-doctor.webp?rev=20260825-3');
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+body:has(.care) .doctor__media > img {
+  content: url('assets/dr-farah-portrait.webp?rev=20260825-3');
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+body:has(.services-hero) .services-hero__media > img {
+  content: url('assets/service-iv-treatment.webp?rev=20260825-3');
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 430px;
+  object-fit: cover;
+  object-position: center 32%;
+}
+
+body:has(.about-lead) .about-lead__media > img {
+  content: url('assets/dr-farah-portrait.webp?rev=20260825-3');
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+body:has(.about-lead) .doctor__media > img {
+  content: url('assets/dr-farah-clinic.webp?rev=20260825-3');
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
