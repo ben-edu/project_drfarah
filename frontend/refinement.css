@@ -15,10 +15,10 @@
   .brand__sub{display:none}
 }
 
-/* Homepage: replace the weaker hero source with approved real Dr. Farah clinic
-   photography. The original HTML image remains as a no-CSS fallback. */
+/* Homepage: use the new high-quality Dr. Farah illustration as the hero image.
+   The original HTML image remains as a no-CSS fallback. */
 .hero__media{
-  background:url('assets/dr-farah-clinic.webp') center 38% / cover no-repeat;
+  background:url('assets/home-hero-doctor.webp') center 38% / cover no-repeat;
 }
 .hero__media > img{
   opacity:0;
