@@ -15,26 +15,26 @@
   .brand__sub{display:none}
 }
 
-/* Homepage: use the new high-quality Dr. Farah illustration as the hero image.
-   The original HTML image remains as a no-CSS fallback. */
+/* Homepage: render the real image element directly. Do not hide it behind a
+   CSS-only background, so the portrait remains visible in normal and cached
+   browser states. The background remains only as a fallback. */
 .hero__media{
   background:url('assets/home-hero-doctor.webp') center 38% / cover no-repeat;
 }
 .hero__media > img{
-  opacity:0;
+  opacity:1;
+  visibility:visible;
 }
 
-/* Services remains deliberately simple: one illustrative hero only. The IV
-   treatment image represents one of the physician-led services without adding
-   separate photography to every card on this long overview page. */
+/* Services remains deliberately simple: one illustrative hero only. Render the
+   actual image element instead of making it transparent and relying solely on a
+   background layer. */
 .services-hero__media{
   position:relative;
   min-height:430px;
   overflow:hidden;
   border-radius:var(--r-lg);
-  background:
-    linear-gradient(180deg,rgba(7,13,15,.03),rgba(7,13,15,.24)),
-    url('assets/service-iv-treatment.webp') center center / cover no-repeat;
+  background:linear-gradient(145deg,var(--noir-3),var(--noir-2));
   box-shadow:var(--shadow);
 }
 .services-hero__media::after{
@@ -42,7 +42,7 @@
   position:absolute;
   inset:0;
   pointer-events:none;
-  background:linear-gradient(180deg,transparent 52%,rgba(4,8,9,.30));
+  background:linear-gradient(180deg,transparent 52%,rgba(4,8,9,.24));
 }
 .services-hero__media img,
 .services-hero__image--ready{
@@ -53,7 +53,16 @@
   object-fit:cover;
   object-position:center 32%;
   border-radius:var(--r-lg);
-  opacity:0;
+  opacity:1;
+  visibility:visible;
+  filter:saturate(.90) contrast(1.02);
+}
+
+/* Keep physician imagery explicit and visible on the homepage and About page. */
+.doctor__media img,
+.about-lead__media img{
+  opacity:1;
+  visibility:visible;
 }
 
 /* Dedicated service landing pages: one restrained, contextual image in each
