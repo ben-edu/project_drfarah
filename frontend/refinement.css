@@ -15,22 +15,26 @@
   .brand__sub{display:none}
 }
 
-/* Preserve the current deployed hero treatment until a stronger source photo is
-   supplied. The original HTML image remains as a no-CSS fallback. */
+/* Homepage: use the new high-quality Dr. Farah illustration as the hero image.
+   The original HTML image remains as a no-CSS fallback. */
 .hero__media{
-  background:url('assets/hero-real.webp') center center / cover no-repeat;
+  background:url('assets/home-hero-doctor.webp') center 38% / cover no-repeat;
 }
 .hero__media > img{
   opacity:0;
 }
 
-/* Services hero: make the real image unmistakably visible and intentional. */
+/* Services remains deliberately simple: one illustrative hero only. The IV
+   treatment image represents one of the physician-led services without adding
+   separate photography to every card on this long overview page. */
 .services-hero__media{
   position:relative;
   min-height:430px;
   overflow:hidden;
   border-radius:var(--r-lg);
-  background:linear-gradient(145deg,var(--noir-3),var(--noir-2));
+  background:
+    linear-gradient(180deg,rgba(7,13,15,.03),rgba(7,13,15,.24)),
+    url('assets/service-iv-treatment.webp') center center / cover no-repeat;
   box-shadow:var(--shadow);
 }
 .services-hero__media::after{
@@ -38,7 +42,7 @@
   position:absolute;
   inset:0;
   pointer-events:none;
-  background:linear-gradient(180deg,transparent 62%,rgba(4,8,9,.18));
+  background:linear-gradient(180deg,transparent 52%,rgba(4,8,9,.30));
 }
 .services-hero__media img,
 .services-hero__image--ready{
@@ -49,8 +53,62 @@
   object-fit:cover;
   object-position:center 32%;
   border-radius:var(--r-lg);
-  opacity:1;
-  filter:saturate(.92) contrast(1.02);
+  opacity:0;
+}
+
+/* Dedicated service landing pages: one restrained, contextual image in each
+   hero. These are illustrative backgrounds, not evidence of a real patient,
+   hotel partnership, or a photographed clinical encounter. */
+.landing-hero{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+.landing-hero__inner{
+  position:relative;
+  z-index:2;
+}
+.landing-hero::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:0;
+  right:0;
+  bottom:0;
+  width:min(56vw,840px);
+  background-image:var(--landing-photo,none);
+  background-size:cover;
+  background-position:var(--landing-photo-position,center);
+  background-repeat:no-repeat;
+  opacity:.68;
+  filter:saturate(.80) contrast(1.03) brightness(.86);
+  pointer-events:none;
+}
+.landing-hero::after{
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(90deg,
+    var(--noir) 0%,
+    rgba(12,21,24,.99) 37%,
+    rgba(12,21,24,.90) 51%,
+    rgba(12,21,24,.48) 72%,
+    rgba(12,21,24,.20) 100%);
+}
+
+body:has(.landing-hero__actions > a[href="/book?service=traveler-care"]) .landing-hero{
+  --landing-photo:url('assets/service-hotel-traveler.webp');
+  --landing-photo-position:center 45%;
+}
+body:has(.landing-hero__actions > a[href*="reason=Travel%20Prescription%20Refill"]) .landing-hero{
+  --landing-photo:url('assets/service-virtual-care.webp');
+  --landing-photo-position:center center;
+}
+body:has(.landing-hero__actions > a:only-child[href^="tel:+13104670101"]) .landing-hero{
+  --landing-photo:url('assets/service-preop-clearance.webp');
+  --landing-photo-position:center center;
 }
 
 /* Lightweight page-level navigation for the long Services page. */
@@ -162,6 +220,18 @@
   .services-hero__media img,
   .services-hero__image--ready{
     min-height:360px;
+  }
+  .landing-hero::before{
+    width:100%;
+    opacity:.38;
+    background-position:var(--landing-photo-mobile-position,var(--landing-photo-position,center));
+    filter:saturate(.76) contrast(1.02) brightness(.72);
+  }
+  .landing-hero::after{
+    background:linear-gradient(180deg,
+      rgba(12,21,24,.82) 0%,
+      rgba(12,21,24,.94) 58%,
+      var(--noir) 100%);
   }
   .service-jump__inner{
     min-height:auto;
