@@ -96,6 +96,7 @@
   border-color:var(--line);
   background:rgba(198,161,91,.07);
 }
+#iv-treatment{scroll-margin-top:110px}
 
 /* Real insurer artwork. Keep logos readable without turning the section into a
    loud sponsor wall. */
