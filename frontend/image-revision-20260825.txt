@@ -1,6 +1,0 @@
-Dr Farah frontend image revision 2026-08-25.3
-Homepage hero: assets/home-hero-doctor.webp
-Homepage physician: assets/dr-farah-portrait.webp
-Services hero: assets/service-iv-treatment.webp
-About lead: assets/dr-farah-portrait.webp
-About lower: assets/dr-farah-clinic.webp
