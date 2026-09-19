@@ -31,7 +31,16 @@ class RegistrationData(BaseModel):
 
 
 class RegistrationCreate(RegistrationData):
-    pass
+    """A new saved draft must contain enough information to identify the patient."""
+
+    first_name: str = Field(..., min_length=1, max_length=128, pattern=r"^[a-zA-ZÀ-ÿ\\-' ]+$")
+    last_name: str = Field(..., min_length=1, max_length=128, pattern=r"^[a-zA-ZÀ-ÿ\\-' ]+$")
+    email: str = Field(
+        ...,
+        max_length=255,
+        pattern=r"^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$",
+    )
+    phone: str = Field(..., min_length=7, max_length=64, pattern=r"^[0-9+\\-() .]+$")
 
 
 class RegistrationUpdate(RegistrationData):
