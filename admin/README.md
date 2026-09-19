@@ -60,3 +60,13 @@ The admin SPA is deployed to `admin.drfarah.proxbenovh.cloud` (Hestia).
 | `API_BASE` | `https://api.staging.drfarah.proxbenovh.cloud/api/v1` | API base URL |
 
 No secrets — this is a public OIDC client.
+
+
+## Patient registrations
+
+Authenticated users with the `clinic-staff` realm role can also review online patient registrations:
+
+- `GET /api/v1/admin/registrations` — filter/search the registration queue.
+- `GET /api/v1/admin/registrations/{id}` — view registration detail.
+
+The admin API never exposes the public resume-token hash. The current admin view is read-only for registration data; editing clinical intake is intentionally outside this phase.
