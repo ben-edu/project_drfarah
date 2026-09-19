@@ -60,3 +60,20 @@ Review excerpts must be checked against the current Google Business Profile befo
 ## Production boundary
 
 Staging remains `noindex,nofollow`. Production cutover, canonical-domain replacement, redirects, sitemap/indexing, and any non-essential advertising/tracking technology remain separate controlled steps.
+
+
+## September 2026 service-navigation and registration update
+
+The current implementation now also includes:
+
+- dedicated public pages for `/prp-treatments`, `/weight-loss-program`, `/traveler-telehealth`, `/iv-therapy`, and `/personal-injury-care`;
+- the expanded primary navigation requested by the clinic;
+- variable-fee wording presented as `Starting From` where the final charge can vary by treatment, testing, medication, or individual plan;
+- attorney/law-firm lien language for qualifying Personal Injury and Pre-Op cases, expressly subject to a formal written agreement and case eligibility;
+- an IV Therapy & Wellness page that reuses the existing approved IV visual rather than introducing another unrelated image;
+- a first-phase Online Patient Registration flow with server-side persistence, Save Draft, Resume, and Submit;
+- a Keycloak-protected admin registration queue and detail view for clinic staff.
+
+The first registration phase is intentionally limited to demographic/contact information. It does not collect medical-history narratives, medication lists, insurance member identifiers, SSNs, identity documents, or medical uploads. The patient receives a registration reference and private resume token; only a hash of the resume token is stored.
+
+AI/chat assistance remains outside this implementation.
