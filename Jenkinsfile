@@ -100,14 +100,6 @@ pipeline {
             frontend/index.html
             frontend/styles.css
             frontend/app.js
-            frontend/app-v5.js
-            frontend/registration.js
-            frontend/iv-therapy.html
-            frontend/prp-treatments.html
-            frontend/weight-loss-program.html
-            frontend/traveler-telehealth.html
-            frontend/personal-injury-care.html
-            frontend/patient-registration.html
             frontend/robots.txt
             admin/README.md
             api/README.md
@@ -134,20 +126,15 @@ pipeline {
             api/app/models/working_hours.py
             api/app/models/blocked_period.py
             api/app/models/appointment.py
-            api/app/models/patient_registration.py
             api/app/services/scheduling.py
             api/app/schemas/service.py
             api/app/schemas/availability.py
             api/app/schemas/appointment.py
-            api/app/schemas/patient_registration.py
             api/app/routers/appointments.py
-            api/app/routers/patient_registration.py
-            api/tests/test_patient_registration.py
             api/alembic.ini
             api/alembic/env.py
             api/alembic/versions/0001_initial_bookings.py
             api/alembic/versions/0002_add_scheduling_tables.py
-            api/alembic/versions/0003_add_patient_registrations.py
             kubernetes/drfarah/README.md
             kubernetes/drfarah-staging/namespace.yaml
             kubernetes/drfarah-staging/postgres-statefulset.yaml
@@ -578,14 +565,6 @@ pipeline {
             frontend/index.html
             frontend/styles.css
             frontend/app.js
-            frontend/app-v5.js
-            frontend/registration.js
-            frontend/iv-therapy.html
-            frontend/prp-treatments.html
-            frontend/weight-loss-program.html
-            frontend/traveler-telehealth.html
-            frontend/personal-injury-care.html
-            frontend/patient-registration.html
             frontend/robots.txt
           "
 
@@ -606,9 +585,7 @@ pipeline {
             -w /app \
             node:20-slim \
             node --check frontend/app.js && \
-            node --check frontend/app-v5.js && \
             node --check frontend/booking.js && \
-            node --check frontend/registration.js && \
             node --check admin/app.js
 
           echo "JavaScript syntax passed."
@@ -760,13 +737,6 @@ pipeline {
             /styles.css
             /app.js
             /booking.js
-            /registration.js
-            /iv-therapy.html
-            /prp-treatments.html
-            /weight-loss-program.html
-            /traveler-telehealth.html
-            /personal-injury-care.html
-            /patient-registration.html
             /robots.txt
             /sitemap.xml
             /assets/hero-treatment.jpg
@@ -1434,13 +1404,6 @@ print(json.dumps({
               /styles.css
               /app.js
               /booking.js
-              /registration.js
-              /iv-therapy
-              /prp-treatments
-              /weight-loss-program
-              /traveler-telehealth
-              /personal-injury-care
-              /patient-registration
               /robots.txt
               /sitemap.xml
               /assets/hero-treatment.jpg
@@ -1470,16 +1433,6 @@ print(json.dumps({
 
               echo "OK    $path -> $status"
             done
-
-            curl -fsS "https://${STAGING_FRONTEND_HOST}/iv-therapy" | grep -q 'IV Therapy &amp; Wellness' || {
-              echo "FAIL: IV Therapy page marker is absent."
-              exit 1
-            }
-
-            curl -fsS "https://${STAGING_FRONTEND_HOST}/patient-registration" | grep -q 'Online Patient Registration' || {
-              echo "FAIL: patient registration page marker is absent."
-              exit 1
-            }
 
             echo ""
             echo "Frontend staging deployment passed."
@@ -1568,11 +1521,6 @@ print(json.dumps({
 
               echo "OK    $path -> $status"
             done
-
-            curl -fsS "https://${ADMIN_FRONTEND_HOST}/" | grep -q 'Patient Registrations' || {
-              echo "FAIL: admin patient-registration marker is absent."
-              exit 1
-            }
 
             echo ""
             echo "Admin SPA staging deployment passed."
