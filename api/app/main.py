@@ -67,6 +67,9 @@ def create_app() -> FastAPI:
     # Scheduling endpoints (services, availability, appointments).
     app.include_router(appointments.router, prefix="/api/v1")
 
+    # Online patient registration — draft/save/resume/submit.
+    app.include_router(patient_registration.router, prefix="/api/v1")
+
     return app
 
 
