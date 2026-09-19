@@ -36,6 +36,7 @@ def db_session(tmp_path):
     import app.models.working_hours  # noqa: F401
     import app.models.blocked_period  # noqa: F401
     import app.models.appointment  # noqa: F401
+    import app.models.patient_registration  # noqa: F401
 
     saved = {}
     for k in (

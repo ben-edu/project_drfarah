@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var REVISION = '20260825-5';
+  var REVISION = '20260919-1';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
   // Keep the approved refinement layer, but load a new revision so staging
@@ -47,6 +47,13 @@
         selector: '.doctor__media img',
         parts: ['/image-data-v5/about-01.txt', '/image-data-v5/about-02.txt', '/image-data-v5/about-03.txt'],
         alt: 'Dr. Farah in her clinic'
+      }
+    ],
+    '/iv-therapy': [
+      {
+        selector: '.specialty-hero__media img',
+        parts: ['/image-data-v5/iv-01.txt', '/image-data-v5/iv-02.txt'],
+        alt: 'Dr. Farah providing physician-supervised IV therapy in a clinic setting'
       }
     ]
   };
@@ -249,16 +256,26 @@
     brand.insertBefore(mark, brand.querySelector('.brand__text'));
   });
 
-  // Primary navigation including the two direct entries requested for staging.
+  // Primary navigation — prominent service destinations requested by the clinic.
   document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
     nav.innerHTML =
       '<a href="/services">Services</a>' +
-      '<a href="/virtual-urgent-care">Telehealth / Virtual Visit</a>' +
-      '<a href="/services#iv-treatment">IV Treatment</a>' +
-      '<a href="/hotel-traveler-care">Hotel &amp; Traveler</a>' +
-      '<a href="/pre-op-clearance">Pre-Op Clearance</a>' +
-      '<a href="/about">The Physician</a>' +
-      '<a href="/contact">Contact</a>';
+      '<a href="/prp-treatments">PRP Treatments</a>' +
+      '<a href="/weight-loss-program">Weight Loss</a>' +
+      '<a href="/traveler-telehealth">Traveler &amp; Telehealth</a>' +
+      '<a href="/iv-therapy">IV Therapy</a>' +
+      '<a href="/pre-op-clearance">Pre-Op</a>' +
+      '<a href="/about">The Physician</a>';
+  });
+
+  // Keep online registration easy to find without overcrowding the main nav.
+  document.querySelectorAll('.topbar__inner').forEach(function (topbar) {
+    if (topbar.querySelector('.topbar__registration')) return;
+    var link = document.createElement('a');
+    link.className = 'topbar__registration';
+    link.href = '/patient-registration';
+    link.textContent = 'Patient Registration';
+    topbar.insertBefore(link, topbar.querySelector('.topbar__phone'));
   });
 
   var header = document.getElementById('siteHeader');

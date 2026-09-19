@@ -111,6 +111,27 @@
           </div>
         </div>
       </section>
+
+      <!-- ═══ Patient Registrations ═══ -->
+      <section id="registrations-section" class="hidden">
+        <h2 class="apt-heading">Patient Registrations</h2>
+        <div class="filters">
+          <select id="reg-filter-status">
+            <option value="">All Registration Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+          </select>
+          <input id="reg-filter-q" type="text" placeholder="Search patient, email, reference&hellip;">
+          <button id="reg-refresh" class="btn btn-primary btn-sm">Refresh</button>
+        </div>
+        <div id="reg-loading" class="text-center mt-1 hidden"><span class="spinner"></span><span style="color:var(--muted); margin-left:0.5rem;">Loading registrations&hellip;</span></div>
+        <div id="reg-error" class="error-box hidden"></div>
+        <div id="reg-empty" class="apt-empty hidden">No registrations match these filters.</div>
+        <div id="reg-table-wrap" class="apt-table-wrap hidden">
+          <table><thead><tr><th>Updated</th><th>Reference</th><th>Patient</th><th>Contact</th><th>Status</th><th></th></tr></thead><tbody id="reg-tbody"></tbody></table>
+        </div>
+        <div id="reg-detail" class="detail-panel hidden"><div class="detail-header"><h3>Registration Detail</h3><button id="reg-detail-close" class="btn btn-ghost btn-sm">&times; Close</button></div><div id="reg-detail-body"></div></div>
+      </section>
     </div>
   </main>
 
