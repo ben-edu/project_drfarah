@@ -47,6 +47,20 @@
   var $filterDateTo   = document.getElementById('filter-date-to');
   var $btnRefresh     = document.getElementById('btn-refresh');
 
+  /* ── DOM refs — patient registrations ── */
+  var $regSection   = document.getElementById('registrations-section');
+  var $regLoading   = document.getElementById('reg-loading');
+  var $regError     = document.getElementById('reg-error');
+  var $regEmpty     = document.getElementById('reg-empty');
+  var $regTableWrap = document.getElementById('reg-table-wrap');
+  var $regTbody     = document.getElementById('reg-tbody');
+  var $regDetail    = document.getElementById('reg-detail');
+  var $regDetailBody = document.getElementById('reg-detail-body');
+  var $regDetailClose = document.getElementById('reg-detail-close');
+  var $regFilterStatus = document.getElementById('reg-filter-status');
+  var $regFilterQ = document.getElementById('reg-filter-q');
+  var $regRefresh = document.getElementById('reg-refresh');
+
   /* ── Appointment state ── */
   var aptState = {
     offset: 0,
@@ -74,10 +88,16 @@
     show($aptError);
   }
 
+  function showRegError(msg) {
+    $regError.textContent = msg;
+    show($regError);
+  }
+
   function clearErrors() {
     hide($loginError);
     hide($apiError);
     hide($aptError);
+    if ($regError) hide($regError);
   }
 
   function escapeHtml(str) {
@@ -184,9 +204,11 @@
 
     show($identity);
 
-    // Show appointments section and load data
+    // Show staff work queues and load data.
     show($aptSection);
+    show($regSection);
     loadAppointments();
+    loadRegistrations();
   }
 
   /* ── Call /admin/me ── */
@@ -456,6 +478,90 @@
       loadAppointments();
     }
   });
+
+  /* ════════════════════════════════════════════════════════════════
+     Patient registrations — read-only staff review
+     ════════════════════════════════════════════════════════════════ */
+
+  function loadRegistrations() {
+    hide($regError);
+    hide($regEmpty);
+    hide($regTableWrap);
+    hide($regDetail);
+    show($regLoading);
+
+    var params = ['limit=50', 'offset=0'];
+    var statusVal = $regFilterStatus.value;
+    if (statusVal) params.push('status=' + encodeURIComponent(statusVal));
+    var qVal = $regFilterQ.value.trim();
+    if (qVal) params.push('q=' + encodeURIComponent(qVal));
+
+    apiFetch(API_BASE + '/admin/registrations?' + params.join('&')).then(function (data) {
+      hide($regLoading);
+      var items = data.items || [];
+      $regTbody.innerHTML = '';
+      if (!items.length) {
+        show($regEmpty);
+        return;
+      }
+      show($regTableWrap);
+      items.forEach(function (reg) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-id', reg.id);
+        tr.innerHTML =
+          '<td>' + formatDate(reg.updated_at) + '</td>' +
+          '<td>' + escapeHtml(reg.public_reference || '—') + '</td>' +
+          '<td>' + escapeHtml(((reg.first_name || '') + ' ' + (reg.last_name || '')).trim() || '—') + '</td>' +
+          '<td>' + escapeHtml(reg.email || reg.phone || '—') + '</td>' +
+          '<td>' + statusBadge(reg.status) + '</td>' +
+          '<td style="color:var(--muted); font-size:0.8rem;">&rarr;</td>';
+        $regTbody.appendChild(tr);
+      });
+    }).catch(function (err) {
+      hide($regLoading);
+      showRegError(err.message || 'Failed to load patient registrations.');
+    });
+  }
+
+  function showRegistrationDetail(id) {
+    $regDetailBody.innerHTML = '<div class="text-center"><span class="spinner"></span> Loading registration&hellip;</div>';
+    show($regDetail);
+    apiFetch(API_BASE + '/admin/registrations/' + encodeURIComponent(id)).then(function (reg) {
+      var address = [reg.address_line1, reg.address_line2, reg.city, reg.state, reg.postal_code].filter(Boolean).join(', ');
+      var fields = [
+        ['Reference', reg.public_reference],
+        ['Status', reg.status],
+        ['Appointment reference', reg.appointment_reference],
+        ['Patient', ((reg.first_name || '') + ' ' + (reg.last_name || '')).trim()],
+        ['Date of birth', reg.date_of_birth],
+        ['Email', reg.email],
+        ['Phone', reg.phone],
+        ['Address', address],
+        ['Emergency contact', reg.emergency_contact_name],
+        ['Emergency phone', reg.emergency_contact_phone],
+        ['Privacy acknowledged', reg.privacy_acknowledged ? 'Yes' : 'No'],
+        ['Updated', formatDate(reg.updated_at)],
+        ['Submitted', formatDate(reg.submitted_at)]
+      ];
+      var html = '<div class="detail-body">';
+      fields.forEach(function (f) {
+        html += '<div class="field"><div class="field-label">' + escapeHtml(f[0]) + '</div><div class="field-value">' + escapeHtml(f[1] || '—') + '</div></div>';
+      });
+      html += '</div>';
+      $regDetailBody.innerHTML = html;
+      $regDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }).catch(function (err) {
+      $regDetailBody.innerHTML = '<div class="error-box">' + escapeHtml(err.message || 'Failed to load registration.') + '</div>';
+    });
+  }
+
+  $regTbody.addEventListener('click', function (e) {
+    var tr = e.target.closest('tr');
+    if (tr) showRegistrationDetail(tr.getAttribute('data-id'));
+  });
+  $regDetailClose.addEventListener('click', function () { hide($regDetail); });
+  $regRefresh.addEventListener('click', loadRegistrations);
+  $regFilterQ.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadRegistrations(); });
 
   /* ════════════════════════════════════════════════════════════════
      Keycloak init
