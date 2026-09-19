@@ -64,6 +64,42 @@ class AdminAppointmentDetail(BaseModel):
     updated_at: datetime
 
 
+class AdminRegistrationListItem(BaseModel):
+    """One row in the admin patient-registration list."""
+
+    id: int
+    public_reference: str
+    appointment_reference: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    status: str
+    updated_at: datetime
+    submitted_at: datetime | None = None
+
+
+class AdminRegistrationDetail(AdminRegistrationListItem):
+    """Full registration detail — never includes the resume-token hash."""
+
+    date_of_birth: str | None = None
+    address_line1: str | None = None
+    address_line2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
+    privacy_acknowledged: bool
+
+
+class PaginatedRegistrationResponse(BaseModel):
+    items: list[AdminRegistrationListItem]
+    total: int
+    limit: int
+    offset: int
+
+
 class AppointmentStatusUpdate(BaseModel):
     """Request body for PATCH /admin/appointments/{id} — status transition."""
 
