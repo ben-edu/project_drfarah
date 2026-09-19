@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: drfarah-api
+  namespace: drfarah
+  labels:
+    app: drfarah-api
+spec:
+  type: ClusterIP
+  selector:
+    app: drfarah-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

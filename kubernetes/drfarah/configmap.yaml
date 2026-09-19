@@ -1,0 +1,28 @@
+# Non-secret configuration for the Dr. Farah PRODUCTION API.
+# Do not deploy while REPLACE_BEFORE_PRODUCTION markers remain.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drfarah-api-config
+  namespace: drfarah
+  labels:
+    app: drfarah-api
+data:
+  ENVIRONMENT: "prod"
+  APP_NAME: "drfarah-api"
+  LOG_LEVEL: "INFO"
+  POSTGRES_HOST: "drfarah-postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "drfarah"
+  CORS_ORIGINS: "https://drfarahvipurgentcare.com,https://www.drfarahvipurgentcare.com,https://admin.drfarahvipurgentcare.com"
+  TRUST_PROXY: "true"
+  KEYCLOAK_ISSUER: "https://keycloak.soria-academie.fr/realms/drfarah"
+  KEYCLOAK_JWKS_URL: "https://keycloak.soria-academie.fr/realms/drfarah/protocol/openid-connect/certs"
+  KEYCLOAK_AUDIENCE: "drfarah-admin"
+  KEYCLOAK_VERIFY_AUD: "false"
+  SMTP_HOST: "REPLACE_BEFORE_PRODUCTION"
+  SMTP_PORT: "587"
+  SMTP_FROM: "REPLACE_BEFORE_PRODUCTION"
+  SMTP_TO: "REPLACE_BEFORE_PRODUCTION"
+  SMTP_USE_TLS: "true"
+  SMTP_TEST_MODE: "false"

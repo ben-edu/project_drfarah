@@ -1,3 +1,3 @@
-# Temporary staging domain — do not index.
+# Staging environment — do not index.
 User-agent: *
 Disallow: /

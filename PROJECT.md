@@ -36,31 +36,39 @@
 - **Primary business goal:** convert qualified visitors into calls or booked appointment requests with the least possible friction while strengthening Dr. Farah’s credibility, premium positioning, and local visibility.
 - **Future direction:** use the website, booking API, operational data model, and approved content as the foundation for later AI integrations. Phase 1 does not implement clinical AI.
 
-## 2. Temporary project domains
+## 2. Environment domains
 
-These domains are the active temporary development and deployment targets. The
-project will later migrate to the clinic’s final production domain(s) through a
-separate controlled migration plan.
+The project is transitioning from temporary `proxbenovh.cloud` development
+hosts to the clinic-owned `drfarahvipurgentcare.com` domain.
+
+### Final target map
 
 | Purpose | Host |
 |---|---|
-| Frontend prod | `drfarah.proxbenovh.cloud` |
-| Frontend canonical alias | `www.drfarah.proxbenovh.cloud` → redirect to apex |
-| Frontend staging | `staging.drfarah.proxbenovh.cloud` |
-| API prod | `api.drfarah.proxbenovh.cloud` |
-| API staging | `api.staging.drfarah.proxbenovh.cloud` |
-| Admin | `admin.drfarah.proxbenovh.cloud` |
+| Frontend production | `drfarahvipurgentcare.com` |
+| Frontend canonical alias | `www.drfarahvipurgentcare.com` → apex |
+| Frontend staging | `staging.drfarahvipurgentcare.com` |
+| API production | `api.drfarahvipurgentcare.com` |
+| API staging | `api.staging.drfarahvipurgentcare.com` |
+| Admin production | `admin.drfarahvipurgentcare.com` |
+| Admin staging | `admin.staging.drfarahvipurgentcare.com` |
+| Keycloak issuer | `keycloak.soria-academie.fr/realms/drfarah` |
 
-Current infrastructure status confirmed by the operator:
+The old `*.drfarah.proxbenovh.cloud` hosts remain transition-only compatibility
+targets until the final-domain cutover and rollback window are complete.
 
-- OVH DNS configuration for these temporary domains: **completed**.
-- HAProxy routing configuration for these temporary domains: **completed**.
-- Live state remains authoritative; verify DNS resolution, TLS, Hestia vhosts,
-  Traefik routes, and backend health before deployment.
+Environment isolation is mandatory:
 
-The current clinic website remains independent during design and development.
-No existing URL, page, text block, visual identity, or navigation structure is
-assumed to be part of the new website.
+- `dev` deploys staging only;
+- `main` deploys production only after explicit approval;
+- staging and production use separate frontend/admin docroots;
+- staging and production use separate Kubernetes namespaces, databases and
+  secrets;
+- staging remains noindexed;
+- production is indexable only after the controlled cutover.
+
+Detailed procedure and blockers are in
+`docs/migration/FINAL_DOMAIN_CUTOVER.md` and `HANDOFF.md`.
 
 ## 3. Product and experience principles
 

@@ -1,205 +1,315 @@
-# HANDOFF — 2026-07-27 (Fix: Bootstrap Legacy Alembic State)
+# HANDOFF — 2026-09-19 — Final Domain Migration Preparation
 
-## Current state
+## Read this first
 
-- **Branch:** `fix/bootstrap-legacy-alembic-state`
-- **Base:** `dev` (5a9aca2 — Step 07-FIX merged + Alembic-in-image fix)
-- **Status:** all code, tests, and docs complete; awaiting operator review and push
+This is the current operational handoff for the Dr. Farah website project.
 
-## Previous state
+Authoritative implementation repository:
 
-Step 07 (Real Availability and Appointment Scheduling) was merged into `dev`
-(ad8b38a) but the live `dev` staging deployment failed with 5 errors.
-See SESSION_LOG.md for the full incident report.
+`ben-edu/project_drfarah`
 
-All 5 errors from Step 07-FIX were resolved. However, a separate problem
-remained: the Jenkins CI pipeline validates migrations against a clean SQLite
-database, but staging PostgreSQL already had a `bookings` table created by the
-application's `Base.metadata.create_all()` at startup. This legacy table
-predates Alembic — there is no Alembic revision and migration 0001 tries to
-CREATE the table that already exists.
+Current integration branch:
 
-## Fix: Migration bootstrap state machine
+`dev`
 
-Created `api/app/migration_bootstrap.py` — a safe state machine that handles
-four database states:
+Current final-domain migration branch:
 
-- **State 1 (Fresh):** No bookings table, no Alembic revision → `alembic upgrade head`
-- **State 2 (Legacy):** bookings table exists, matches 0001 schema, no Alembic
-  revision → validate schema, stamp 0001, upgrade head. Existing bookings are
-  **preserved** — the table is never dropped or recreated.
-- **State 3 (Managed):** Valid Alembic revision present → `alembic upgrade head`
-- **State 4 (Unsafe):** Schema mismatch, corrupt revision table, or other
-  inconsistent state → fail closed with diagnostic log. No partial changes.
+`chore/final-domain-migration`
 
-The K8s init container now runs `python -m app.migration_bootstrap` instead of
-`python -m alembic upgrade head`.
+Detailed cutover runbook:
 
-This is NOT a manual one-time procedure — it runs as the init container on
-every pod creation and correctly handles all four states idempotently.
+`docs/migration/FINAL_DOMAIN_CUTOVER.md`
 
-## Legacy schema validation
+For infrastructure details, use `ben-edu/infra-docs`; live infrastructure wins
+when documentation and runtime disagree.
 
-Before stamping 0001 on a legacy database, the bootstrap validates every
-column in the existing `bookings` table against the expected 0001 schema:
-column names, types, nullability, and primary key. If any required column is
-missing or incompatible, the bootstrap fails closed — no stamp, no partial
-migration, no data loss.
+---
 
-## Tests (13 PostgreSQL integration tests)
+## Current deployed state before domain cutover
 
-`api/tests/test_migration_bootstrap.py` — comprehensive integration tests
-against disposable PostgreSQL databases (`sudo -u postgres createdb/dropdb`):
+The latest website/application feature release is merged to `dev` and was
+successfully deployed to the temporary staging environment.
 
-| Test class | State | Tests |
-|---|---|---|
-| `TestFreshDatabase` | State 1 | 5 — all tables created, seeds exist, head reached, idempotent |
-| `TestLegacyDatabase` | State 2 | 4 — stamped 0001, upgraded, rows preserved, not recreated, idempotent |
-| `TestEmptyAlembicVersion` | State 2 edge | 1 — empty version table treated as legacy |
-| `TestUnsafeIncompatibleSchema` | State 4 | 1 — missing required column rejected, no stamp |
-| `TestAlreadyManaged` | State 3 | 2 — upgrades from 0001, no-op at head |
+Last known green integration commit before this migration work:
 
-Full suite: **83 passed, 1 skipped** (137s).
+`8b3731bfd7ca736b211514b911a6758ab791463b`
 
-## CI validation
+That release includes:
 
-Jenkinsfile "API — migration bootstrap validation" stage validates:
-- Bootstrap file and test file exist
-- Module imports cleanly
-- Bootstrap runs against a fresh SQLite database
+- revised premium public website and navigation;
+- PRP Treatments page;
+- Weight Loss Program page;
+- combined Traveler & Telehealth entry point;
+- IV Therapy & Wellness page;
+- Personal Injury / attorney-lien page;
+- enhanced Pre-Operative Clearance lien wording;
+- variable fees presented with `Starting From` where appropriate;
+- public booking against real API services/availability;
+- online Patient Registration with Save / Resume / Submit;
+- PostgreSQL persistence;
+- Alembic head `0003`;
+- Keycloak-protected Admin appointment management;
+- Admin Patient Registration review.
 
-## Why plain `alembic upgrade head` failed
+Known UI backlog:
 
-The staging database had a `bookings` table created by
-`Base.metadata.create_all()` (from the application startup before Alembic
-existed). Migration 0001 tries to CREATE TABLE bookings — but the table
-already exists. PostgreSQL rejects the duplicate CREATE and the migration
-fails. The bootstrap detects this legacy state, validates the schema,
-stamps the migration, and applies only later migrations.
+- the Services-page IV hero image is still visually too soft/blurred and should
+  be sharpened in a later focused visual fix;
+- critical homepage/service imagery still uses the temporary `app-v5` runtime
+  reconstruction workaround. It is stable enough for staging but should
+  eventually be replaced by direct static assets.
 
-## Manual stamping not required
+AI Virtual Assistant / Digital Concierge is explicitly postponed.
 
-The bootstrap state machine is the normal, automated deployment procedure.
-No manual `alembic stamp` on staging or production is needed — the init
-container detects the state and applies the correct action automatically.
+---
 
-## Recommended next steps
+## Current temporary environment
 
-1. Review the changes on this branch.
-2. Push and open a PR into `dev`.
-3. After merge, trigger a `dev` build and verify:
-   - Init container runs migration bootstrap successfully on staging PostgreSQL
-   - Staging API health check passes
-   - Existing bookings are preserved after bootstrap
+The currently deployed temporary environment uses:
 
-### Fix 1 — Deployment rendering (CRITICAL)
+- frontend staging: `https://staging.drfarah.proxbenovh.cloud`
+- API staging: `https://api.staging.drfarah.proxbenovh.cloud`
+- admin SPA: `https://admin.drfarah.proxbenovh.cloud`
+- Keycloak: `https://keycloak.soria-academie.fr/realms/drfarah`
 
-**Problem:** `kubectl set image` cannot target init containers — it only
-updates `spec.containers`. The db-migrate init container was left at `:dev`.
-The pipe `| kubectl apply -f -` masked the rendering failure because POSIX sh
-lacks `pipefail`.
+The temporary admin hostname is effectively a staging admin because the
+`dev` Jenkins pipeline deploys to it.
 
-**Fix:** Render the Deployment to a temp file via `sed` (replacing the `:dev`
-placeholder with the immutable SHA globally). Validate 2 image lines contain
-the immutable image. Validate no `:dev` placeholder remains. Apply the
-validated temp file directly — no pipe. Clean up the temp file after apply.
+---
 
-### Fix 2 — Compromised cleanup token
+## Approved final environment map
 
-**Problem:** `CLEANUP_TOKEN = 'staging-ci-cleanup-token-2026'` was committed
-in `Jenkinsfile` (environment block) and `configmap.yaml`. Printed in Jenkins
-logs via the curl Authorization header.
+### Production
 
-**Fix:**
-- Removed from `Jenkinsfile` environment block. Now uses `withCredentials`
-  with a String credential (`drfarah-staging-ci-cleanup-token`).
-- `set +x` / `set -x` around the authenticated curl prevents token in logs.
-- Removed from `configmap.yaml`. Moved to `drfarah-staging-api-secret`
-  (injected via existing `envFrom.secretRef`).
-- Updated `secret.example.yaml` with CLEANUP_TOKEN field.
-- **Token rotation is mandatory** before next deploy.
+- frontend: `https://drfarahvipurgentcare.com`
+- www: `https://www.drfarahvipurgentcare.com` → 301 to apex
+- API: `https://api.drfarahvipurgentcare.com`
+- admin: `https://admin.drfarahvipurgentcare.com`
 
-### Fix 3 — Availability smoke test
+### Staging
 
-**Problem:** Hardcoded `service_code=urgent-care` on a single date. If
-`urgent-care` isn't seeded or the date has no slots, the test fails
-incorrectly.
+- frontend: `https://staging.drfarahvipurgentcare.com`
+- API: `https://api.staging.drfarahvipurgentcare.com`
+- admin: `https://admin.staging.drfarahvipurgentcare.com`
 
-**Fix:** Smoke test now calls `GET /api/v1/services`, validates at least one
-active service exists, picks the first one. Queries availability over a
-14-day window. Picks the first returned slot for the appointment smoke test.
-Uses `python3` for JSON parsing (available on Jenkins agent).
+The separate staging admin is intentional. Sharing one admin hostname between
+`dev` and `main` would let a staging deploy overwrite the production SPA.
 
-### Fix 4 — Root cause of 404
+Keycloak stays at `keycloak.soria-academie.fr`; only client redirect URIs and
+web origins need the new admin domains.
 
-**Diagnosis:** The init container ran the old `:dev` image (kubectl set image
-couldn't update it), so Alembic migrations never ran. The `services` table
-was never seeded → `GET /api/v1/availability?service_code=urgent-care`
-returned 404 because no service with code `urgent-care` existed.
+---
 
-**Fix:** Fix 1 ensures the init container gets the immutable image with the
-migration code. Fix 3 makes the test resilient in case any individual service
-is missing.
+## Migration branch state
 
-### Fix 5 — False success from piped commands
+Do **not** merge `chore/final-domain-migration` to `dev` until the operator
+preflight below is complete.
 
-**Problem:** Without `pipefail`, the `kubectl set image` failure (exit code 1)
-was discarded — only `kubectl apply` exit code (0) mattered.
+Repository preparation already on the branch includes:
 
-**Fix:** The deployment rendering no longer uses a pipe. See Fix 1.
+- final-domain API selection in `frontend/booking.js`;
+- final-domain API selection in `frontend/registration.js`;
+- environment-aware `admin/config.js`;
+- final staging CORS origins;
+- final staging Traefik API host while temporarily retaining the old host;
+- final production canonical URLs and sitemap;
+- production robots policy;
+- production Apache/cutover rules;
+- production Kubernetes namespace/API/PostgreSQL manifests;
+- fail-closed Jenkins `main` production stages;
+- final staging hostname/docroot targets in Jenkins;
+- production hostname/docroot targets in Jenkins;
+- domain migration runbook.
 
-### Fix 6 — Cleanup endpoint security
+Transition support for the old temporary hosts is intentional until the new
+hosts are verified.
 
-**Validated:**
-- Only deletes records where `source='ci'` — never touches real appointments.
-- 1-hour grace period prevents race conditions.
-- Returns 401 for wrong/missing token (not 403 — avoids user enumeration).
-- Token is operational (not a user authentication secret). Constant-time
-  comparison is not required for this use case.
+---
 
-**Applied:**
-- `set +x` / `set -x` around the authenticated curl in Jenkins.
-- Token moved from ConfigMap to Secret (defense in depth).
+## Operator-owned prerequisites before merge to dev
 
-### Fix 7 — Documentation
+### 1. GoDaddy DNS
 
-- Updated this HANDOFF.md.
-- Updated SESSION_LOG.md with incident report and fix summary.
-- Updated `kubernetes/drfarah-staging/README.md` with token rotation notice
-  and corrected deployment rendering description.
+Preserve nameservers and all unrelated mail records (MX/SPF/DKIM/DMARC).
 
-## Recommended next steps
+Prepare:
 
-1. **Rotate the cleanup token before any deploy.** The old token
-   (`staging-ci-cleanup-token-2026`) was committed in two files and must be
-   replaced in both the live Kubernetes Secret and the Jenkins credential.
-2. Review the changes on this branch.
-3. Push and open a PR into `dev`.
-4. After merge, trigger a `dev` build and verify:
-   - Deployment renders with both containers set to the immutable SHA.
-   - Init container runs migrations successfully.
-   - Services and availability endpoints return real data.
-   - CI cleanup + dynamic appointment smoke test pass.
-5. Do not start Keycloak/admin UI until scheduling is verified end-to-end.
+- apex `@` → BM1/web HAProxy;
+- `www` → apex;
+- `staging` → BM1/web HAProxy;
+- `admin` → BM1/web HAProxy;
+- `admin.staging` → BM1/web HAProxy;
+- `api` → BM2/API HAProxy;
+- `api.staging` → BM2/API HAProxy.
 
-## 2026-07-27 — PostgreSQL CI test architecture (fix/bootstrap-legacy-alembic-state)
+Check stale A/AAAA/CNAME conflicts. Reduce apex/www TTL before final cutover and
+record the current WordPress DNS target for rollback.
 
-- Root cause of the Jenkins failure: `test_migration_bootstrap.py` orchestrated
-  host infrastructure from inside the `python:3.12-slim` test container, calling
-  `sudo -u postgres createdb/dropdb` and socket peer-auth. The container has no
-  `sudo` and no local PostgreSQL → `FileNotFoundError: 'sudo'` on all 13 tests.
-- Fix: tests no longer touch the host. PostgreSQL is provisioned by Jenkins as a
-  disposable container on an isolated Docker network; tests receive a maintenance
-  URL via `POSTGRES_TEST_DATABASE_URL` (tests/_pg_util.py) and create/drop
-  per-test databases with plain SQL on an AUTOCOMMIT connection.
-- Marker separation: `@pytest.mark.postgresql` (registered in api/pytest.ini).
-  SQLite stage runs `-m "not postgresql"`; the new "API — PostgreSQL integration
-  tests" stage runs `-m postgresql` (migration bootstrap + real concurrency).
-- Concurrency: the postgres test migrates via the bootstrap (creating the
-  `no_double_booking` exclusion constraint from migration 0002) and asserts two
-  concurrent requests yield exactly one 201 + one 409 and one active row.
-- Determinism: replaced weekend-prone `_days_ahead(4)` with next-Monday slots.
-- Cleanup: Jenkins stage uses a POSIX `trap cleanup EXIT INT TERM`; the
-  PostgreSQL container uses `--tmpfs` storage and is removed with its network.
-  No `sudo`, no `--privileged`, no Docker socket in the test container.
-- Branch policy unchanged: feature/fix are validation-only; push/deploy on `dev`.
+### 2. Hestia domains/docroots
+
+Create/verify, owned and writable by `benweb`:
+
+- `/home/benweb/web/drfarahvipurgentcare.com/public_html`
+- `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
+- `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
+- `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html`
+
+### 3. HAProxy and TLS
+
+Configure final frontend/admin routes on BM1 and API routes on BM2.
+Install valid certificates for all final hostnames before browser testing.
+
+### 4. Keycloak
+
+Realm: `drfarah`  
+Client: `drfarah-admin`
+
+Add:
+
+Valid redirect URIs:
+- `https://admin.drfarahvipurgentcare.com/*`
+- `https://admin.staging.drfarahvipurgentcare.com/*`
+
+Valid post-logout redirect URIs:
+- same values
+
+Web origins:
+- `https://admin.drfarahvipurgentcare.com`
+- `https://admin.staging.drfarahvipurgentcare.com`
+
+Keep the old temporary admin URI/origin during the transition, then remove it
+after stable cutover. Do not use a broad wildcard. Enable/require MFA for real
+staff before production.
+
+### 5. Production Kubernetes secrets
+
+In namespace `drfarah`, verify/create:
+
+- `harbor-regcred`
+- `drfarah-db-secret`
+- `drfarah-api-secret`
+
+Production DB credentials must be independent from staging.
+
+### 6. Production SMTP identity
+
+Confirm the non-secret production values:
+
+- SMTP host;
+- SMTP from address;
+- clinic notification recipient.
+
+Real SMTP username/password remain out of Git and belong in
+`drfarah-api-secret`.
+
+The production ConfigMap intentionally contains
+`REPLACE_BEFORE_PRODUCTION` markers until these values are confirmed.
+
+### 7. Legacy WordPress preservation
+
+Before apex DNS cutover:
+
+- back up/export the old WordPress files and database;
+- export/crawl the complete legacy URL inventory / XML sitemap;
+- retain old DNS target and hosting for rollback;
+- prepare 301 mappings for valuable legacy URLs.
+
+The production Apache file intentionally contains a `CUTOVER_BLOCKER` marker
+until the full redirect inventory is reviewed.
+
+---
+
+## Repository-side cutover blockers
+
+Production deployment is intentionally fail-closed until both are resolved:
+
+1. `REPLACE_BEFORE_PRODUCTION` values in
+   `kubernetes/drfarah/configmap.yaml`;
+2. `CUTOVER_BLOCKER` in `frontend/.htaccess.production`.
+
+Do not remove either marker merely to make Jenkins green. Remove them only after
+the corresponding operator/business information is available.
+
+---
+
+## Required migration sequence
+
+1. Finish operator DNS/Hestia/HAProxy/TLS/Keycloak prerequisites for the **new
+   staging hosts**.
+2. Run CI on `chore/final-domain-migration`.
+3. Review PR and merge to `dev`.
+4. Jenkins `dev` deploys to:
+   - `staging.drfarahvipurgentcare.com`
+   - `api.staging.drfarahvipurgentcare.com`
+   - `admin.staging.drfarahvipurgentcare.com`
+5. Verify staging end to end:
+   - public pages;
+   - booking;
+   - availability;
+   - Patient Registration Save/Resume/Submit;
+   - admin Keycloak login;
+   - appointment and registration admin views;
+   - CORS;
+   - noindex + robots Disallow.
+6. Complete production SMTP, secrets and legacy redirect inventory.
+7. Back up legacy WordPress and record rollback DNS.
+8. With explicit human approval, fast-forward `main` to the exact approved
+   green `dev` SHA.
+9. Jenkins `main` deploys isolated production API/DB/frontend/admin.
+10. Validate production routing with `curl --resolve` before apex DNS switch.
+11. Switch apex/www DNS.
+12. Verify canonical, robots, sitemap, redirects, booking, API, admin and
+    Keycloak after public cutover.
+13. Submit the new sitemap in Google Search Console.
+14. Keep old WordPress hosting and temporary Dr. Farah routes available during
+    the stabilization/rollback window.
+
+---
+
+## SEO / legacy URL warning
+
+The current production domain already has indexed WordPress content. The domain
+itself staying the same does not protect rankings for old paths that disappear.
+
+Known examples that require redirect decisions include:
+
+- `/about-us/`
+- `/contact-us/`
+- `/prp-prf-exosomes-center/`
+- `/urgent-care-near-you/`
+- `/vip-urgent-care/`
+- `/faq/`
+- `/blog/`
+- multiple indexed article URLs.
+
+Some obvious structural redirects are already drafted, but the list is not
+complete. Do not declare production cutover ready until the full legacy URL
+inventory has been captured.
+
+---
+
+## Security / privacy boundaries
+
+- Never expose Keycloak, database, Harbor, SMTP or Jenkins secrets.
+- Staging and production databases/secrets remain separate.
+- Browser traffic uses public API hostnames, never private cluster IPs.
+- Patient Registration currently collects demographic/contact data only; do not
+  casually extend it to clinical documents/history.
+- Admin tokens stay in memory through `keycloak-js`.
+- Production deployment must go through Jenkins; do not manually rsync the final
+  site as a normal deployment method.
+
+---
+
+## New-session startup protocol
+
+A new AI/tab should:
+
+1. read this `HANDOFF.md`;
+2. read `docs/migration/FINAL_DOMAIN_CUTOVER.md`;
+3. inspect current `dev`, `main`, and open PRs;
+4. inspect current Jenkins status;
+5. inspect live DNS/HAProxy/Hestia/Kubernetes/Keycloak state when relevant;
+6. never assume this migration branch has been merged;
+7. preserve all fail-closed blockers until their prerequisites are actually met.
+

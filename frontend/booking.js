@@ -12,9 +12,25 @@
 
   var API_BASE = (function () {
     var h = location.hostname;
-    if (h.indexOf('staging.') === 0) return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
-    if (h === 'drfarah.proxbenovh.cloud' || h.indexOf('www.') === 0) return 'https://api.drfarah.proxbenovh.cloud/api/v1';
-    return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
+
+    // Final domains.
+    if (h === 'staging.drfarahvipurgentcare.com') {
+      return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+    }
+    if (h === 'drfarahvipurgentcare.com' || h === 'www.drfarahvipurgentcare.com') {
+      return 'https://api.drfarahvipurgentcare.com/api/v1';
+    }
+
+    // Temporary domains kept during the controlled migration window.
+    if (h === 'staging.drfarah.proxbenovh.cloud') {
+      return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
+    }
+    if (h === 'drfarah.proxbenovh.cloud' || h === 'www.drfarah.proxbenovh.cloud') {
+      return 'https://api.drfarah.proxbenovh.cloud/api/v1';
+    }
+
+    // Local/unknown hosts intentionally use staging rather than production.
+    return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
   })();
 
   var CLINIC_TZ = 'America/Los_Angeles';

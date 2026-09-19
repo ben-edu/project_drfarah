@@ -29,8 +29,8 @@ platform.  Static HTML/CSS/JS — no build step, no framework.
 
 The SPA **must** be served over a URL registered in the Keycloak client:
 
-- **Valid Redirect URIs:** `https://admin.drfarah.proxbenovh.cloud/*`
-- **Web Origins:** `https://admin.drfarah.proxbenovh.cloud`
+- **Valid Redirect URIs:** `https://admin.staging.drfarahvipurgentcare.com/*`
+- **Web Origins:** `https://admin.staging.drfarahvipurgentcare.com`
 
 ### Local testing
 
@@ -57,7 +57,7 @@ The admin SPA is deployed to `admin.drfarah.proxbenovh.cloud` (Hestia).
 | `KEYCLOAK_URL` | `https://keycloak.soria-academie.fr` | Keycloak base URL |
 | `REALM` | `drfarah` | Keycloak realm |
 | `CLIENT_ID` | `drfarah-admin` | Public OIDC client (PKCE) |
-| `API_BASE` | `https://api.staging.drfarah.proxbenovh.cloud/api/v1` | API base URL |
+| `API_BASE` | `https://api.staging.drfarahvipurgentcare.com/api/v1` | API base URL |
 
 No secrets — this is a public OIDC client.
 
@@ -70,3 +70,18 @@ Authenticated users with the `clinic-staff` realm role can also review online pa
 - `GET /api/v1/admin/registrations/{id}` — view registration detail.
 
 The admin API never exposes the public resume-token hash. The current admin view is read-only for registration data; editing clinical intake is intentionally outside this phase.
+
+
+## Final-domain Keycloak migration
+
+Keycloak remains at `https://keycloak.soria-academie.fr`, realm `drfarah`,
+client `drfarah-admin`.
+
+Final explicit client settings must include:
+
+- Redirect/post-logout: `https://admin.staging.drfarahvipurgentcare.com/*`
+- Redirect/post-logout: `https://admin.drfarahvipurgentcare.com/*`
+- Web origin: `https://admin.staging.drfarahvipurgentcare.com`
+- Web origin: `https://admin.drfarahvipurgentcare.com`
+
+The old temporary admin origin may remain only during the transition window.

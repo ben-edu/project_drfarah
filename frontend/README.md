@@ -32,3 +32,17 @@ clinic photography before production; keep the same filenames.
 Legal pages are drafts pending clinic + counsel review. All pages carry
 noindex,nofollow,noarchive and robots.txt disallows all (temporary staging domain).
 Remove at final-domain migration (1E).
+
+
+## Final-domain migration
+
+Final public production origin: `https://drfarahvipurgentcare.com`  
+Final staging origin: `https://staging.drfarahvipurgentcare.com`
+
+`booking.js` and `registration.js` recognize both final and temporary
+origins during the cutover window. Staging remains `noindex` with
+`robots.txt: Disallow: /`. Production is assembled by Jenkins using the
+production robots/Apache policy only after the legacy redirect inventory and
+other cutover blockers are cleared.
+
+See `docs/migration/FINAL_DOMAIN_CUTOVER.md`.

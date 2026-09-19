@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed origins.
     # Staging origins must not include production origins.
     CORS_ORIGINS: str = Field(
-        default="https://staging.drfarah.proxbenovh.cloud"
+        default="https://staging.drfarahvipurgentcare.com"
     )
 
     @property

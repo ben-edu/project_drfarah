@@ -4,9 +4,28 @@
 
   var API_BASE = (function () {
     var h = location.hostname;
-    if (h === 'staging.drfarah.proxbenovh.cloud') return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
-    if (h === 'drfarah.proxbenovh.cloud' || h === 'www.drfarah.proxbenovh.cloud') return 'https://api.drfarah.proxbenovh.cloud/api/v1';
-    return 'http://localhost:8000/api/v1';
+
+    // Final domains.
+    if (h === 'staging.drfarahvipurgentcare.com') {
+      return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+    }
+    if (h === 'drfarahvipurgentcare.com' || h === 'www.drfarahvipurgentcare.com') {
+      return 'https://api.drfarahvipurgentcare.com/api/v1';
+    }
+
+    // Temporary domains kept during the controlled migration window.
+    if (h === 'staging.drfarah.proxbenovh.cloud') {
+      return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
+    }
+    if (h === 'drfarah.proxbenovh.cloud' || h === 'www.drfarah.proxbenovh.cloud') {
+      return 'https://api.drfarah.proxbenovh.cloud/api/v1';
+    }
+
+    if (h === 'localhost' || h === '127.0.0.1') {
+      return 'http://localhost:8000/api/v1';
+    }
+
+    return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
   })();
 
   var form = document.getElementById('registrationForm');

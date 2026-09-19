@@ -79,3 +79,23 @@ The first registration phase is intentionally limited to demographic/contact inf
 AI/chat assistance remains outside this implementation.
 
 CI rerun note: validation re-triggered after Jenkins HTTPS endpoint recovery on 2026-09-19.
+
+
+## 2026-09-19 — Final-domain migration status
+
+The clean-slate website is now preparing to replace the legacy WordPress site on
+`drfarahvipurgentcare.com`.
+
+Final public/staging architecture:
+
+- production: `drfarahvipurgentcare.com`, `api.drfarahvipurgentcare.com`,
+  `admin.drfarahvipurgentcare.com`;
+- staging: `staging.drfarahvipurgentcare.com`,
+  `api.staging.drfarahvipurgentcare.com`,
+  `admin.staging.drfarahvipurgentcare.com`.
+
+Staging remains noindexed. Production becomes crawlable only during controlled
+promotion/cutover. Existing WordPress URL equity must be protected with an
+explicit redirect inventory before the apex switch.
+
+See `docs/migration/FINAL_DOMAIN_CUTOVER.md` and `HANDOFF.md`.

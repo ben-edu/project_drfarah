@@ -1,0 +1,69 @@
+# API Deployment — Dr. Farah production.
+# Jenkins replaces the :prod placeholders with the exact immutable Git SHA.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drfarah-api
+  namespace: drfarah
+  labels:
+    app: drfarah-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drfarah-api
+  template:
+    metadata:
+      labels:
+        app: drfarah-api
+    spec:
+      imagePullSecrets:
+        - name: harbor-regcred
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+      initContainers:
+        - name: db-migrate
+          image: harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:prod
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "app.migration_bootstrap"]
+          envFrom:
+            - configMapRef:
+                name: drfarah-api-config
+            - secretRef:
+                name: drfarah-api-secret
+      containers:
+        - name: api
+          image: harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:prod
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: drfarah-api-config
+            - secretRef:
+                name: drfarah-api-secret
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

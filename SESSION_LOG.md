@@ -1146,3 +1146,84 @@ a double-quoted multi-line heredoc for the JSON `-d` body inside a Jenkins
 `sh '''...'''` block mangled inner JSON quotes. Fixed by building the JSON with
 `python3` into a temp file and POSTing with `--data-binary`; no new dependency.
 Committed on `fix/appointment-smoke-test-quoting`.
+
+
+---
+
+## 2026-09-19 — Final-domain migration preparation
+
+### Starting point
+
+- Current green integration branch: `dev`.
+- Last known green pre-migration commit: `8b3731bfd7ca736b211514b911a6758ab791463b`.
+- Temporary staging frontend/API/admin are still on `proxbenovh.cloud`.
+- Clinic-owned `drfarahvipurgentcare.com` is still the legacy WordPress public site.
+
+### Migration architecture
+
+Approved final host map:
+
+- production frontend: `drfarahvipurgentcare.com`
+- production API: `api.drfarahvipurgentcare.com`
+- production admin: `admin.drfarahvipurgentcare.com`
+- staging frontend: `staging.drfarahvipurgentcare.com`
+- staging API: `api.staging.drfarahvipurgentcare.com`
+- staging admin: `admin.staging.drfarahvipurgentcare.com`
+
+The separate staging admin prevents `dev` deployments from overwriting the
+production admin SPA.
+
+### Branch
+
+Created exceptional infrastructure/auth/deployment branch:
+
+`chore/final-domain-migration`
+
+Do not merge until operator DNS/Hestia/HAProxy/TLS/Keycloak prerequisites are
+ready.
+
+### Repository changes prepared
+
+- final hostname-aware public booking and registration API routing;
+- hostname-aware admin API routing;
+- final staging CORS and API ingress host, retaining temporary compatibility;
+- final production canonicals and sitemap;
+- production robots and Apache/cutover policy;
+- production Kubernetes namespace/PostgreSQL/API manifests;
+- independent production DB/API secret contract;
+- fail-closed Jenkins production deployment stages for `main`;
+- Jenkins staging targets moved to final staging frontend/API/admin hosts;
+- updated project/environment documentation;
+- new current `HANDOFF.md`;
+- detailed `docs/migration/FINAL_DOMAIN_CUTOVER.md`.
+
+### Intentional blockers
+
+Production Jenkins refuses to deploy while:
+
+- `kubernetes/drfarah/configmap.yaml` contains `REPLACE_BEFORE_PRODUCTION`
+  (production SMTP host/from/to not yet confirmed);
+- `frontend/.htaccess.production` contains `CUTOVER_BLOCKER`
+  (legacy WordPress URL/redirect inventory incomplete).
+
+These markers must not be removed merely to make CI/deployment pass.
+
+### Operator prerequisites
+
+- GoDaddy DNS records while preserving mail DNS.
+- Hestia frontend/admin domains for both environments.
+- HAProxy routing and TLS certificates.
+- Keycloak redirect/post-logout URI and Web Origin additions for both final
+  admin hosts.
+- production Kubernetes secrets.
+- production SMTP identity/recipient confirmation.
+- full legacy WordPress backup and URL inventory.
+- rollback DNS target recorded.
+
+### SEO
+
+The current domain already has indexed WordPress paths. Some obvious redirects
+are drafted, but a full legacy sitemap/crawl is still required before cutover.
+The old WordPress hosting must remain available for rollback during the
+stabilization window.
+

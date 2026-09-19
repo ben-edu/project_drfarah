@@ -109,15 +109,15 @@ and `ENVIRONMENT` is `staging` or `prod`.
 | `APP_NAME` | `drfarah-api` | No |
 | `ENVIRONMENT` | `dev` | No |
 | `DATABASE_URL` | `sqlite:///./drfarah.db` | Yes (staging/prod) |
-| `CORS_ORIGINS` | `https://staging.drfarah.proxbenovh.cloud` | No |
+| `CORS_ORIGINS` | `https://staging.drfarahvipurgentcare.com` | No |
 | `LOG_LEVEL` | `INFO` | No |
 | `TRUST_PROXY` | `false` | Set to `true` behind Traefik/HAProxy |
 | `SMTP_HOST` | `""` | Yes (for email notifications) |
 | `SMTP_PORT` | `587` | No |
 | `SMTP_USER` | `""` | Yes (for email notifications) |
 | `SMTP_PASSWORD` | `""` | Yes (for email notifications) |
-| `SMTP_FROM` | `noreply@drfarah.proxbenovh.cloud` | Yes |
-| `SMTP_TO` | `appointments@drfarah.proxbenovh.cloud` | Yes |
+| `SMTP_FROM` | `REPLACE_BEFORE_PRODUCTION` | Yes |
+| `SMTP_TO` | `REPLACE_BEFORE_PRODUCTION` | Yes |
 | `SMTP_USE_TLS` | `true` | No |
 | `SMTP_TEST_MODE` | `true` | No (set to `false` to send real emails) |
 | `CLEANUP_TOKEN` | `""` | Yes (for CI cleanup endpoint) |
@@ -153,7 +153,7 @@ The booking endpoint enforces strict validation:
 
 - Harbor image: `harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:dev`
 - K8s namespace: `drfarah-staging`
-- API URL: `https://api.staging.drfarah.proxbenovh.cloud`
+- API URL: `https://api.staging.drfarahvipurgentcare.com`
 - Jenkins handles build, push, and manifest deployment on `dev` branch.
 
 ## Scheduling
@@ -177,3 +177,14 @@ The public registration flow is deliberately narrower than a full clinical intak
 - Request bodies are not intentionally logged by the application.
 
 The narrower first phase is intentional so the clinic can approve the exact clinical forms and secure document workflow before more sensitive intake data is introduced.
+
+
+## Final-domain environment split
+
+Staging API: `https://api.staging.drfarahvipurgentcare.com`  
+Production API: `https://api.drfarahvipurgentcare.com`
+
+Staging and production use separate namespaces, PostgreSQL instances and
+secrets. Production SMTP identity/recipient must be explicitly confirmed before
+promotion; repository production configuration remains fail-closed while
+`REPLACE_BEFORE_PRODUCTION` markers exist.

@@ -11,14 +11,19 @@ or databases.
 
 ## Namespace mapping
 
-| Environment | Namespace | Frontend domain | API domain | DB hostname |
-|---|---|---|---|---|
-| Staging | `drfarah-staging` | `staging.drfarah.proxbenovh.cloud` | `api.staging.drfarah.proxbenovh.cloud` | `drfarah-staging-postgres` |
-| Production | `drfarah` | `drfarah.proxbenovh.cloud` | `api.drfarah.proxbenovh.cloud` | `drfarah-postgres` (planned) |
+| Environment | Namespace | Frontend domain | API domain | Admin domain | DB hostname |
+|---|---|---|---|---|---|
+| Staging | `drfarah-staging` | `staging.drfarahvipurgentcare.com` | `api.staging.drfarahvipurgentcare.com` | `admin.staging.drfarahvipurgentcare.com` | `drfarah-staging-postgres` |
+| Production | `drfarah` | `drfarahvipurgentcare.com` | `api.drfarahvipurgentcare.com` | `admin.drfarahvipurgentcare.com` | `drfarah-postgres` |
 
-Frontend staging and production already use separate Hestia docroots:
-- Staging: `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html`
-- Production: `/home/benweb/web/drfarah.proxbenovh.cloud/public_html`
+Target Hestia docroots:
+- Staging frontend: `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
+- Staging admin: `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html`
+- Production frontend: `/home/benweb/web/drfarahvipurgentcare.com/public_html`
+- Production admin: `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
+
+The old `proxbenovh.cloud` hosts are temporary compatibility routes during
+migration and must not be treated as the final environment map.
 
 ## Why isolation matters
 
@@ -65,8 +70,8 @@ Production resources (in `drfarah` namespace) will use production-prefixed names
 
 ## CORS origins
 
-- Staging ConfigMap: `https://staging.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud`
-- Production ConfigMap (future): `https://drfarah.proxbenovh.cloud,https://www.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud`
+- Staging ConfigMap: final staging frontend/admin origins, with temporary old origins retained only during cutover.
+- Production ConfigMap: `https://drfarahvipurgentcare.com,https://www.drfarahvipurgentcare.com,https://admin.drfarahvipurgentcare.com`
 
 Production origins must not appear in staging configuration.
 
