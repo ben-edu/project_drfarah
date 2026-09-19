@@ -77,3 +77,5 @@ The current implementation now also includes:
 The first registration phase is intentionally limited to demographic/contact information. It does not collect medical-history narratives, medication lists, insurance member identifiers, SSNs, identity documents, or medical uploads. The patient receives a registration reference and private resume token; only a hash of the resume token is stored.
 
 AI/chat assistance remains outside this implementation.
+
+CI rerun note: validation re-triggered after Jenkins HTTPS endpoint recovery on 2026-09-19.
