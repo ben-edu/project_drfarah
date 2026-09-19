@@ -114,7 +114,7 @@ def save_registration(
     if registration.status == "submitted":
         raise HTTPException(status_code=409, detail="Submitted registration cannot be edited")
 
-    for key, value in payload.model_dump().items():
+    for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(registration, key, value)
     registration.updated_at = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
