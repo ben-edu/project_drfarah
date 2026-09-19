@@ -82,7 +82,24 @@
     });
   }
 
+  function validateCoreIdentity() {
+    var required = [
+      ['first_name', 'First name'],
+      ['last_name', 'Last name'],
+      ['email', 'Email'],
+      ['phone', 'Phone']
+    ];
+    var missing = [];
+    required.forEach(function (item) {
+      if (!value(item[0])) missing.push(item[1]);
+    });
+    if (missing.length) {
+      throw new Error('Before saving a draft, please complete: ' + missing.join(', ') + '.');
+    }
+  }
+
   function ensureDraft() {
+    if (!reference || !token) validateCoreIdentity();
     if (reference && token) {
       return request('/patient-registrations/' + encodeURIComponent(reference), {
         method: 'PATCH',
