@@ -61,3 +61,24 @@
 .services-hero__media img{filter:none!important;opacity:1;image-rendering:auto}
 @media(max-width:820px){.specialty-hero__inner,.traveler-choice-grid{grid-template-columns:1fr}.specialty-hero__media{order:2;min-height:320px}.specialty-hero__media img{min-height:320px}.treatment-detail-grid{grid-template-columns:1fr 1fr}.iv-card-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.treatment-detail-grid{grid-template-columns:1fr}}
+
+
+/* Online patient registration — intentionally simple and privacy-forward. */
+.registration-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr);gap:clamp(30px,5vw,64px);align-items:start}
+.registration-form{border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:clamp(22px,3vw,34px);background:var(--noir-2)}
+.registration-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+.registration-form label,.registration-resume label{display:grid;gap:7px;color:var(--bone-dim);font-size:13px;font-weight:500}
+.registration-form label>span,.registration-resume label>span{color:var(--muted);font-weight:400;font-size:11px}
+.registration-form input,.registration-resume input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--noir);color:var(--bone);padding:12px 13px;font:inherit;outline:none}
+.registration-form input:focus,.registration-resume input:focus{border-color:var(--gold)}
+.registration-consent{display:flex!important;grid-template-columns:auto 1fr;align-items:flex-start;gap:10px!important;margin-top:22px;line-height:1.5}
+.registration-consent input{width:auto;margin-top:3px}
+.registration-consent a{color:var(--gold-lite)}
+.registration-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.registration-resume{position:sticky;top:110px;display:grid;gap:18px}
+.registration-resume .partner-callout{display:grid;gap:14px}
+.registration-credentials{border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;background:rgba(198,161,91,.06)}
+.registration-credentials code{display:block;margin-top:5px;padding:9px 10px;border-radius:6px;background:var(--noir);color:var(--gold-lite);font-size:12px;word-break:break-all;user-select:all}
+.registration-note{color:var(--muted);font-size:12px;line-height:1.5}
+.registration-hero{padding-bottom:clamp(54px,7vw,86px)}
+@media(max-width:820px){.registration-layout{grid-template-columns:1fr}.registration-resume{position:static}.registration-grid{grid-template-columns:1fr}}
