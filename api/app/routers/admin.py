@@ -17,12 +17,16 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.auth import get_current_user, require_realm_role
 from app.core.database import get_db
 from app.models.appointment import Appointment
+from app.models.patient_registration import PatientRegistration
 from app.schemas.admin import (
     AdminAppointmentDetail,
     AdminAppointmentListItem,
     AppointmentStatusEnum,
     AppointmentStatusUpdate,
     PaginatedAppointmentResponse,
+    AdminRegistrationDetail,
+    AdminRegistrationListItem,
+    PaginatedRegistrationResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +78,37 @@ def _admin_appointment_detail(appt: Appointment) -> dict:
         "created_at": appt.created_at,
         "updated_at": appt.updated_at,
     }
+
+
+def _admin_registration_list_item(registration: PatientRegistration) -> dict:
+    return {
+        "id": registration.id,
+        "public_reference": registration.public_reference,
+        "appointment_reference": registration.appointment_reference,
+        "first_name": registration.first_name,
+        "last_name": registration.last_name,
+        "email": registration.email,
+        "phone": registration.phone,
+        "status": registration.status,
+        "updated_at": registration.updated_at,
+        "submitted_at": registration.submitted_at,
+    }
+
+
+def _admin_registration_detail(registration: PatientRegistration) -> dict:
+    data = _admin_registration_list_item(registration)
+    data.update({
+        "date_of_birth": registration.date_of_birth.isoformat() if registration.date_of_birth else None,
+        "address_line1": registration.address_line1,
+        "address_line2": registration.address_line2,
+        "city": registration.city,
+        "state": registration.state,
+        "postal_code": registration.postal_code,
+        "emergency_contact_name": registration.emergency_contact_name,
+        "emergency_contact_phone": registration.emergency_contact_phone,
+        "privacy_acknowledged": registration.privacy_acknowledged,
+    })
+    return data
 
 
 # ---------------------------------------------------------------------------
@@ -262,4 +297,52 @@ def patch_admin_appointment(
     )
 
     return _admin_appointment_detail(appt)
+
+
+@router.get(
+    "/admin/registrations",
+    response_model=PaginatedRegistrationResponse,
+    dependencies=[Depends(require_realm_role("clinic-staff"))],
+)
+def list_admin_registrations(
+    status_filter: Optional[str] = Query(default=None, alias="status"),
+    q: Optional[str] = Query(default=None),
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    query = db.query(PatientRegistration)
+    if status_filter:
+        if status_filter not in ("draft", "submitted"):
+            raise HTTPException(status_code=422, detail="Invalid registration status")
+        query = query.filter(PatientRegistration.status == status_filter)
+    if q:
+        search = f"%{q}%"
+        query = query.filter(sa_or_(
+            PatientRegistration.public_reference.ilike(search),
+            PatientRegistration.first_name.ilike(search),
+            PatientRegistration.last_name.ilike(search),
+            PatientRegistration.email.ilike(search),
+            PatientRegistration.phone.ilike(search),
+        ))
+    total = query.count()
+    rows = query.order_by(PatientRegistration.updated_at.desc()).offset(offset).limit(limit).all()
+    return {
+        "items": [_admin_registration_list_item(row) for row in rows],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get(
+    "/admin/registrations/{registration_id}",
+    response_model=AdminRegistrationDetail,
+    dependencies=[Depends(require_realm_role("clinic-staff"))],
+)
+def get_admin_registration(registration_id: int, db: Session = Depends(get_db)):
+    registration = db.query(PatientRegistration).filter(PatientRegistration.id == registration_id).first()
+    if registration is None:
+        raise HTTPException(status_code=404, detail="Registration not found")
+    return _admin_registration_detail(registration)
 

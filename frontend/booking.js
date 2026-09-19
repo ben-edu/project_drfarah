@@ -275,6 +275,10 @@
       .then(function (data) {
         var ref = data && (data.public_reference || data.id);
         document.getElementById('successRef').textContent = ref ? ('Reference: ' + ref) : '';
+        var registrationLink = document.querySelector('a[href="/patient-registration"]');
+        if (registrationLink && ref) {
+          registrationLink.href = '/patient-registration?appointment_reference=' + encodeURIComponent(String(ref));
+        }
         show(5);
       })
       .catch(function (err) {

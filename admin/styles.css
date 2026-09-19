@@ -380,3 +380,15 @@ footer {
 .hidden { display: none !important; }
 .text-center { text-align: center; }
 .mt-1 { margin-top: 1rem; }
+
+
+.badge-draft {
+  background: rgba(198,161,91,.12);
+  color: var(--gold-lite);
+  border: 1px solid rgba(198,161,91,.22);
+}
+.badge-submitted {
+  background: rgba(76,175,80,.15);
+  color: #81C784;
+  border: 1px solid rgba(76,175,80,.25);
+}
