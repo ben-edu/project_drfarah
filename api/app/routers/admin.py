@@ -16,13 +16,17 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.auth import get_current_user, require_realm_role
 from app.core.database import get_db
-from app.models.appointment import Appointment\nfrom app.models.patient_registration import PatientRegistration
+from app.models.appointment import Appointment
+from app.models.patient_registration import PatientRegistration
 from app.schemas.admin import (
     AdminAppointmentDetail,
     AdminAppointmentListItem,
     AppointmentStatusEnum,
     AppointmentStatusUpdate,
-    PaginatedAppointmentResponse,\n    AdminRegistrationDetail,\n    AdminRegistrationListItem,\n    PaginatedRegistrationResponse,
+    PaginatedAppointmentResponse,
+    AdminRegistrationDetail,
+    AdminRegistrationListItem,
+    PaginatedRegistrationResponse,
 )
 
 logger = logging.getLogger(__name__)
