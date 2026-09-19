@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 NAME_PATTERN = r"^[a-zA-ZÀ-ÿ\-' ]*$"
 PHONE_PATTERN = r"^[0-9+\-() .]*$"
 EMAIL_PATTERN = r"^$|^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+EMAIL_REQUIRED_PATTERN = r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
 
 
 class RegistrationData(BaseModel):
@@ -36,7 +37,7 @@ class RegistrationCreate(RegistrationData):
 
     first_name: str = Field(..., min_length=1, max_length=128, pattern=NAME_PATTERN)
     last_name: str = Field(..., min_length=1, max_length=128, pattern=NAME_PATTERN)
-    email: str = Field(..., max_length=255, pattern=EMAIL_PATTERN)
+    email: str = Field(..., min_length=3, max_length=255, pattern=EMAIL_REQUIRED_PATTERN)
     phone: str = Field(..., min_length=7, max_length=64, pattern=PHONE_PATTERN)
 
 
