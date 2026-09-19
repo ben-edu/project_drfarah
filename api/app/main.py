@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.database import Base, _get_engine
-from app.routers import admin, appointments, booking, health
+from app.routers import admin, appointments, booking, health, patient_registration
 
 settings = get_settings()
 
