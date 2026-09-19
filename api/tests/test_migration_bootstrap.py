@@ -243,7 +243,8 @@ class TestFreshDatabase:
 
         db_url = os.environ["DATABASE_URL"]
         for table in ("bookings", "services", "working_hours",
-                      "blocked_periods", "appointments", "alembic_version"):
+                      "blocked_periods", "appointments", "patient_registrations",
+                      "alembic_version"):
             assert _table_exists(db_url, table), f"Table '{table}' is missing"
 
     def test_seed_services_exist(self, pg_db):
@@ -278,14 +279,14 @@ class TestFreshDatabase:
         db_url = os.environ["DATABASE_URL"]
         rev = _get_revision(db_url)
         assert rev is not None, "alembic_version should contain a revision"
-        assert rev == "0002", f"Expected head 0002, got {rev}"
+        assert rev == "0003", f"Expected head 0003, got {rev}"
 
     def test_second_bootstrap_is_idempotent(self, pg_db):
         _run_bootstrap()
         _run_bootstrap()
 
         db_url = os.environ["DATABASE_URL"]
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
 
 
 class TestLegacyDatabase:
@@ -304,9 +305,10 @@ class TestLegacyDatabase:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
         assert _table_exists(db_url, "bookings")
-        for table in ("services", "working_hours", "blocked_periods", "appointments"):
+        for table in ("services", "working_hours", "blocked_periods",
+                      "appointments", "patient_registrations"):
             assert _table_exists(db_url, table), f"'{table}' missing"
 
     def test_legacy_rows_preserved(self, pg_db):
@@ -358,7 +360,7 @@ class TestLegacyDatabase:
         _insert_legacy_bookings(db_url, count=1)
         _run_bootstrap()
         _run_bootstrap()
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
 
 
 class TestEmptyAlembicVersion:
@@ -378,7 +380,7 @@ class TestEmptyAlembicVersion:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
         assert _count_rows(db_url, "bookings") == 1
 
 
@@ -447,7 +449,7 @@ class TestAlreadyManaged:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
         assert _table_exists(db_url, "services")
         assert _table_exists(db_url, "working_hours")
         assert _count_rows(db_url, "bookings") == 1
@@ -470,10 +472,10 @@ class TestAlreadyManaged:
         command.stamp(cfg, "0001")
         command.upgrade(cfg, "head")
 
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
 
         _run_bootstrap()
-        assert _get_revision(db_url) == "0002"
+        assert _get_revision(db_url) == "0003"
         assert _count_rows(db_url, "bookings") == 1
 
 
