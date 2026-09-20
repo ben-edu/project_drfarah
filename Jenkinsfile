@@ -23,17 +23,8 @@ pipeline {
     HESTIA_SSH_USER = 'benweb'
     STAGING_FRONTEND_HOST = 'staging.drfarahvipurgentcare.com'
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarahvipurgentcare.com/public_html'
-    STAGING_ADMIN_FRONTEND_HOST = 'admin.staging.drfarahvipurgentcare.com'
-    STAGING_ADMIN_DOCROOT = '/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html'
-
-    PROD_NAMESPACE = 'drfarah'
-    PROD_API_URL = 'https://api.drfarahvipurgentcare.com'
-    PROD_FRONTEND_HOST = 'drfarahvipurgentcare.com'
-    PROD_DOCROOT = '/home/benweb/web/drfarahvipurgentcare.com/public_html'
-    PROD_ADMIN_FRONTEND_HOST = 'admin.drfarahvipurgentcare.com'
-    PROD_ADMIN_DOCROOT = '/home/benweb/web/admin.drfarahvipurgentcare.com/public_html'
-    PROD_WEB_EDGE_IP = '87.98.174.211'
-    PROD_API_EDGE_IP = '51.75.57.153'
+    ADMIN_FRONTEND_HOST = 'admin.staging.drfarahvipurgentcare.com'
+    ADMIN_DOCROOT = '/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html'
 
   }
 
@@ -56,12 +47,9 @@ pipeline {
   //   - Deploy frontend to staging
   //
   // main:
-  //   - Validation
-  //   - Build/push immutable production API image
-  //   - Deploy isolated production API/PostgreSQL resources
-  //   - Deploy production frontend and admin after cutover blockers are cleared
+  //   - Validation only
   //
-  // Production deploy remains fail-closed until operator prerequisites are ready.
+  // Production deployment is intentionally disabled.
   // =========================================================================
 
   stages {
@@ -108,19 +96,12 @@ pipeline {
             docs/architecture/README.md
             docs/design/DESIGN_SYSTEM_V1.md
             docs/design/DESIGN_SYSTEM_V2.md
-            docs/migration/FINAL_DOMAIN_CUTOVER.md
             frontend/README.md
             frontend/index.html
             frontend/styles.css
             frontend/app.js
-            frontend/app-v5.js
-            frontend/booking.js
-            frontend/registration.js
             frontend/robots.txt
-            frontend/robots.production.txt
-            frontend/.htaccess.production
             admin/README.md
-            admin/config.js
             api/README.md
             api/Dockerfile
             api/requirements.txt
@@ -150,24 +131,11 @@ pipeline {
             api/app/schemas/availability.py
             api/app/schemas/appointment.py
             api/app/routers/appointments.py
-            api/app/models/patient_registration.py
-            api/app/schemas/patient_registration.py
-            api/app/routers/patient_registration.py
-            api/tests/test_patient_registration.py
             api/alembic.ini
             api/alembic/env.py
             api/alembic/versions/0001_initial_bookings.py
             api/alembic/versions/0002_add_scheduling_tables.py
-            api/alembic/versions/0003_add_patient_registrations.py
             kubernetes/drfarah/README.md
-            kubernetes/drfarah/namespace.yaml
-            kubernetes/drfarah/postgres-statefulset.yaml
-            kubernetes/drfarah/postgres-service.yaml
-            kubernetes/drfarah/configmap.yaml
-            kubernetes/drfarah/secret.example.yaml
-            kubernetes/drfarah/api-deployment.yaml
-            kubernetes/drfarah/api-service.yaml
-            kubernetes/drfarah/api-ingress.yaml
             kubernetes/drfarah-staging/namespace.yaml
             kubernetes/drfarah-staging/postgres-statefulset.yaml
             kubernetes/drfarah-staging/postgres-service.yaml
@@ -597,18 +565,7 @@ pipeline {
             frontend/index.html
             frontend/styles.css
             frontend/app.js
-            frontend/app-v5.js
-            frontend/booking.js
-            frontend/registration.js
             frontend/robots.txt
-            frontend/robots.production.txt
-            frontend/.htaccess.production
-            frontend/iv-therapy.html
-            frontend/prp-treatments.html
-            frontend/weight-loss-program.html
-            frontend/traveler-telehealth.html
-            frontend/personal-injury-care.html
-            frontend/patient-registration.html
           "
 
           for file in $required_files; do
@@ -628,10 +585,7 @@ pipeline {
             -w /app \
             node:20-slim \
             node --check frontend/app.js && \
-            node --check frontend/app-v5.js && \
             node --check frontend/booking.js && \
-            node --check frontend/registration.js && \
-            node --check admin/config.js && \
             node --check admin/app.js
 
           echo "JavaScript syntax passed."
@@ -783,13 +737,6 @@ pipeline {
             /styles.css
             /app.js
             /booking.js
-            /registration.js
-            /iv-therapy.html
-            /prp-treatments.html
-            /weight-loss-program.html
-            /traveler-telehealth.html
-            /personal-injury-care.html
-            /patient-registration.html
             /robots.txt
             /sitemap.xml
             /assets/hero-treatment.jpg
@@ -1390,8 +1337,6 @@ print(json.dumps({
             rsync -av --delete \
               --exclude='.env' \
               --exclude='.well-known' \
-              --exclude='.htaccess.production' \
-              --exclude='robots.production.txt' \
               -e "ssh $SSH_OPTS" \
               frontend/ \
               "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$STAGING_DOCROOT/"
@@ -1520,18 +1465,18 @@ print(json.dumps({
               "
                 set -e
 
-                [ -d '$STAGING_ADMIN_DOCROOT' ] || {
+                [ -d '$ADMIN_DOCROOT' ] || {
                   echo 'ERROR: admin docroot is missing'
                   exit 1
                 }
 
-                touch '$STAGING_ADMIN_DOCROOT/.jenkins-write-test' 2>/dev/null || {
+                touch '$ADMIN_DOCROOT/.jenkins-write-test' 2>/dev/null || {
                   echo 'ERROR: no write access'
-                  ls -ld '$STAGING_ADMIN_DOCROOT'
+                  ls -ld '$ADMIN_DOCROOT'
                   exit 1
                 }
 
-                rm -f '$STAGING_ADMIN_DOCROOT/.jenkins-write-test'
+                rm -f '$ADMIN_DOCROOT/.jenkins-write-test'
                 echo 'Write access confirmed.'
               "
 
@@ -1543,7 +1488,7 @@ print(json.dumps({
               --exclude='.well-known' \
               -e "ssh $SSH_OPTS" \
               admin/ \
-              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$STAGING_ADMIN_DOCROOT/"
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$ADMIN_DOCROOT/"
 
             echo ""
             echo "=== Admin SPA smoke test ==="
@@ -1561,7 +1506,7 @@ print(json.dumps({
                 curl -sS \
                   -o /dev/null \
                   -w '%{http_code}' \
-                  "https://${STAGING_ADMIN_FRONTEND_HOST}${path}" \
+                  "https://${ADMIN_FRONTEND_HOST}${path}" \
                   || true
               )"
 
@@ -1579,396 +1524,6 @@ print(json.dumps({
 
             echo ""
             echo "Admin SPA staging deployment passed."
-          '''
-        }
-      }
-    }
-
-
-    stage('Production — repository cutover preflight') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        sh '''
-          set -eu
-
-          if grep -R -q 'REPLACE_BEFORE_PRODUCTION' kubernetes/drfarah/configmap.yaml; then
-            echo "FAIL: production SMTP configuration is still intentionally blocked."
-            exit 1
-          fi
-
-          if grep -q 'CUTOVER_BLOCKER' frontend/.htaccess.production; then
-            echo "FAIL: legacy WordPress redirect inventory is not complete."
-            exit 1
-          fi
-
-          if grep -R -q 'drfarahvipurgentcare.com/wp-content/' frontend/app.js frontend/app-v5.js; then
-            echo "FAIL: insurer artwork is still hotlinked from the legacy WordPress host."
-            echo "Copy the approved insurer artwork into frontend/assets and update app.js/app-v5.js before production."
-            exit 1
-          fi
-
-          if grep -q 'BACKUP_READINESS_BLOCKER' kubernetes/drfarah/README.md; then
-            echo "FAIL: production database backup/restore readiness is not yet verified."
-            exit 1
-          fi
-
-          echo "Production repository cutover blockers are cleared."
-        '''
-      }
-    }
-
-    stage('API — build and push production image') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        withCredentials([
-          usernamePassword(
-            credentialsId: 'harbor-robot-devops-project-harbor',
-            usernameVariable: 'HARBOR_USER',
-            passwordVariable: 'HARBOR_PASS'
-          )
-        ]) {
-          sh '''
-            set -eu
-
-            IMAGE_TAG="$(git rev-parse HEAD)"
-
-            if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
-              echo "FAIL: invalid immutable Git SHA: '$IMAGE_TAG'"
-              exit 1
-            fi
-
-            FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}"
-            BUILD_IMAGE="${FULL_IMAGE}:${IMAGE_TAG}"
-            PROD_IMAGE="${FULL_IMAGE}:prod"
-
-            DOCKER_CONFIG="${WORKSPACE}/.docker-auth-${BUILD_NUMBER}-$$"
-            export DOCKER_CONFIG
-
-            cleanup_harbor() {
-              rm -rf "$DOCKER_CONFIG"
-              docker rmi "$BUILD_IMAGE" "$PROD_IMAGE" >/dev/null 2>&1 || true
-            }
-            trap cleanup_harbor EXIT HUP INT TERM
-
-            mkdir -p "$DOCKER_CONFIG"
-
-            printf '%s' "$HARBOR_PASS" \
-              | docker login "$HARBOR_REGISTRY" \
-                  --username "$HARBOR_USER" \
-                  --password-stdin
-
-            docker build -t "$BUILD_IMAGE" -t "$PROD_IMAGE" api
-            docker push "$BUILD_IMAGE"
-            docker push "$PROD_IMAGE"
-
-            echo "Production API image pushed: $BUILD_IMAGE"
-          '''
-        }
-      }
-    }
-
-    stage('API — deploy production manifests') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        sh '''
-          set -eu
-
-          if grep -R -q 'REPLACE_BEFORE_PRODUCTION' kubernetes/drfarah/configmap.yaml; then
-            echo "FAIL: production ConfigMap still contains REPLACE_BEFORE_PRODUCTION."
-            echo "Confirm production SMTP host/from/to before promotion."
-            exit 1
-          fi
-
-          IMAGE_TAG="$(git rev-parse HEAD)"
-          if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
-            echo "FAIL: invalid immutable Git SHA: '$IMAGE_TAG'"
-            exit 1
-          fi
-
-          FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
-          PLACEHOLDER="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:prod"
-
-          test -r "$KUBECONFIG" || {
-            echo "FAIL: kubeconfig missing or unreadable."
-            exit 1
-          }
-
-          kubectl apply -f kubernetes/drfarah/namespace.yaml
-
-          for secret in harbor-regcred drfarah-db-secret drfarah-api-secret; do
-            kubectl -n "$PROD_NAMESPACE" get secret "$secret" >/dev/null 2>&1 || {
-              echo "FAIL: required production secret '$secret' is missing."
-              exit 1
-            }
-          done
-
-          kubectl apply \
-            -f kubernetes/drfarah/configmap.yaml \
-            -f kubernetes/drfarah/postgres-service.yaml \
-            -f kubernetes/drfarah/postgres-statefulset.yaml \
-            -f kubernetes/drfarah/api-service.yaml \
-            -f kubernetes/drfarah/api-ingress.yaml
-
-          RENDERED="$(mktemp)"
-          sed "s|image: ${PLACEHOLDER}|image: ${FULL_IMAGE}|g" \
-            kubernetes/drfarah/api-deployment.yaml > "$RENDERED"
-
-          IMAGE_COUNT="$(grep -cF "image: ${FULL_IMAGE}" "$RENDERED" || true)"
-          if [ "$IMAGE_COUNT" -ne 2 ]; then
-            echo "FAIL: expected 2 immutable production image lines, found $IMAGE_COUNT"
-            rm -f "$RENDERED"
-            exit 1
-          fi
-
-          if grep -qE 'image:.*:prod\b' "$RENDERED"; then
-            echo "FAIL: :prod placeholder remains in rendered production deployment."
-            rm -f "$RENDERED"
-            exit 1
-          fi
-
-          kubectl apply -f "$RENDERED"
-          rm -f "$RENDERED"
-
-          kubectl -n "$PROD_NAMESPACE" \
-            rollout status statefulset/drfarah-postgres --timeout=180s
-
-          kubectl -n "$PROD_NAMESPACE" \
-            rollout status deployment/drfarah-api --timeout=180s
-
-          echo "Production API rollout completed."
-        '''
-      }
-    }
-
-    stage('API — production health check') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        sh '''
-          set -eu
-
-          for endpoint in live ready; do
-            status="000"
-            for attempt in $(seq 1 18); do
-              status="$(
-                curl -sS -o /dev/null -w '%{http_code}' \
-                  --resolve "${PROD_API_URL#https://}:443:${PROD_API_EDGE_IP}" \
-                  "${PROD_API_URL}/api/v1/health/${endpoint}" || true
-              )"
-              [ -n "$status" ] || status="000"
-              if [ "$status" = "200" ]; then
-                break
-              fi
-              echo "  ${endpoint} attempt $attempt/18 -> HTTP $status"
-              sleep 5
-            done
-
-            if [ "$status" != "200" ]; then
-              echo "FAIL: production ${endpoint} returned HTTP $status"
-              exit 1
-            fi
-          done
-
-          SERVICES_JSON="$(curl -fsS \
-            --resolve "${PROD_API_URL#https://}:443:${PROD_API_EDGE_IP}" \
-            "${PROD_API_URL}/api/v1/services")"
-          SERVICE_COUNT="$(
-            echo "$SERVICES_JSON" \
-              | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('services',[])))"
-          )"
-
-          if [ "$SERVICE_COUNT" -eq 0 ]; then
-            echo "FAIL: production services endpoint returned no active services."
-            exit 1
-          fi
-
-          IMAGE_TAG="$(git rev-parse HEAD)"
-          FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
-
-          DEPLOYED_IMAGE="$(
-            kubectl -n "$PROD_NAMESPACE" get deployment drfarah-api \
-              -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
-          )"
-          DEPLOYED_INIT_IMAGE="$(
-            kubectl -n "$PROD_NAMESPACE" get deployment drfarah-api \
-              -o jsonpath='{.spec.template.spec.initContainers[?(@.name=="db-migrate")].image}'
-          )"
-
-          [ "$DEPLOYED_IMAGE" = "$FULL_IMAGE" ] || {
-            echo "FAIL: production API image does not match commit SHA."
-            exit 1
-          }
-          [ "$DEPLOYED_INIT_IMAGE" = "$FULL_IMAGE" ] || {
-            echo "FAIL: production migration image does not match commit SHA."
-            exit 1
-          }
-
-          echo "Production API read-only health checks passed."
-        '''
-      }
-    }
-
-    stage('Frontend — deploy production') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        withCredentials([
-          sshUserPrivateKey(
-            credentialsId: 'hestia-benweb-ssh',
-            keyFileVariable: 'SSH_KEY'
-          )
-        ]) {
-          sh '''
-            set -eu
-
-            if grep -q 'CUTOVER_BLOCKER' frontend/.htaccess.production; then
-              echo "FAIL: legacy WordPress redirect inventory is not complete."
-              echo "Resolve CUTOVER_BLOCKER in frontend/.htaccess.production before production promotion."
-              exit 1
-            fi
-
-            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
-
-            ssh $SSH_OPTS "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" "
-              set -e
-              [ -d '$PROD_DOCROOT' ] || {
-                echo 'ERROR: production frontend docroot is missing'
-                exit 1
-              }
-              touch '$PROD_DOCROOT/.jenkins-write-test'
-              rm -f '$PROD_DOCROOT/.jenkins-write-test'
-            "
-
-            ARTIFACT="$(mktemp -d)"
-            cleanup_artifact() { rm -rf "$ARTIFACT"; }
-            trap cleanup_artifact EXIT HUP INT TERM
-
-            cp -a frontend/. "$ARTIFACT/"
-
-            find "$ARTIFACT" -maxdepth 1 -name '*.html' -type f -exec \
-              sed -i 's/<meta name="robots" content="noindex,nofollow,noarchive">/<meta name="robots" content="index,follow">/g' {} +
-
-            cp "$ARTIFACT/robots.production.txt" "$ARTIFACT/robots.txt"
-            cp "$ARTIFACT/.htaccess.production" "$ARTIFACT/.htaccess"
-            rm -f "$ARTIFACT/robots.production.txt" "$ARTIFACT/.htaccess.production"
-
-            if grep -R -q 'noindex,nofollow,noarchive' "$ARTIFACT"/*.html; then
-              echo "FAIL: production HTML still contains staging noindex."
-              exit 1
-            fi
-
-            grep -q 'Sitemap: https://drfarahvipurgentcare.com/sitemap.xml' "$ARTIFACT/robots.txt" || {
-              echo "FAIL: production robots sitemap is incorrect."
-              exit 1
-            }
-
-            rsync -av --delete \
-              --exclude='.env' \
-              --exclude='.well-known' \
-              -e "ssh $SSH_OPTS" \
-              "$ARTIFACT/" \
-              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$PROD_DOCROOT/"
-
-            curl -fsS --resolve "${PROD_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" "https://${PROD_FRONTEND_HOST}/" \
-              | grep -q 'Dr. Farah' || {
-                echo "FAIL: production homepage marker missing."
-                exit 1
-              }
-
-            if curl -fsS --resolve "${PROD_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" "https://${PROD_FRONTEND_HOST}/" \
-              | grep -q 'noindex,nofollow,noarchive'; then
-              echo "FAIL: production homepage is still noindexed."
-              exit 1
-            fi
-
-            curl -fsS --resolve "${PROD_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" "https://${PROD_FRONTEND_HOST}/robots.txt" \
-              | grep -q 'Allow: /' || {
-                echo "FAIL: production robots policy is not crawlable."
-                exit 1
-              }
-
-            curl -fsS --resolve "${PROD_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" "https://${PROD_FRONTEND_HOST}/sitemap.xml" \
-              | grep -q 'https://drfarahvipurgentcare.com/' || {
-                echo "FAIL: production sitemap does not use the final domain."
-                exit 1
-              }
-
-            for path in /services /book /prp-treatments /weight-loss-program /traveler-telehealth /iv-therapy /pre-op-clearance /patient-registration; do
-              status="$(curl -sS -o /dev/null -w '%{http_code}' \
-                --resolve "${PROD_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" \
-                "https://${PROD_FRONTEND_HOST}${path}" || true)"
-              if [ "$status" != "200" ]; then
-                echo "FAIL: production $path -> HTTP $status"
-                exit 1
-              fi
-            done
-
-            echo "Production frontend deployment passed."
-          '''
-        }
-      }
-    }
-
-    stage('Admin SPA — deploy production') {
-      when {
-        branch 'main'
-      }
-
-      steps {
-        withCredentials([
-          sshUserPrivateKey(
-            credentialsId: 'hestia-benweb-ssh',
-            keyFileVariable: 'SSH_KEY'
-          )
-        ]) {
-          sh '''
-            set -eu
-
-            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
-
-            ssh $SSH_OPTS "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" "
-              set -e
-              [ -d '$PROD_ADMIN_DOCROOT' ] || {
-                echo 'ERROR: production admin docroot is missing'
-                exit 1
-              }
-              touch '$PROD_ADMIN_DOCROOT/.jenkins-write-test'
-              rm -f '$PROD_ADMIN_DOCROOT/.jenkins-write-test'
-            "
-
-            rsync -av --delete \
-              --exclude='.env' \
-              --exclude='.well-known' \
-              -e "ssh $SSH_OPTS" \
-              admin/ \
-              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$PROD_ADMIN_DOCROOT/"
-
-            for path in / /index.html /app.js /config.js /styles.css; do
-              status="$(
-                curl -sS -o /dev/null -w '%{http_code}' \
-                  --resolve "${PROD_ADMIN_FRONTEND_HOST}:443:${PROD_WEB_EDGE_IP}" \
-                  "https://${PROD_ADMIN_FRONTEND_HOST}${path}" || true
-              )"
-              if [ "$status" != "200" ]; then
-                echo "FAIL: production admin $path -> HTTP $status"
-                exit 1
-              fi
-            done
-
-            echo "Production admin SPA deployment passed."
           '''
         }
       }
