@@ -89,8 +89,8 @@ The temporary admin hostname is effectively a staging admin because the
 ### Staging
 
 - frontend: `https://staging.drfarahvipurgentcare.com`
-- API: `https://api.staging.drfarahvipurgentcare.com`
-- admin: `https://admin.staging.drfarahvipurgentcare.com`
+- API: `https://api-staging.drfarahvipurgentcare.com`
+- admin: `https://admin-staging.drfarahvipurgentcare.com`
 
 The separate staging admin is intentional. Sharing one admin hostname between
 `dev` and `main` would let a staging deploy overwrite the production SPA.
@@ -152,12 +152,16 @@ Create/verify, owned and writable by `benweb`:
 - `/home/benweb/web/drfarahvipurgentcare.com/public_html`
 - `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
 - `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
-- `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html`
+- `/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html`
 
 ### 3. HAProxy and TLS
 
 Configure final frontend/admin routes on BM1 and API routes on BM2.
 Install valid certificates for all final hostnames before browser testing.
+Because the staging API/admin names are hyphenated one-label subdomains,
+`*.drfarahvipurgentcare.com` covers them; the apex
+`drfarahvipurgentcare.com` still needs an explicit SAN or a separate
+certificate.
 
 ### 4. Keycloak
 
@@ -168,14 +172,14 @@ Add:
 
 Valid redirect URIs:
 - `https://admin.drfarahvipurgentcare.com/*`
-- `https://admin.staging.drfarahvipurgentcare.com/*`
+- `https://admin-staging.drfarahvipurgentcare.com/*`
 
 Valid post-logout redirect URIs:
 - same values
 
 Web origins:
 - `https://admin.drfarahvipurgentcare.com`
-- `https://admin.staging.drfarahvipurgentcare.com`
+- `https://admin-staging.drfarahvipurgentcare.com`
 
 Keep the old temporary admin URI/origin during the transition, then remove it
 after stable cutover. Do not use a broad wildcard. Enable/require MFA for real
@@ -248,8 +252,8 @@ its prerequisite is actually satisfied.
 3. Review PR and merge to `dev`.
 4. Jenkins `dev` deploys to:
    - `staging.drfarahvipurgentcare.com`
-   - `api.staging.drfarahvipurgentcare.com`
-   - `admin.staging.drfarahvipurgentcare.com`
+   - `api-staging.drfarahvipurgentcare.com`
+   - `admin-staging.drfarahvipurgentcare.com`
 5. Verify staging end to end:
    - public pages;
    - booking;

@@ -1167,8 +1167,8 @@ Approved final host map:
 - production API: `api.drfarahvipurgentcare.com`
 - production admin: `admin.drfarahvipurgentcare.com`
 - staging frontend: `staging.drfarahvipurgentcare.com`
-- staging API: `api.staging.drfarahvipurgentcare.com`
-- staging admin: `admin.staging.drfarahvipurgentcare.com`
+- staging API: `api-staging.drfarahvipurgentcare.com`
+- staging admin: `admin-staging.drfarahvipurgentcare.com`
 
 The separate staging admin prevents `dev` deployments from overwriting the
 production admin SPA.
@@ -1248,8 +1248,8 @@ Production:
 
 Staging:
 - `staging.drfarahvipurgentcare.com`
-- `api.staging.drfarahvipurgentcare.com`
-- `admin.staging.drfarahvipurgentcare.com`
+- `api-staging.drfarahvipurgentcare.com`
+- `admin-staging.drfarahvipurgentcare.com`
 
 Keycloak remains at `keycloak.soria-academie.fr`, realm `drfarah`.
 
@@ -1309,3 +1309,26 @@ backup and full redirect inventory.
 `HANDOFF.md` and `docs/migration/FINAL_DOMAIN_CUTOVER.md` are now the
 starting documents for any new tab/AI continuing this migration. Historical
 temporary-domain audit/provisioning documents are explicitly marked historical.
+
+---
+
+## 2026-09-20 — Corrected final staging hostname contract
+
+The operator-confirmed HAProxy names use hyphens, not nested staging
+subdomains:
+
+- API staging: `api-staging.drfarahvipurgentcare.com` (BM2);
+- admin staging: `admin-staging.drfarahvipurgentcare.com` (BM1).
+
+All repository runtime configuration, deployment targets, Keycloak guidance,
+Hestia docroots, Kubernetes manifests, and current migration documentation
+were aligned to those exact names. Jenkins now rejects the obsolete nested
+forms and verifies the critical runtime mappings before any deploy stage.
+
+The TLS guidance was corrected accordingly: `*.drfarahvipurgentcare.com`
+covers both hyphenated staging hosts, while the apex still requires an
+explicit SAN or a separate certificate.
+
+No merge or deployment was performed. PR #40 remains the controlled migration
+branch until operator TLS/HAProxy/Hestia/Keycloak prerequisites and CI are
+ready.

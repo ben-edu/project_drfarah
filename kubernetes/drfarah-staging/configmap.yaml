@@ -14,7 +14,7 @@ data:
   POSTGRES_HOST: "drfarah-staging-postgres"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "drfarah"
-  CORS_ORIGINS: "https://staging.drfarahvipurgentcare.com,https://admin.staging.drfarahvipurgentcare.com,https://staging.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud"
+  CORS_ORIGINS: "https://staging.drfarahvipurgentcare.com,https://admin-staging.drfarahvipurgentcare.com,https://staging.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud"
   TRUST_PROXY: "true"
   SMTP_HOST: "mail.soria-academie.fr"
   SMTP_PORT: "587"

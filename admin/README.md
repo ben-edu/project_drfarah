@@ -29,8 +29,8 @@ platform.  Static HTML/CSS/JS — no build step, no framework.
 
 The SPA **must** be served over a URL registered in the Keycloak client:
 
-- **Valid Redirect URIs:** `https://admin.staging.drfarahvipurgentcare.com/*`
-- **Web Origins:** `https://admin.staging.drfarahvipurgentcare.com`
+- **Valid Redirect URIs:** `https://admin-staging.drfarahvipurgentcare.com/*`
+- **Web Origins:** `https://admin-staging.drfarahvipurgentcare.com`
 
 ### Local testing
 
@@ -49,7 +49,7 @@ against that environment's registered Keycloak origin.
 
 Final targets are separated:
 
-- staging: `https://admin.staging.drfarahvipurgentcare.com`
+- staging: `https://admin-staging.drfarahvipurgentcare.com`
 - production: `https://admin.drfarahvipurgentcare.com`
 
 The temporary `https://admin.drfarah.proxbenovh.cloud` remains a transition
@@ -85,9 +85,9 @@ client `drfarah-admin`.
 
 Final explicit client settings must include:
 
-- Redirect/post-logout: `https://admin.staging.drfarahvipurgentcare.com/*`
+- Redirect/post-logout: `https://admin-staging.drfarahvipurgentcare.com/*`
 - Redirect/post-logout: `https://admin.drfarahvipurgentcare.com/*`
-- Web origin: `https://admin.staging.drfarahvipurgentcare.com`
+- Web origin: `https://admin-staging.drfarahvipurgentcare.com`
 - Web origin: `https://admin.drfarahvipurgentcare.com`
 
 The old temporary admin origin may remain only during the transition window.

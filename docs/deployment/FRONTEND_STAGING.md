@@ -18,9 +18,9 @@
 |---|---|
 | Public frontend | `staging.drfarahvipurgentcare.com` |
 | Frontend docroot | `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html` |
-| API | `api.staging.drfarahvipurgentcare.com` |
-| Admin SPA | `admin.staging.drfarahvipurgentcare.com` |
-| Admin docroot | `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html` |
+| API | `api-staging.drfarahvipurgentcare.com` |
+| Admin SPA | `admin-staging.drfarahvipurgentcare.com` |
+| Admin docroot | `/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html` |
 | API namespace | `drfarah-staging` |
 | Hestia server | `192.168.100.75:2275` |
 | SSH user / Jenkins credential | `benweb` / `hestia-benweb-ssh` |

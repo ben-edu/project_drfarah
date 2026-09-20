@@ -10,14 +10,14 @@
 
   if (h === 'admin.drfarahvipurgentcare.com') {
     apiBase = 'https://api.drfarahvipurgentcare.com/api/v1';
-  } else if (h === 'admin.staging.drfarahvipurgentcare.com') {
-    apiBase = 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+  } else if (h === 'admin-staging.drfarahvipurgentcare.com') {
+    apiBase = 'https://api-staging.drfarahvipurgentcare.com/api/v1';
   } else if (h === 'admin.drfarah.proxbenovh.cloud') {
     // Temporary staging admin kept during migration.
     apiBase = 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
   } else {
     // Fail toward staging, never production, for unknown/local hosts.
-    apiBase = 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+    apiBase = 'https://api-staging.drfarahvipurgentcare.com/api/v1';
   }
 
   window.ADMIN_CONFIG = {

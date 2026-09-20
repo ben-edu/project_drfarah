@@ -11,9 +11,9 @@
 | Production www alias | `www.drfarahvipurgentcare.com` → apex | HAProxy/Hestia redirect |
 | Staging frontend | `staging.drfarahvipurgentcare.com` | Hestia / BM1 |
 | Production API | `api.drfarahvipurgentcare.com` | HAProxy BM2 → Traefik → `drfarah` |
-| Staging API | `api.staging.drfarahvipurgentcare.com` | HAProxy BM2 → Traefik → `drfarah-staging` |
+| Staging API | `api-staging.drfarahvipurgentcare.com` | HAProxy BM2 → Traefik → `drfarah-staging` |
 | Production admin | `admin.drfarahvipurgentcare.com` | Hestia / BM1 |
-| Staging admin | `admin.staging.drfarahvipurgentcare.com` | Hestia / BM1 |
+| Staging admin | `admin-staging.drfarahvipurgentcare.com` | Hestia / BM1 |
 
 The Keycloak issuer remains `https://keycloak.soria-academie.fr/realms/drfarah`.
 The realm does not move with the website domain.
@@ -24,7 +24,7 @@ The current temporary `admin.drfarah.proxbenovh.cloud` is deployed by the
 `dev` pipeline and therefore behaves as a staging admin. Reusing one final
 admin hostname for both `dev` and `main` would allow a staging deploy to
 overwrite the production admin SPA. The final architecture therefore uses
-`admin.staging.drfarahvipurgentcare.com` for `dev` and
+`admin-staging.drfarahvipurgentcare.com` for `dev` and
 `admin.drfarahvipurgentcare.com` for production.
 
 ## Operator-owned preflight
@@ -63,7 +63,7 @@ The following independent web domains/docroots must exist and be writable by
 - `/home/benweb/web/drfarahvipurgentcare.com/public_html`
 - `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
 - `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
-- `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html`
+- `/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html`
 
 Configure `www.drfarahvipurgentcare.com` as the production alias/redirect.
 TLS terminates on HAProxy; Hestia-local ACME is not the authoritative TLS path.
@@ -86,11 +86,11 @@ Install/verify certificates for every final hostname before browser testing.
 DNS-01 certificate issuance can be done before the public A-record cutover.
 
 Certificate coverage detail: a certificate containing
-`*.drfarahvipurgentcare.com` covers `staging`, `admin`, and `api`, but it
-does **not** cover two-level names such as
-`api.staging.drfarahvipurgentcare.com` or
-`admin.staging.drfarahvipurgentcare.com`. Those need explicit SAN entries or
-coverage such as `*.staging.drfarahvipurgentcare.com`.
+`*.drfarahvipurgentcare.com` covers every one-label subdomain used here,
+including `www`, `staging`, `api`, `api-staging`, `admin`, and
+`admin-staging`. It does **not** cover the apex
+`drfarahvipurgentcare.com`; include the apex as an explicit SAN or use a
+separate certificate for it.
 
 ### Keycloak
 
@@ -100,7 +100,7 @@ During transition, configure the public client with explicit entries for:
 
 Valid redirect URIs:
 - `https://admin.drfarahvipurgentcare.com/*`
-- `https://admin.staging.drfarahvipurgentcare.com/*`
+- `https://admin-staging.drfarahvipurgentcare.com/*`
 - keep `https://admin.drfarah.proxbenovh.cloud/*` temporarily until migration is verified
 
 Valid post-logout redirect URIs:
@@ -108,7 +108,7 @@ Valid post-logout redirect URIs:
 
 Web origins:
 - `https://admin.drfarahvipurgentcare.com`
-- `https://admin.staging.drfarahvipurgentcare.com`
+- `https://admin-staging.drfarahvipurgentcare.com`
 - keep `https://admin.drfarah.proxbenovh.cloud` temporarily during transition
 
 Use explicit origins, not a broad wildcard.

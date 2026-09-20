@@ -97,8 +97,8 @@ Final public/staging architecture:
 - production: `drfarahvipurgentcare.com`, `api.drfarahvipurgentcare.com`,
   `admin.drfarahvipurgentcare.com`;
 - staging: `staging.drfarahvipurgentcare.com`,
-  `api.staging.drfarahvipurgentcare.com`,
-  `admin.staging.drfarahvipurgentcare.com`.
+  `api-staging.drfarahvipurgentcare.com`,
+  `admin-staging.drfarahvipurgentcare.com`.
 
 Staging remains noindexed. Production becomes crawlable only during controlled
 promotion/cutover. Existing WordPress URL equity must be protected with an

@@ -153,7 +153,7 @@ The booking endpoint enforces strict validation:
 
 - Harbor image: `harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:dev`
 - K8s namespace: `drfarah-staging`
-- API URL: `https://api.staging.drfarahvipurgentcare.com`
+- API URL: `https://api-staging.drfarahvipurgentcare.com`
 - Jenkins handles build, push, and manifest deployment on `dev` branch.
 
 ## Scheduling
@@ -181,7 +181,7 @@ The narrower first phase is intentional so the clinic can approve the exact clin
 
 ## Final-domain environment split
 
-Staging API: `https://api.staging.drfarahvipurgentcare.com`  
+Staging API: `https://api-staging.drfarahvipurgentcare.com`  
 Production API: `https://api.drfarahvipurgentcare.com`
 
 Staging and production use separate namespaces, PostgreSQL instances and

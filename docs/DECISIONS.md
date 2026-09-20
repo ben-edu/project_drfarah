@@ -22,8 +22,8 @@ Production:
 
 Staging:
 - `staging.drfarahvipurgentcare.com`
-- `api.staging.drfarahvipurgentcare.com`
-- `admin.staging.drfarahvipurgentcare.com`
+- `api-staging.drfarahvipurgentcare.com`
+- `admin-staging.drfarahvipurgentcare.com`
 
 The old `*.drfarah.proxbenovh.cloud` hosts are transition/rollback
 compatibility hosts only. Keycloak remains on

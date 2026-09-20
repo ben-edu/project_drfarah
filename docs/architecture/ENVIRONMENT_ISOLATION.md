@@ -13,12 +13,12 @@ or databases.
 
 | Environment | Namespace | Frontend domain | API domain | Admin domain | DB hostname |
 |---|---|---|---|---|---|
-| Staging | `drfarah-staging` | `staging.drfarahvipurgentcare.com` | `api.staging.drfarahvipurgentcare.com` | `admin.staging.drfarahvipurgentcare.com` | `drfarah-staging-postgres` |
+| Staging | `drfarah-staging` | `staging.drfarahvipurgentcare.com` | `api-staging.drfarahvipurgentcare.com` | `admin-staging.drfarahvipurgentcare.com` | `drfarah-staging-postgres` |
 | Production | `drfarah` | `drfarahvipurgentcare.com` | `api.drfarahvipurgentcare.com` | `admin.drfarahvipurgentcare.com` | `drfarah-postgres` |
 
 Target Hestia docroots:
 - Staging frontend: `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
-- Staging admin: `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html`
+- Staging admin: `/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html`
 - Production frontend: `/home/benweb/web/drfarahvipurgentcare.com/public_html`
 - Production admin: `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
 

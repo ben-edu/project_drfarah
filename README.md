@@ -16,9 +16,9 @@ build.
 | Frontend canonical alias | `www.drfarahvipurgentcare.com` → redirect to apex |
 | Frontend staging | `staging.drfarahvipurgentcare.com` |
 | API prod | `api.drfarahvipurgentcare.com` |
-| API staging | `api.staging.drfarahvipurgentcare.com` |
+| API staging | `api-staging.drfarahvipurgentcare.com` |
 | Admin prod | `admin.drfarahvipurgentcare.com` |
-| Admin staging | `admin.staging.drfarahvipurgentcare.com` |
+| Admin staging | `admin-staging.drfarahvipurgentcare.com` |
 
 ## Repository layout
 

@@ -16,15 +16,15 @@ pipeline {
 
     KUBECONFIG = '/var/lib/jenkins/.kube/config-afpa-k3s'
     STAGING_NAMESPACE = 'drfarah-staging'
-    STAGING_API_URL = 'https://api.staging.drfarahvipurgentcare.com'
+    STAGING_API_URL = 'https://api-staging.drfarahvipurgentcare.com'
 
     HESTIA_SSH_HOST = '192.168.100.75'
     HESTIA_SSH_PORT = '2275'
     HESTIA_SSH_USER = 'benweb'
     STAGING_FRONTEND_HOST = 'staging.drfarahvipurgentcare.com'
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarahvipurgentcare.com/public_html'
-    ADMIN_FRONTEND_HOST = 'admin.staging.drfarahvipurgentcare.com'
-    ADMIN_DOCROOT = '/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html'
+    ADMIN_FRONTEND_HOST = 'admin-staging.drfarahvipurgentcare.com'
+    ADMIN_DOCROOT = '/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html'
 
   }
 
@@ -165,6 +165,54 @@ pipeline {
 
           echo ""
           echo "All required paths are present."
+        '''
+      }
+    }
+
+    stage('Validate final-domain hostname contract') {
+      steps {
+        sh '''
+          set -eu
+
+          domain='drfarahvipurgentcare.com'
+          staging_api="api-staging.${domain}"
+          staging_admin="admin-staging.${domain}"
+
+          echo "Checking for obsolete nested staging hostnames..."
+
+          for prefix in api admin; do
+            obsolete_host="${prefix}.staging.${domain}"
+            hits="$(git grep -nF "$obsolete_host" -- . || true)"
+
+            if [ -n "$hits" ]; then
+              echo "FAIL: obsolete hostname found: $obsolete_host"
+              echo "$hits"
+              exit 1
+            fi
+          done
+
+          require_text() {
+            file="$1"
+            needle="$2"
+
+            if ! grep -qF "$needle" "$file"; then
+              echo "FAIL: expected hostname contract is missing from $file"
+              echo "Expected: $needle"
+              exit 1
+            fi
+          }
+
+          require_text Jenkinsfile "STAGING_API_URL = 'https://${staging_api}'"
+          require_text Jenkinsfile "ADMIN_FRONTEND_HOST = '${staging_admin}'"
+          require_text Jenkinsfile "ADMIN_DOCROOT = '/home/benweb/web/${staging_admin}/public_html'"
+          require_text frontend/booking.js "https://${staging_api}/api/v1"
+          require_text frontend/registration.js "https://${staging_api}/api/v1"
+          require_text admin/config.js "h === '${staging_admin}'"
+          require_text admin/config.js "https://${staging_api}/api/v1"
+          require_text kubernetes/drfarah-staging/api-ingress.yaml "host: ${staging_api}"
+          require_text kubernetes/drfarah-staging/configmap.yaml "https://${staging_admin}"
+
+          echo "Final-domain hostname contract is consistent."
         '''
       }
     }

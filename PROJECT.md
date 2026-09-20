@@ -49,9 +49,9 @@ hosts to the clinic-owned `drfarahvipurgentcare.com` domain.
 | Frontend canonical alias | `www.drfarahvipurgentcare.com` → apex |
 | Frontend staging | `staging.drfarahvipurgentcare.com` |
 | API production | `api.drfarahvipurgentcare.com` |
-| API staging | `api.staging.drfarahvipurgentcare.com` |
+| API staging | `api-staging.drfarahvipurgentcare.com` |
 | Admin production | `admin.drfarahvipurgentcare.com` |
-| Admin staging | `admin.staging.drfarahvipurgentcare.com` |
+| Admin staging | `admin-staging.drfarahvipurgentcare.com` |
 | Keycloak issuer | `keycloak.soria-academie.fr/realms/drfarah` |
 
 The old `*.drfarah.proxbenovh.cloud` hosts remain transition-only compatibility

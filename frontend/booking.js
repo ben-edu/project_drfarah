@@ -15,7 +15,7 @@
 
     // Final domains.
     if (h === 'staging.drfarahvipurgentcare.com') {
-      return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+      return 'https://api-staging.drfarahvipurgentcare.com/api/v1';
     }
     if (h === 'drfarahvipurgentcare.com' || h === 'www.drfarahvipurgentcare.com') {
       return 'https://api.drfarahvipurgentcare.com/api/v1';
@@ -30,7 +30,7 @@
     }
 
     // Local/unknown hosts intentionally use staging rather than production.
-    return 'https://api.staging.drfarahvipurgentcare.com/api/v1';
+    return 'https://api-staging.drfarahvipurgentcare.com/api/v1';
   })();
 
   var CLINIC_TZ = 'America/Los_Angeles';
