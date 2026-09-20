@@ -25,8 +25,16 @@ requests to Apache, which honors the shipped .htaccess (AllowOverride All).
 Keep .htaccess.
 
 ## Assets
-assets/*.jpg are temporary AI-generated placeholders. Replace with real approved
-clinic photography before production; keep the same filenames.
+The frontend now includes approved Dr. Farah/clinic imagery plus a temporary
+runtime reconstruction workaround for several critical hero/physician images.
+Do not reintroduce retired generic AI placeholders. The Services hero is a known
+visual-quality backlog item (too soft/blurred) and should be corrected in a
+focused visual change.
+
+Insurance artwork is a separate cutover concern: `app.js` and `app-v5.js`
+still reference six legacy WordPress insurer images. Production is intentionally
+blocked until those approved originals are stored locally in `frontend/assets/`
+and the hotlinks are removed.
 
 ## Legal / noindex
 Legal pages are drafts pending clinic + counsel review. All pages carry
