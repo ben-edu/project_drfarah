@@ -1,4 +1,4 @@
-# HANDOFF — 2026-09-19 — Final Domain Migration Preparation
+# HANDOFF — 2026-09-20 — Final Domain Migration Preparation
 
 ## Read this first
 
@@ -221,14 +221,22 @@ until the full redirect inventory is reviewed.
 
 ## Repository-side cutover blockers
 
-Production deployment is intentionally fail-closed until both are resolved:
+Production deployment is intentionally fail-closed until all of these are resolved:
 
 1. `REPLACE_BEFORE_PRODUCTION` values in
-   `kubernetes/drfarah/configmap.yaml`;
-2. `CUTOVER_BLOCKER` in `frontend/.htaccess.production`.
+   `kubernetes/drfarah/configmap.yaml` — production SMTP host/from/to;
+2. `CUTOVER_BLOCKER` in `frontend/.htaccess.production` — full legacy URL
+   inventory / redirect decisions;
+3. legacy insurer images are still hotlinked from
+   `drfarahvipurgentcare.com/wp-content/...` in `app.js` / `app-v5.js`.
+   The six approved artwork files must be copied into `frontend/assets/` and
+   referenced locally before apex cutover;
+4. `BACKUP_READINESS_BLOCKER` in `kubernetes/drfarah/README.md` — production
+   PostgreSQL backup destination, retention, restore procedure and a restore
+   test are not yet verified.
 
-Do not remove either marker merely to make Jenkins green. Remove them only after
-the corresponding operator/business information is available.
+Do not remove a blocker merely to make Jenkins green. Clear each one only after
+its prerequisite is actually satisfied.
 
 ---
 
