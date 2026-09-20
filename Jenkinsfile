@@ -1610,6 +1610,11 @@ print(json.dumps({
             exit 1
           fi
 
+          if grep -q 'BACKUP_READINESS_BLOCKER' kubernetes/drfarah/README.md; then
+            echo "FAIL: production database backup/restore readiness is not yet verified."
+            exit 1
+          fi
+
           echo "Production repository cutover blockers are cleared."
         '''
       }
