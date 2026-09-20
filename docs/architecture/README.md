@@ -20,11 +20,12 @@ Architecture decisions and diagrams for the Dr. Farah VIP Urgent Care project.
 
 | File | Purpose |
 |---|---|
-| `../deployment/FRONTEND_STAGING.md` | Staging frontend deployment — branch mapping, mechanism, rollback |
+| `../deployment/FRONTEND_STAGING.md` | Current staging frontend/admin deployment contract |
+| `../migration/FINAL_DOMAIN_CUTOVER.md` | Final clinic-domain migration, production gates and rollback |
 
 ## Status
 
-Phase 1: website + booking foundation. Frontend prototype integrated; staging deployment configured; API scaffold complete.
+Website, booking, patient registration and Keycloak-protected admin are running on temporary staging. Final-domain migration to `drfarahvipurgentcare.com` is prepared on a controlled branch; read the migration runbook before changing DNS or promoting `main`.
 
 ## Reference documents (outside repository)
 
