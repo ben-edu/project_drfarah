@@ -1390,6 +1390,8 @@ print(json.dumps({
             rsync -av --delete \
               --exclude='.env' \
               --exclude='.well-known' \
+              --exclude='.htaccess.production' \
+              --exclude='robots.production.txt' \
               -e "ssh $SSH_OPTS" \
               frontend/ \
               "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$STAGING_DOCROOT/"
@@ -1599,6 +1601,12 @@ print(json.dumps({
 
           if grep -q 'CUTOVER_BLOCKER' frontend/.htaccess.production; then
             echo "FAIL: legacy WordPress redirect inventory is not complete."
+            exit 1
+          fi
+
+          if grep -R -q 'drfarahvipurgentcare.com/wp-content/' frontend/app.js frontend/app-v5.js; then
+            echo "FAIL: insurer artwork is still hotlinked from the legacy WordPress host."
+            echo "Copy the approved insurer artwork into frontend/assets and update app.js/app-v5.js before production."
             exit 1
           fi
 
