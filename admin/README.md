@@ -42,13 +42,19 @@ client `drfarah-admin` (e.g. `http://localhost:8080/*` and
 
     python3 -m http.server 8080 --directory admin
 
-**Option B** — Deploy the `admin/` directory to the admin host
-(`admin.drfarah.proxbenovh.cloud`) and test against the live URL.
+**Option B** — Deploy through Jenkins to an approved admin environment and test
+against that environment's registered Keycloak origin.
 
 ### Production / staging
 
-The admin SPA is deployed to `admin.drfarah.proxbenovh.cloud` (Hestia).
-`config.js` points `API_BASE` to the appropriate API host.
+Final targets are separated:
+
+- staging: `https://admin.staging.drfarahvipurgentcare.com`
+- production: `https://admin.drfarahvipurgentcare.com`
+
+The temporary `https://admin.drfarah.proxbenovh.cloud` remains a transition
+compatibility host only. `config.js` derives the API base from the current
+admin hostname so staging can never intentionally point at the production API.
 
 ## Configuration
 
@@ -57,7 +63,7 @@ The admin SPA is deployed to `admin.drfarah.proxbenovh.cloud` (Hestia).
 | `KEYCLOAK_URL` | `https://keycloak.soria-academie.fr` | Keycloak base URL |
 | `REALM` | `drfarah` | Keycloak realm |
 | `CLIENT_ID` | `drfarah-admin` | Public OIDC client (PKCE) |
-| `API_BASE` | `https://api.staging.drfarahvipurgentcare.com/api/v1` | API base URL |
+| `API_BASE` | hostname-derived | final staging → staging API; final production → production API |
 
 No secrets — this is a public OIDC client.
 
