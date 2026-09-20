@@ -1227,3 +1227,85 @@ are drafted, but a full legacy sitemap/crawl is still required before cutover.
 The old WordPress hosting must remain available for rollback during the
 stabilization window.
 
+
+
+---
+
+## 2026-09-20 — Final-domain cutover audit and hardening
+
+### Scope
+
+Audited the full dependency chain for migration from the temporary
+`*.drfarah.proxbenovh.cloud` environment to the clinic-owned
+`drfarahvipurgentcare.com` domain.
+
+### Confirmed final environment map
+
+Production:
+- `drfarahvipurgentcare.com`
+- `api.drfarahvipurgentcare.com`
+- `admin.drfarahvipurgentcare.com`
+
+Staging:
+- `staging.drfarahvipurgentcare.com`
+- `api.staging.drfarahvipurgentcare.com`
+- `admin.staging.drfarahvipurgentcare.com`
+
+Keycloak remains at `keycloak.soria-academie.fr`, realm `drfarah`.
+
+### Repository/deployment preparation
+
+- public booking and patient-registration JS selects API by final hostname;
+- admin SPA selects staging/production API by admin hostname;
+- final staging CORS and API ingress are prepared with temporary compatibility
+  origins/host retained during migration;
+- production Kubernetes manifests are source-controlled under
+  `kubernetes/drfarah/`;
+- Jenkins `dev` targets the final staging frontend/API/admin;
+- Jenkins `main` contains isolated production build/deploy/smoke stages;
+- production frontend artifact converts noindex to index/follow and substitutes
+  the production robots/Apache files;
+- production pre-DNS smoke checks use `curl --resolve`;
+- final-domain canonicals and sitemap are prepared;
+- staging excludes production-only robots/Apache files during rsync.
+
+### Additional launch blockers found during audit
+
+1. **Legacy insurer artwork hotlinks.**
+   `app.js` and `app-v5.js` still reference six
+   `drfarahvipurgentcare.com/wp-content/...` insurer images. These must be
+   copied into `frontend/assets/` and referenced locally before apex cutover.
+   Jenkins production preflight now fails while the hotlinks remain.
+
+2. **Production database backup/restore.**
+   The earlier infrastructure readiness audit already classified backup as a
+   production blocker. `BACKUP_READINESS_BLOCKER` now prevents accidental
+   production promotion until an off-PVC backup target, retention, restore
+   procedure and restore test are verified.
+
+3. **Production SMTP identity.**
+   `REPLACE_BEFORE_PRODUCTION` remains in the production ConfigMap until the
+   actual SMTP host/from/to are approved. Temporary-domain SMTP defaults were
+   removed from application defaults.
+
+4. **Legacy URL redirects.**
+   `CUTOVER_BLOCKER` remains in the production Apache file until a complete
+   WordPress URL/sitemap inventory is reviewed. Search-visible legacy examples
+   include `/services/`, `/about-us/`, `/contact-us/`,
+   `/urgent-care-near-you/`, `/vip-urgent-care/`, `/faq/`,
+   `/blog/`, and multiple indexed article URLs.
+
+### Operator prerequisites
+
+Before merging this migration branch to `dev`, prepare the new **staging**
+DNS/Hestia/HAProxy/TLS and Keycloak staging-admin origin.
+
+Before promoting `main`, additionally complete production Hestia/HAProxy/TLS,
+production K8s secrets, SMTP, backup/restore, insurer localization, WordPress
+backup and full redirect inventory.
+
+### Handoff
+
+`HANDOFF.md` and `docs/migration/FINAL_DOMAIN_CUTOVER.md` are now the
+starting documents for any new tab/AI continuing this migration. Historical
+temporary-domain audit/provisioning documents are explicitly marked historical.
