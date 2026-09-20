@@ -1,6 +1,6 @@
 # Final Domain Migration — drfarahvipurgentcare.com
 
-**Prepared:** 2026-09-19  
+**Prepared:** 2026-09-20  
 **Status:** PRE-CUTOVER / DO NOT MERGE OR PROMOTE UNTIL OPERATOR PREFLIGHT IS COMPLETE
 
 ## Target environment map
@@ -38,13 +38,16 @@ records.
 
 Prepare or verify these records:
 
-- apex `@` → BM1 public HAProxy frontend IP
-- `www` → apex (CNAME or equivalent redirect strategy)
-- `staging` → BM1 public HAProxy frontend IP
-- `admin` → BM1 public HAProxy frontend IP
-- `admin.staging` → BM1 public HAProxy frontend IP
-- `api` → BM2 public HAProxy/API IP
-- `api.staging` → BM2 public HAProxy/API IP
+- apex `@` → **A 87.98.174.211** (BM1 web HAProxy)
+- `www` → **CNAME @** (or equivalent apex alias/redirect strategy)
+- `staging` → **A 87.98.174.211**
+- `admin` → **A 87.98.174.211**
+- `admin.staging` → **A 87.98.174.211**
+- `api` → **A 51.75.57.153** (BM2 API HAProxy)
+- `api.staging` → **A 51.75.57.153**
+
+These are the currently documented platform edge IPs; verify the live HAProxy
+addresses immediately before editing DNS.
 
 Check for conflicting stale A/AAAA/CNAME records. In particular, remove or
 replace an old AAAA record if IPv6 is not routed to the new platform.
@@ -81,6 +84,13 @@ BM2 routes:
 
 Install/verify certificates for every final hostname before browser testing.
 DNS-01 certificate issuance can be done before the public A-record cutover.
+
+Certificate coverage detail: a certificate containing
+`*.drfarahvipurgentcare.com` covers `staging`, `admin`, and `api`, but it
+does **not** cover two-level names such as
+`api.staging.drfarahvipurgentcare.com` or
+`admin.staging.drfarahvipurgentcare.com`. Those need explicit SAN entries or
+coverage such as `*.staging.drfarahvipurgentcare.com`.
 
 ### Keycloak
 
@@ -132,6 +142,20 @@ booking:
 Do not silently use a test/SORIA address as the final clinic identity unless
 the operator and clinic explicitly approve it.
 
+### Production PostgreSQL backup / restore
+
+Production data protection is a launch requirement, not a post-cutover task.
+
+Before promotion to `main`:
+- choose a backup destination outside the production PVC/node;
+- define an automated schedule and retention period;
+- encrypt/protect backup credentials outside Git;
+- document restore commands;
+- perform and record at least one restore test to a disposable database.
+
+`kubernetes/drfarah/README.md` contains `BACKUP_READINESS_BLOCKER` until this
+is complete.
+
 ## Repository-owned migration work
 
 The migration branch must prepare:
@@ -148,6 +172,25 @@ The migration branch must prepare:
    - production removes staging noindex and publishes a crawlable robots file;
 9. production smoke checks that are read-only wherever possible;
 10. updated project handoff and environment documentation.
+
+## Legacy insurer artwork dependency
+
+The current frontend still references six insurance images from the legacy
+WordPress host:
+
+- `/wp-content/uploads/2025/02/6.png`
+- `/wp-content/uploads/2025/02/14.png`
+- `/wp-content/uploads/2025/02/3.png`
+- `/wp-content/uploads/2025/02/21.png`
+- `/wp-content/uploads/2025/02/aetna.jpg`
+- `/wp-content/uploads/2025/02/22.png`
+
+This is safe only while the legacy WordPress origin still serves those files.
+After the apex domain points at the new Hestia site, those hotlinks are not a
+stable dependency. Copy the approved originals into `frontend/assets/`, keep
+their insurer identity/alt text accurate, and replace both `app.js` and
+`app-v5.js` references before production promotion. Jenkins deliberately
+blocks `main` while these legacy hotlinks remain.
 
 ## Legacy WordPress / SEO cutover
 
