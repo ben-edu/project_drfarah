@@ -13,8 +13,25 @@ technology or content choices.
 
 ## Domains
 
-Temporary development/staging/production domains under `proxbenovh.cloud`
-(see `README.md`). OVH DNS and HAProxy routing configured by the operator.
+The final clinic-domain migration is approved as a controlled cutover.
+
+Production:
+- `drfarahvipurgentcare.com`
+- `api.drfarahvipurgentcare.com`
+- `admin.drfarahvipurgentcare.com`
+
+Staging:
+- `staging.drfarahvipurgentcare.com`
+- `api.staging.drfarahvipurgentcare.com`
+- `admin.staging.drfarahvipurgentcare.com`
+
+The old `*.drfarah.proxbenovh.cloud` hosts are transition/rollback
+compatibility hosts only. Keycloak remains on
+`keycloak.soria-academie.fr`.
+
+Staging and production admin hostnames are deliberately separate so a `dev`
+deployment cannot overwrite the production admin SPA. See
+`docs/migration/FINAL_DOMAIN_CUTOVER.md` for the cutover sequence and gates.
 
 ## Infrastructure placement
 
