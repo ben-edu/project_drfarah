@@ -1329,6 +1329,11 @@ The TLS guidance was corrected accordingly: `*.drfarahvipurgentcare.com`
 covers both hyphenated staging hosts, while the apex still requires an
 explicit SAN or a separate certificate.
 
+Jenkins PR build #6 then exposed a stale CORS unit test that still expected
+the temporary `staging.drfarah.proxbenovh.cloud` default. The test contract
+now checks the final public staging origin and requires a successful CORS
+preflight with the matching `Access-Control-Allow-Origin` response header.
+
 No merge or deployment was performed. PR #40 remains the controlled migration
 branch until operator TLS/HAProxy/Hestia/Keycloak prerequisites and CI are
 ready.
