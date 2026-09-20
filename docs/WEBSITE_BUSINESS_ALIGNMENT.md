@@ -40,7 +40,13 @@ The current staging image files remain placeholders until approved real photogra
 
 ### Insurance logo binaries
 
-Approved insurer logo files are still required. The homepage currently uses styled textual carrier marks so the information architecture can be reviewed without hotlinking third-party assets. Replace these with approved local assets after verifying current clinic participation/acceptance status.
+Approved local insurer-logo files are still required. The current runtime
+still references six artwork files from the legacy clinic WordPress host. That
+dependency is acceptable only during the transition and is a production
+cutover blocker: once the apex domain moves to the new site, the old
+`/wp-content/...` locations are not a stable asset source. Copy the approved
+originals into `frontend/assets/`, verify each carrier/network is still
+accurate, and remove the hotlinks before production promotion.
 
 ### Reviews
 
@@ -81,7 +87,7 @@ AI/chat assistance remains outside this implementation.
 CI rerun note: validation re-triggered after Jenkins HTTPS endpoint recovery on 2026-09-19.
 
 
-## 2026-09-19 — Final-domain migration status
+## 2026-09-20 — Final-domain migration status
 
 The clean-slate website is now preparing to replace the legacy WordPress site on
 `drfarahvipurgentcare.com`.
