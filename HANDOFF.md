@@ -118,7 +118,7 @@ Repository preparation already on the branch includes:
 - production Kubernetes namespace/API/PostgreSQL manifests;
 - fail-closed Jenkins `main` production stages;
 - final staging hostname/docroot targets in Jenkins;
-- production hostname/docroot targets in Jenkins;
+- production hostname/docroot targets are documented for the later production-activation step;
 - domain migration runbook.
 
 Transition support for the old temporary hosts is intentional until the new
@@ -261,9 +261,8 @@ its prerequisite is actually satisfied.
    - noindex + robots Disallow.
 6. Complete production SMTP, secrets and legacy redirect inventory.
 7. Back up legacy WordPress and record rollback DNS.
-8. With explicit human approval, fast-forward `main` to the exact approved
-   green `dev` SHA.
-9. Jenkins `main` deploys isolated production API/DB/frontend/admin.
+8. After explicit human approval of the exact green `dev` SHA, activate the production Jenkins stages in a focused follow-up PR only after all production blockers are cleared.
+9. Promote that approved production-ready SHA to `main` and deploy the isolated production API/DB/frontend/admin through Jenkins.
 10. Validate production routing with `curl --resolve` before apex DNS switch.
 11. Switch apex/www DNS.
 12. Verify canonical, robots, sitemap, redirects, booking, API, admin and
@@ -325,5 +324,5 @@ A new AI/tab should:
 ## 2026-09-20 — Migration CI retrigger
 
 - Jenkins HTTPS/reachability issue was corrected by the operator.
-- PR #40 remains the authoritative final-domain migration PR.
+- PR #40 remains the authoritative final-domain migration PR. Its active Jenkins change is deliberately limited to final-staging deployment; production deployment activation is deferred until staging acceptance.
 - Re-trigger CI on this branch after the Jenkins recovery; do not merge to `dev` until the final staging DNS/Hestia/HAProxy/TLS/Keycloak prerequisites in this handoff are complete.
