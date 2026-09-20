@@ -69,3 +69,14 @@ Do not remove either blocker until its prerequisite is genuinely complete.
 
 Full cutover procedure:
 `docs/migration/FINAL_DOMAIN_CUTOVER.md`.
+
+
+## Production data-protection gate
+
+**BACKUP_READINESS_BLOCKER**
+
+Do not remove this marker until a production PostgreSQL backup destination,
+retention policy, restore procedure, and at least one restore test are
+documented and verified. Production stores appointment and patient-registration
+data; a green application deployment is not sufficient evidence of data
+recoverability.
