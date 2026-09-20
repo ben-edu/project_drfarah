@@ -1,5 +1,12 @@
 # Infrastructure Foundation — Dr. Farah VIP Urgent Care
 
+> **Historical provisioning record.** This file records the original
+> `proxbenovh.cloud` foundation and is useful for provenance, but it is not the
+> current final-domain runbook. Use `HANDOFF.md` and
+> `docs/migration/FINAL_DOMAIN_CUTOVER.md` for
+> `drfarahvipurgentcare.com`, and verify live infrastructure before changes.
+
+
 **Date:** 2026-07-26
 **Step:** 02 — Infrastructure Foundation
 **Branch:** `feature/infrastructure-foundation`
