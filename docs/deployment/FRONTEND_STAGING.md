@@ -1,85 +1,69 @@
 # Frontend Staging Deployment
 
-## Branch-to-environment mapping
+> Updated for the final clinic-domain migration. Do not merge the cutover branch
+> until the new staging Hestia domains, HAProxy routes, TLS and Keycloak staging
+> admin origin are ready.
 
-| Branch | Environment | Deploy frontend? |
+## Branch mapping
+
+| Branch | Environment | Deployment |
 |---|---|---|
-| `feature/*` | None (validation only) | No |
-| `dev` | Staging | Yes, via Jenkins |
-| `main` | Production | Not yet configured |
+| feature/fix/chore | validation only | no deployment |
+| `dev` | final staging | Jenkins deploys |
+| `main` | production | Jenkins deploys only after production gates are cleared |
 
-## Staging target
+## Final staging targets
 
-| Setting | Value |
+| Component | Host / target |
 |---|---|
-| Host | `staging.drfarah.proxbenovh.cloud` |
+| Public frontend | `staging.drfarahvipurgentcare.com` |
+| Frontend docroot | `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html` |
+| API | `api.staging.drfarahvipurgentcare.com` |
+| Admin SPA | `admin.staging.drfarahvipurgentcare.com` |
+| Admin docroot | `/home/benweb/web/admin.staging.drfarahvipurgentcare.com/public_html` |
+| API namespace | `drfarah-staging` |
 | Hestia server | `192.168.100.75:2275` |
-| SSH user | `benweb` |
-| Docroot | `/home/benweb/web/staging.drfarah.proxbenovh.cloud/public_html` |
-| Jenkins credential | `hestia-benweb-ssh` |
+| SSH user / Jenkins credential | `benweb` / `hestia-benweb-ssh` |
 
-## Deployment mechanism
+The old temporary staging/admin/API hosts remain compatibility routes during the
+migration window but are no longer the target environment after the cutover
+branch reaches `dev`.
 
-Deployment occurs through the Jenkins `Frontend — deploy staging` stage, which
-runs exclusively on the `dev` branch.
+## Delivery mechanism
 
-1. **Preflight** — SSH to Hestia as `benweb`, verify docroot exists and is
-   writable, create and delete a temporary test file.
-2. **rsync** — `rsync -av --delete --exclude='.env' --exclude='.well-known'`
-   from `frontend/` to the staging docroot.
-3. **Smoke test** — verify HTTP 200 for `/`, `/styles.css`, `/app.js`,
-   `/robots.txt`, and confirm content markers (Dr. Farah title, noindex meta,
-   robots Disallow rule).
+Jenkins is authoritative for deployment.
 
-## Preflight checks (performed each deploy)
+For `dev`:
+1. validate repository, Python tests, PostgreSQL tests, Docker image and static assets;
+2. build/push the immutable API image plus `:dev`;
+3. apply staging Kubernetes resources and run the migration init container;
+4. run staging API smoke checks;
+5. rsync `frontend/` to the final staging frontend docroot as `benweb`;
+6. rsync `admin/` to the final staging admin docroot as `benweb`;
+7. run HTTPS smoke checks.
 
-- Docroot exists at the expected path.
-- Connected user is `benweb`.
-- Write access confirmed via temporary file create/delete.
-- Failure produces a clear error message without exposing credentials.
+The staging frontend keeps the repository `.htaccess`, noindex metadata and
+`robots.txt: Disallow: /`. Production-only files
+`.htaccess.production` and `robots.production.txt` are excluded from the
+staging rsync.
 
-## Smoke tests (performed each deploy)
+## Production separation
 
-- `GET /` returns 200 and contains `Dr. Farah` marker and
-  `noindex,nofollow,noarchive` meta tag.
-- `GET /styles.css` returns 200.
-- `GET /app.js` returns 200.
-- `GET /robots.txt` returns 200 and contains `Disallow: /`.
-- TLS verification remains successful.
-- Retries with short delays (5 attempts, 3-second intervals) to accommodate
-  HAProxy/Hestia serving latency.
+Production is not the staging docroot with different DNS. It uses:
+- frontend `drfarahvipurgentcare.com`;
+- admin `admin.drfarahvipurgentcare.com`;
+- API `api.drfarahvipurgentcare.com`;
+- Kubernetes namespace `drfarah`;
+- independent PostgreSQL secrets/PVC;
+- production-only crawlable robots and Apache redirect rules.
 
-## Rollback procedure
+See `docs/migration/FINAL_DOMAIN_CUTOVER.md` for DNS, HAProxy, TLS, Keycloak,
+legacy WordPress redirects, insurer assets, backup requirements and promotion
+sequence.
 
-1. Identify the last known-good commit on `dev`.
-2. Run the Jenkins dev build from that commit (or revert and push).
-3. Jenkins will rsync the previous frontend content to the staging docroot.
-4. Do not manually restore files outside Jenkins.
+## Rollback
 
-## No-index status
-
-Temporary-domain indexing protection is active:
-- `<meta name="robots" content="noindex,nofollow,noarchive">` in `index.html`
-- `robots.txt`: `Disallow: /`
-
-Both must be removed or changed during final-domain migration.
-
-## Production deployment
-
-Production frontend deployment (`main` -> `drfarah.proxbenovh.cloud`) is
-**not configured**. The `main` branch runs validation and API stages only.
-A separate step will add the production deployment stage after the staging
-frontend is reviewed and accepted.
-
-## Exclusions
-
-- `.env` — excluded from rsync (never present in `frontend/` but protected)
-- `.well-known` — excluded from rsync (preserved for Let's Encrypt / Hestia)
-
-## Constraints
-
-- No `sudo`, `root`, `chmod`, `chown`, or group permission workarounds.
-- No manual file copies to Hestia.
-- No HAProxy, DNS, TLS, or Hestia domain configuration changes.
-- No API, PostgreSQL, Keycloak, admin panel, or Kubernetes deployment.
-- No credentials committed or exposed.
+Do not hand-edit deployed files as the normal rollback. Revert the bad change on
+`dev`, validate staging, and redeploy through Jenkins. For the production
+domain cutover itself, retain the old WordPress hosting/DNS target during the
+stabilization window so apex DNS can be restored if required.
