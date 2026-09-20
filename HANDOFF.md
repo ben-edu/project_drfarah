@@ -321,3 +321,9 @@ A new AI/tab should:
 6. never assume this migration branch has been merged;
 7. preserve all fail-closed blockers until their prerequisites are actually met.
 
+
+## 2026-09-20 — Migration CI retrigger
+
+- Jenkins HTTPS/reachability issue was corrected by the operator.
+- PR #40 remains the authoritative final-domain migration PR.
+- Re-trigger CI on this branch after the Jenkins recovery; do not merge to `dev` until the final staging DNS/Hestia/HAProxy/TLS/Keycloak prerequisites in this handoff are complete.
