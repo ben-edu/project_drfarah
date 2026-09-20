@@ -166,7 +166,7 @@ The migration branch must prepare:
 4. staging CORS and Ingress for the final staging origins/host;
 5. production Kubernetes manifests in `kubernetes/drfarah/`;
 6. `dev` deployment to the final staging frontend/admin/API hosts;
-7. `main` production deployment to the production frontend/admin/API hosts;
+7. production deployment assets/manifests are prepared now; activation of `main` deployment stages happens in a focused follow-up only after final staging is accepted and all production blockers are cleared;
 8. production-only indexing behavior:
    - staging keeps `noindex,nofollow,noarchive` and `Disallow: /`;
    - production removes staging noindex and publishes a crawlable robots file;
@@ -249,8 +249,8 @@ Also test:
 2. Complete new DNS records for non-apex hosts first (staging/admin/API).
 3. Validate final staging end to end.
 4. Create/verify production K8s secrets and production database.
-5. Promote the exact approved green `dev` SHA to `main`.
-6. Require successful `main` production deployment.
+5. After final staging acceptance and production blocker clearance, activate the production Jenkins stages in a focused follow-up PR.
+6. Promote the exact approved production-ready SHA to `main` and require a successful production deployment.
 7. Validate production with `--resolve` before apex DNS switch.
 8. Switch apex/www DNS to BM1.
 9. Verify HTTPS, canonical, robots, sitemap, booking, API, admin and Keycloak.
