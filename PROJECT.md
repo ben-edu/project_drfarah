@@ -8,7 +8,7 @@
 >
 > No secrets belong in this file; credentials are referenced by name only.
 >
-> **Project status:** planning / product design / booking definition
+> **Project status:** staging operational / final-domain cutover preparation
 > **Current public website used only as a business-reference source:**
 > `https://drfarahvipurgentcare.com/`
 >
@@ -22,7 +22,7 @@
 
 - **What it does:** A premium, physician-led website for Dr. Farah VIP Urgent Care in Beverly Hills. It presents urgent and acute care, VIP/mobile visits, and regenerative/rejuvenation consultations through a concise, visually refined experience. Booking is a core product feature, not a secondary page: visitors must be able to understand the offer and start an appointment request within seconds.
 - **Slug:** `drfarah` (repository / Kubernetes namespace / image / Keycloak realm)
-- **Planned repo:** `https://github.com/ben-edu/project_drfarah` (create or confirm before implementation)
+- **Repository:** `https://github.com/ben-edu/project_drfarah`
 - **Language(s):** English in phase 1. Structure and content components must remain localization-ready for later approved languages.
 - **Needs:** frontend **yes** · API **yes** · DB **yes** · admin **yes** · email **yes**
 - **Primary timezone:** `America/Los_Angeles`
