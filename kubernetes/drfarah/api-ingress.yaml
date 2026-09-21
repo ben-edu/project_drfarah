@@ -1,0 +1,22 @@
+# Traefik Ingress for the production API.
+# TLS is terminated upstream on HAProxy (BM2).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drfarah-api
+  namespace: drfarah
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: api.drfarahvipurgentcare.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: drfarah-api
+                port:
+                  number: 80

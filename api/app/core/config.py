@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed origins.
     # Staging origins must not include production origins.
     CORS_ORIGINS: str = Field(
-        default="https://staging.drfarah.proxbenovh.cloud"
+        default="https://staging.drfarahvipurgentcare.com"
     )
 
     @property
@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     SMTP_PORT: int = Field(default=587)
     SMTP_USER: str = Field(default="")
     SMTP_PASSWORD: str = Field(default="")
-    SMTP_FROM: str = Field(default="noreply@drfarah.proxbenovh.cloud")
-    SMTP_TO: str = Field(default="appointments@drfarah.proxbenovh.cloud")
+    SMTP_FROM: str = Field(default="")
+    SMTP_TO: str = Field(default="")
     SMTP_USE_TLS: bool = Field(default=True)
     SMTP_TEST_MODE: bool = Field(default=True)
 

@@ -1146,3 +1146,194 @@ a double-quoted multi-line heredoc for the JSON `-d` body inside a Jenkins
 `sh '''...'''` block mangled inner JSON quotes. Fixed by building the JSON with
 `python3` into a temp file and POSTing with `--data-binary`; no new dependency.
 Committed on `fix/appointment-smoke-test-quoting`.
+
+
+---
+
+## 2026-09-19 — Final-domain migration preparation
+
+### Starting point
+
+- Current green integration branch: `dev`.
+- Last known green pre-migration commit: `8b3731bfd7ca736b211514b911a6758ab791463b`.
+- Temporary staging frontend/API/admin are still on `proxbenovh.cloud`.
+- Clinic-owned `drfarahvipurgentcare.com` is still the legacy WordPress public site.
+
+### Migration architecture
+
+Approved final host map:
+
+- production frontend: `drfarahvipurgentcare.com`
+- production API: `api.drfarahvipurgentcare.com`
+- production admin: `admin.drfarahvipurgentcare.com`
+- staging frontend: `staging.drfarahvipurgentcare.com`
+- staging API: `api-staging.drfarahvipurgentcare.com`
+- staging admin: `admin-staging.drfarahvipurgentcare.com`
+
+The separate staging admin prevents `dev` deployments from overwriting the
+production admin SPA.
+
+### Branch
+
+Created exceptional infrastructure/auth/deployment branch:
+
+`chore/final-domain-migration`
+
+Do not merge until operator DNS/Hestia/HAProxy/TLS/Keycloak prerequisites are
+ready.
+
+### Repository changes prepared
+
+- final hostname-aware public booking and registration API routing;
+- hostname-aware admin API routing;
+- final staging CORS and API ingress host, retaining temporary compatibility;
+- final production canonicals and sitemap;
+- production robots and Apache/cutover policy;
+- production Kubernetes namespace/PostgreSQL/API manifests;
+- independent production DB/API secret contract;
+- fail-closed Jenkins production deployment stages for `main`;
+- Jenkins staging targets moved to final staging frontend/API/admin hosts;
+- updated project/environment documentation;
+- new current `HANDOFF.md`;
+- detailed `docs/migration/FINAL_DOMAIN_CUTOVER.md`.
+
+### Intentional blockers
+
+Production Jenkins refuses to deploy while:
+
+- `kubernetes/drfarah/configmap.yaml` contains `REPLACE_BEFORE_PRODUCTION`
+  (production SMTP host/from/to not yet confirmed);
+- `frontend/.htaccess.production` contains `CUTOVER_BLOCKER`
+  (legacy WordPress URL/redirect inventory incomplete).
+
+These markers must not be removed merely to make CI/deployment pass.
+
+### Operator prerequisites
+
+- GoDaddy DNS records while preserving mail DNS.
+- Hestia frontend/admin domains for both environments.
+- HAProxy routing and TLS certificates.
+- Keycloak redirect/post-logout URI and Web Origin additions for both final
+  admin hosts.
+- production Kubernetes secrets.
+- production SMTP identity/recipient confirmation.
+- full legacy WordPress backup and URL inventory.
+- rollback DNS target recorded.
+
+### SEO
+
+The current domain already has indexed WordPress paths. Some obvious redirects
+are drafted, but a full legacy sitemap/crawl is still required before cutover.
+The old WordPress hosting must remain available for rollback during the
+stabilization window.
+
+
+
+---
+
+## 2026-09-20 — Final-domain cutover audit and hardening
+
+### Scope
+
+Audited the full dependency chain for migration from the temporary
+`*.drfarah.proxbenovh.cloud` environment to the clinic-owned
+`drfarahvipurgentcare.com` domain.
+
+### Confirmed final environment map
+
+Production:
+- `drfarahvipurgentcare.com`
+- `api.drfarahvipurgentcare.com`
+- `admin.drfarahvipurgentcare.com`
+
+Staging:
+- `staging.drfarahvipurgentcare.com`
+- `api-staging.drfarahvipurgentcare.com`
+- `admin-staging.drfarahvipurgentcare.com`
+
+Keycloak remains at `keycloak.soria-academie.fr`, realm `drfarah`.
+
+### Repository/deployment preparation
+
+- public booking and patient-registration JS selects API by final hostname;
+- admin SPA selects staging/production API by admin hostname;
+- final staging CORS and API ingress are prepared with temporary compatibility
+  origins/host retained during migration;
+- production Kubernetes manifests are source-controlled under
+  `kubernetes/drfarah/`;
+- Jenkins `dev` targets the final staging frontend/API/admin;
+- Jenkins `main` contains isolated production build/deploy/smoke stages;
+- production frontend artifact converts noindex to index/follow and substitutes
+  the production robots/Apache files;
+- production pre-DNS smoke checks use `curl --resolve`;
+- final-domain canonicals and sitemap are prepared;
+- staging excludes production-only robots/Apache files during rsync.
+
+### Additional launch blockers found during audit
+
+1. **Legacy insurer artwork hotlinks.**
+   `app.js` and `app-v5.js` still reference six
+   `drfarahvipurgentcare.com/wp-content/...` insurer images. These must be
+   copied into `frontend/assets/` and referenced locally before apex cutover.
+   Jenkins production preflight now fails while the hotlinks remain.
+
+2. **Production database backup/restore.**
+   The earlier infrastructure readiness audit already classified backup as a
+   production blocker. `BACKUP_READINESS_BLOCKER` now prevents accidental
+   production promotion until an off-PVC backup target, retention, restore
+   procedure and restore test are verified.
+
+3. **Production SMTP identity.**
+   `REPLACE_BEFORE_PRODUCTION` remains in the production ConfigMap until the
+   actual SMTP host/from/to are approved. Temporary-domain SMTP defaults were
+   removed from application defaults.
+
+4. **Legacy URL redirects.**
+   `CUTOVER_BLOCKER` remains in the production Apache file until a complete
+   WordPress URL/sitemap inventory is reviewed. Search-visible legacy examples
+   include `/services/`, `/about-us/`, `/contact-us/`,
+   `/urgent-care-near-you/`, `/vip-urgent-care/`, `/faq/`,
+   `/blog/`, and multiple indexed article URLs.
+
+### Operator prerequisites
+
+Before merging this migration branch to `dev`, prepare the new **staging**
+DNS/Hestia/HAProxy/TLS and Keycloak staging-admin origin.
+
+Before promoting `main`, additionally complete production Hestia/HAProxy/TLS,
+production K8s secrets, SMTP, backup/restore, insurer localization, WordPress
+backup and full redirect inventory.
+
+### Handoff
+
+`HANDOFF.md` and `docs/migration/FINAL_DOMAIN_CUTOVER.md` are now the
+starting documents for any new tab/AI continuing this migration. Historical
+temporary-domain audit/provisioning documents are explicitly marked historical.
+
+---
+
+## 2026-09-20 — Corrected final staging hostname contract
+
+The operator-confirmed HAProxy names use hyphens, not nested staging
+subdomains:
+
+- API staging: `api-staging.drfarahvipurgentcare.com` (BM2);
+- admin staging: `admin-staging.drfarahvipurgentcare.com` (BM1).
+
+All repository runtime configuration, deployment targets, Keycloak guidance,
+Hestia docroots, Kubernetes manifests, and current migration documentation
+were aligned to those exact names. Jenkins now rejects the obsolete nested
+forms and verifies the critical runtime mappings before any deploy stage.
+
+The TLS guidance was corrected accordingly: `*.drfarahvipurgentcare.com`
+covers both hyphenated staging hosts, while the apex still requires an
+explicit SAN or a separate certificate.
+
+Jenkins PR build #6 then exposed a stale CORS unit test that still expected
+the temporary `staging.drfarah.proxbenovh.cloud` default. The test contract
+now checks the final public staging origin and requires a successful CORS
+preflight with the matching `Access-Control-Allow-Origin` response header.
+
+No merge or deployment was performed. PR #40 remains the controlled migration
+branch until operator TLS/HAProxy/Hestia/Keycloak prerequisites and CI are
+ready.

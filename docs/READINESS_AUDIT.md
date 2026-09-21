@@ -1,5 +1,12 @@
 # Readiness Audit — Dr. Farah VIP Urgent Care
 
+> **Historical infrastructure audit.** The hostname/TLS/Keycloak observations
+> below were captured during the temporary `proxbenovh.cloud` bootstrap and
+> must not be treated as current cutover state. For the September 2026 final
+> domain migration, read `HANDOFF.md` and
+> `docs/migration/FINAL_DOMAIN_CUTOVER.md`, then verify live infrastructure.
+
+
 **Date:** 2026-07-26 (updated after Step 02 — Infrastructure Foundation)
 **Performed by:** Claude Code sessions, management VM
 **Scope:** Read-only inspection of all documented prerequisites

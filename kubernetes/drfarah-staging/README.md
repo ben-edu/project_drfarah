@@ -13,12 +13,16 @@ Staging environment for the Dr. Farah VIP Urgent Care API.
 | `postgres-service.yaml` | PostgreSQL ClusterIP Service |
 | `api-deployment.yaml` | FastAPI Deployment (1 replica) |
 | `api-service.yaml` | API ClusterIP Service |
-| `api-ingress.yaml` | Traefik Ingress for `api.staging.drfarah.proxbenovh.cloud` |
+| `api-ingress.yaml` | Traefik Ingress for `api-staging.drfarahvipurgentcare.com` |
 
 ## Environment isolation
 
-- `drfarah` namespace → production (reserved, not yet provisioned).
+- `drfarah` namespace → production.
 - `drfarah-staging` namespace → staging (these manifests).
+- staging frontend: `staging.drfarahvipurgentcare.com`
+- staging admin: `admin-staging.drfarahvipurgentcare.com`
+- temporary `proxbenovh.cloud` API/origins may remain during the migration
+  window only.
 - Separate Deployments, Services, Secrets, PVCs, and databases per
   environment.
 - See `docs/architecture/ENVIRONMENT_ISOLATION.md`.
@@ -38,7 +42,7 @@ Namespace and all resources are deployed and running:
 | Service | `drfarah-staging-postgres` | ClusterIP:5432 |
 | Deployment | `drfarah-staging-api` | 1/1 Ready |
 | Service | `drfarah-staging-api` | ClusterIP:80 |
-| Ingress | `drfarah-staging-api` | `api.staging.drfarah.proxbenovh.cloud` |
+| Ingress | `drfarah-staging-api` | `api-staging.drfarahvipurgentcare.com` |
 
 ## Secrets (created via kubectl, never committed)
 

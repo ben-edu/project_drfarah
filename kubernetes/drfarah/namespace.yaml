@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: drfarah
+  labels:
+    app.kubernetes.io/name: drfarah
+    app.kubernetes.io/part-of: drfarah-vip-urgent-care
+    app.kubernetes.io/managed-by: jenkins
+    app.kubernetes.io/environment: production

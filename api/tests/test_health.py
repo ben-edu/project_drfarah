@@ -43,9 +43,10 @@ def _set_env(key: str, value: str | None):
 def cleanup_env():
     """Ensure clean environment after each test."""
     saved = {}
-    for k in ("DATABASE_URL", "ENVIRONMENT", "APP_NAME"):
+    for k in ("DATABASE_URL", "ENVIRONMENT", "APP_NAME", "CORS_ORIGINS"):
         saved[k] = os.environ.get(k)
     os.environ.pop("DATABASE_URL", None)
+    os.environ.pop("CORS_ORIGINS", None)
     os.environ["ENVIRONMENT"] = "test"
     from app.core.config import get_settings
 
@@ -163,22 +164,25 @@ class TestCORS:
         ]
 
     def test_cors_config_default(self):
-        """Default CORS_ORIGINS includes staging origin."""
+        """Default CORS_ORIGINS uses the final public staging origin."""
         from app.core.config import Settings
 
         s = Settings(ENVIRONMENT="test")
-        assert "https://staging.drfarah.proxbenovh.cloud" in s.cors_origins_list
+        assert s.cors_origins_list == [
+            "https://staging.drfarahvipurgentcare.com"
+        ]
 
     def test_cors_preflight_allowed_origin(self):
         """OPTIONS preflight returns success for an allowed origin."""
+        origin = "https://staging.drfarahvipurgentcare.com"
         app = _clear_and_reload()
         with TestClient(app) as client:
             resp = client.options(
                 "/api/v1/health/live",
                 headers={
-                    "Origin": "https://staging.drfarah.proxbenovh.cloud",
+                    "Origin": origin,
                     "Access-Control-Request-Method": "GET",
                 },
             )
-            # Either 200 or at minimum not a 400 CORS block
-            assert resp.status_code < 500
+            assert resp.status_code == 200
+            assert resp.headers["access-control-allow-origin"] == origin

@@ -11,6 +11,17 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
+    - host: api-staging.drfarahvipurgentcare.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: drfarah-staging-api
+                port:
+                  number: 80
+    # Temporary compatibility host during the cutover window.
     - host: api.staging.drfarah.proxbenovh.cloud
       http:
         paths:
