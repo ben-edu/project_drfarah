@@ -1,0 +1,24 @@
+# Non-secret configuration for the drfarah API — STAGING environment.
+# Secrets (database password, SMTP credentials) are in drfarah-staging-api-secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drfarah-staging-api-config
+  namespace: drfarah-staging
+  labels:
+    app: drfarah-staging-api
+data:
+  ENVIRONMENT: "staging"
+  APP_NAME: "drfarah-api"
+  LOG_LEVEL: "INFO"
+  POSTGRES_HOST: "drfarah-staging-postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "drfarah"
+  CORS_ORIGINS: "https://staging.drfarahvipurgentcare.com,https://admin-staging.drfarahvipurgentcare.com,https://staging.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud"
+  TRUST_PROXY: "true"
+  SMTP_HOST: "mail.soria-academie.fr"
+  SMTP_PORT: "587"
+  SMTP_FROM: "contact@soria-academie.fr"
+  SMTP_TO: "appointment@soria-academie.fr"
+  SMTP_USE_TLS: "true"
+  SMTP_TEST_MODE: "false"

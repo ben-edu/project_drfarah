@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Dr. Farah — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Dr. Farah <span>&mdash; Admin</span></h1>
+  </header>
+
+  <main>
+    <!-- Logged-out state -->
+    <div id="logged-out" class="card text-center">
+      <p style="color:var(--bone-dim); margin-bottom:1.25rem;">Sign in with your staff account to access the admin panel.</p>
+      <button id="btn-login" class="btn btn-primary">Sign in with Keycloak</button>
+      <div id="login-error" class="error-box hidden"></div>
+    </div>
+
+    <!-- Logged-in state -->
+    <div id="logged-in" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <p style="color:var(--gold); font-weight:500;">Authenticated</p>
+        <button id="btn-logout" class="btn btn-ghost">Sign out</button>
+      </div>
+
+      <div id="loading-indicator" class="text-center mt-1">
+        <span class="spinner"></span>
+        <span style="color:var(--muted); margin-left:0.5rem;">Loading identity&hellip;</span>
+      </div>
+
+      <dl id="identity-panel" class="identity hidden"></dl>
+
+      <div id="api-error" class="error-box hidden"></div>
+
+      <!-- ═══ Appointment Requests ═══ -->
+      <section id="appointments-section" class="hidden">
+        <h2 class="apt-heading">Appointment Requests</h2>
+
+        <!-- Filter bar -->
+        <div class="filters">
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="completed">Completed</option>
+            <option value="no_show">No Show</option>
+          </select>
+          <input id="filter-q" type="text" placeholder="Search name, email, ref&hellip;">
+          <input id="filter-date-from" type="date" placeholder="From">
+          <input id="filter-date-to" type="date" placeholder="To">
+          <button id="btn-refresh" class="btn btn-primary btn-sm">Refresh</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="apt-loading" class="text-center mt-1 hidden">
+          <span class="spinner"></span>
+          <span style="color:var(--muted); margin-left:0.5rem;">Loading appointments&hellip;</span>
+        </div>
+
+        <!-- Error -->
+        <div id="apt-error" class="error-box hidden"></div>
+
+        <!-- Empty state -->
+        <div id="apt-empty" class="apt-empty hidden">No requests match these filters.</div>
+
+        <!-- Table -->
+        <div id="apt-table-wrap" class="apt-table-wrap hidden">
+          <table>
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Patient</th>
+                <th>Service</th>
+                <th>Contact</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="apt-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pager -->
+        <div id="apt-pager" class="pager hidden"></div>
+
+        <!-- Detail panel -->
+        <div id="apt-detail" class="detail-panel hidden">
+          <div class="detail-header">
+            <h3>Appointment Detail</h3>
+            <button id="btn-detail-close" class="btn btn-ghost btn-sm">&times; Close</button>
+          </div>
+          <div id="apt-detail-body"></div>
+          <div class="detail-status-row">
+            <label for="detail-status-select">Change status:</label>
+            <select id="detail-status-select">
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="completed">Completed</option>
+              <option value="no_show">No Show</option>
+            </select>
+            <button id="btn-status-update" class="btn btn-primary btn-sm">Update Status</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ Patient Registrations ═══ -->
+      <section id="registrations-section" class="hidden">
+        <h2 class="apt-heading">Patient Registrations</h2>
+        <div class="filters">
+          <select id="reg-filter-status">
+            <option value="">All Registration Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+          </select>
+          <input id="reg-filter-q" type="text" placeholder="Search patient, email, reference&hellip;">
+          <button id="reg-refresh" class="btn btn-primary btn-sm">Refresh</button>
+        </div>
+        <div id="reg-loading" class="text-center mt-1 hidden"><span class="spinner"></span><span style="color:var(--muted); margin-left:0.5rem;">Loading registrations&hellip;</span></div>
+        <div id="reg-error" class="error-box hidden"></div>
+        <div id="reg-empty" class="apt-empty hidden">No registrations match these filters.</div>
+        <div id="reg-table-wrap" class="apt-table-wrap hidden">
+          <table><thead><tr><th>Updated</th><th>Reference</th><th>Patient</th><th>Contact</th><th>Status</th><th></th></tr></thead><tbody id="reg-tbody"></tbody></table>
+        </div>
+        <div id="reg-detail" class="detail-panel hidden"><div class="detail-header"><h3>Registration Detail</h3><button id="reg-detail-close" class="btn btn-ghost btn-sm">&times; Close</button></div><div id="reg-detail-body"></div></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>Dr. Farah Admin &middot; staff access only</footer>
+
+  <!-- Runtime config (no secrets) -->
+  <script src="config.js"></script>
+  <!-- Keycloak JS adapter — pinned version, UMD build -->
+  <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.5/dist/keycloak.js"></script>
+  <!-- Application logic -->
+  <script src="app.js"></script>
+</body>
+</html>

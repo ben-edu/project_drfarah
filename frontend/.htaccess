@@ -1,0 +1,49 @@
+# Dr. Farah frontend — static hosting rules (Apache).
+Options -Indexes
+
+ErrorDocument 404 /404.html
+
+# Staging is an active review environment. Avoid stale frontend responses while
+# visual QA is in progress. Production cache policy can be tightened separately.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?:html|css|js|txt)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Serve the byte-safe v5 runtime for the existing app.js URL. Keeping the
+  # public URL stable avoids editing every static template, while replacing the
+  # fragile runtime that swaps critical imagery only after a successful decode.
+  RewriteRule ^app\.js$ app-v5.js [L]
+
+  # Prevent a flash of the retired first-generation imagery before app-v5 has
+  # reconstructed the approved image. The user sees only a neutral background
+  # matching the site's dark visual system during those few milliseconds.
+  RewriteRule ^assets/hero-treatment\.jpg$ assets/critical-image-placeholder.svg [L]
+  RewriteRule ^assets/home-hero-doctor\.webp$ assets/critical-image-placeholder.svg [L]
+
+  # reception-vip.jpg is also used on About, so only suppress it when the
+  # requesting document is the Services overview. About keeps its existing
+  # fallback behavior until its approved image has decoded.
+  RewriteCond %{HTTP_REFERER} /services(?:$|[/?#]) [NC]
+  RewriteRule ^assets/reception-vip\.jpg$ assets/critical-image-placeholder.svg [L]
+
+  # If request maps to an existing file or directory, serve it as-is.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Otherwise, if "<name>.html" exists, serve it for the extensionless URL.
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+</IfModule>
+
+# Do not serve the raw .htaccess or dotfiles.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>

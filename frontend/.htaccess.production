@@ -1,0 +1,56 @@
+# Dr. Farah production frontend — Apache rules.
+Options -Indexes
+
+ErrorDocument 404 /404.html
+
+# LEGACY_REDIRECT_RISK_ACCEPTED: 2026-09-21.
+# The operator explicitly approved launching with the confirmed high-value
+# redirects below while the complete historical WordPress URL inventory is
+# finished after launch. GoDaddy hosting is retained as the recovery source;
+# it must not be deleted during the stabilization window.
+
+<IfModule mod_headers.c>
+  # HTML should revalidate; versioned/static assets may be cached by browsers.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(?:css|js|svg|webp|jpg|jpeg|png|gif|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Canonical host: HTTPS + apex. HAProxy terminates TLS and supplies
+  # X-Forwarded-Proto.
+  RewriteCond %{HTTP_HOST} ^www\.drfarahvipurgentcare\.com$ [NC]
+  RewriteRule ^ https://drfarahvipurgentcare.com%{REQUEST_URI} [R=301,L]
+
+  # Confirmed legacy WordPress structural redirects.
+  RewriteRule ^about-us/?$ /about [R=301,L,NC]
+  RewriteRule ^contact-us/?$ /contact [R=301,L,NC]
+  RewriteRule ^prp-prf-exosomes-center/?$ /prp-treatments [R=301,L,NC]
+  RewriteRule ^urgent-care-near-you/?$ /services [R=301,L,NC]
+  RewriteRule ^vip-urgent-care/?$ /services [R=301,L,NC]
+  RewriteRule ^faq/?$ /services [R=301,L,NC]
+
+  # Existing image-runtime behavior retained until the critical-image cleanup is
+  # replaced by direct static assets.
+  RewriteRule ^app\.js$ app-v5.js [L]
+  RewriteRule ^assets/hero-treatment\.jpg$ assets/critical-image-placeholder.svg [L]
+  RewriteRule ^assets/home-hero-doctor\.webp$ assets/critical-image-placeholder.svg [L]
+  RewriteCond %{HTTP_REFERER} /services(?:$|[/?#]) [NC]
+  RewriteRule ^assets/reception-vip\.jpg$ assets/critical-image-placeholder.svg [L]
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+</IfModule>
+
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>

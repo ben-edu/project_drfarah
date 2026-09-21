@@ -1,0 +1,63 @@
+# Environment and secrets
+.env
+.env.*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+secret.yaml
+!secret.example.yaml
+secrets.yaml
+!secrets.example.yaml
+*-secret.yaml
+!*-secret.example.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.next/
+dist/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.log
+*.db
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Supporting docs (kept outside repository)
+project-sources/
+
+# Local Claude / session scratch
+.claude/session-tmp/
+
+# Misc
+*.tmp
+**/.pytest_cache/
