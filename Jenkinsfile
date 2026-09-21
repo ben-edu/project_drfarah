@@ -958,6 +958,12 @@ pipeline {
             echo ""
             echo "=== Production namespace and secret preflight ==="
 
+            # Jenkins runs sh steps with xtrace enabled. Kubernetes Secret
+            # values are not Jenkins-managed credentials, so the masker cannot
+            # protect values returned by kubectl. Disable tracing before any
+            # Secret read and only re-enable it after the values are unset.
+            set +x
+
             kubectl apply -f kubernetes/drfarah/namespace.yaml
 
             db_secret_present=0
@@ -1049,6 +1055,7 @@ pipeline {
             fi
 
             unset prod_db_password api_db_password staging_db_password value
+            set -x
             echo "Production DB isolation confirmed."
 
             echo ""
@@ -1058,26 +1065,27 @@ pipeline {
 
             ssh $SSH_OPTS \
               "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" \
-              "
-                set -e
+              sh -s -- \
+              "$PRODUCTION_FRONTEND_DOCROOT" \
+              "$PRODUCTION_ADMIN_DOCROOT" \
+              "$PRODUCTION_BACKUP_DIR" <<'HESTIA_PREFLIGHT'
+              set -eu
 
-                for path in \
-                  '$PRODUCTION_FRONTEND_DOCROOT' \
-                  '$PRODUCTION_ADMIN_DOCROOT'; do
-                  [ -d \"\$path\" ] || {
-                    echo \"ERROR: production docroot is missing: \$path\"
-                    exit 1
-                  }
-                  touch \"\$path/.jenkins-write-test\"
-                  rm -f \"\$path/.jenkins-write-test\"
-                done
+              for path in "$1" "$2"; do
+                [ -d "$path" ] || {
+                  echo "ERROR: production docroot is missing: $path"
+                  exit 1
+                }
+                touch "$path/.jenkins-write-test"
+                rm -f "$path/.jenkins-write-test"
+              done
 
-                mkdir -p '$PRODUCTION_BACKUP_DIR'
-                chmod 700 '$PRODUCTION_BACKUP_DIR'
-                touch '$PRODUCTION_BACKUP_DIR/.jenkins-write-test'
-                rm -f '$PRODUCTION_BACKUP_DIR/.jenkins-write-test'
-                echo 'Production docroots and backup destination are writable.'
-              "
+              mkdir -p "$3"
+              chmod 700 "$3"
+              touch "$3/.jenkins-write-test"
+              rm -f "$3/.jenkins-write-test"
+              echo 'Production docroots and backup destination are writable.'
+HESTIA_PREFLIGHT
 
             echo ""
             echo "=== Installing backup SSH material in production namespace ==="
