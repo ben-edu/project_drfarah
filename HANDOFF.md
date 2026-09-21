@@ -108,17 +108,17 @@ The daily database backup CronJob:
 Frontend/admin publication does not happen unless the immediate off-cluster
 archive passes the disposable restore test.
 
-## One required operator action before promotion to `main`
+## Production secret bootstrap
 
-Create independent production DB/API secrets and copy only the already
-approved SMTP and Harbor credentials from staging:
+On the first `main` deployment, Jenkins automatically runs the safe bootstrap
+when both production DB/API secrets are absent:
 
 ```bash
 sh scripts/bootstrap-production-secrets.sh
 ```
 
-Run it from a trusted Kubernetes management shell in the production-activation
-branch checkout. The script:
+The same script can be run manually from a trusted Kubernetes management shell
+if an operator intentionally prepares the namespace before promotion. It:
 
 - prints no secret values;
 - generates a new independent production database password;
@@ -128,14 +128,17 @@ branch checkout. The script:
 
 Do not paste credential values into chat, Git, or Jenkins logs.
 
+If exactly one of the DB/API secrets exists, Jenkins fails closed instead of
+guessing or overwriting a partial production state.
+
 ## Promotion order
 
 1. Validate the production-activation branch in Jenkins.
 2. Merge its PR into `dev` and require a green final staging deployment.
-3. Run the one-time production secret bootstrap above.
-4. Open/merge the exact approved `dev` state into `main`.
-5. Require the complete green `main` production pipeline.
-6. Verify public booking/services, admin Keycloak login, redirects, robots and
+3. Open/merge the exact approved `dev` state into `main`.
+4. Require the complete green `main` production pipeline; on a fresh namespace
+   it performs the one-time secret bootstrap automatically.
+5. Verify public booking/services, admin Keycloak login, redirects, robots and
    sitemap from an external host.
 
 Do not manually rsync production content around Jenkins; Jenkins is the

@@ -1381,5 +1381,7 @@ ready.
 - added production API environment/CORS checks, crawlability checks, canonical
   www/legacy redirect verification, admin noindex and final endpoint checks.
 
-Production promotion still requires the one-time secret bootstrap and a green
-production-activation PR before merging the approved state to `main`.
+On a fresh production namespace, Jenkins runs the safe one-time secret
+bootstrap automatically. A partial pre-existing DB/API secret state fails
+closed. Production promotion still requires a green production-activation PR
+before merging the approved state to `main`.

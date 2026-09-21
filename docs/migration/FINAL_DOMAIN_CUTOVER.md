@@ -118,7 +118,9 @@ by the project security requirements.
 
 ### Production Kubernetes prerequisites
 
-Verify live `drfarah` namespace and create/verify:
+Verify live `drfarah` namespace and create/verify (or allow the first `main`
+deployment to perform the safe one-time bootstrap when both DB/API secrets are
+absent):
 - `harbor-regcred`
 - `drfarah-db-secret`
 - `drfarah-api-secret`

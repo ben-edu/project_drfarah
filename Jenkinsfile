@@ -960,6 +960,35 @@ pipeline {
 
             kubectl apply -f kubernetes/drfarah/namespace.yaml
 
+            db_secret_present=0
+            api_secret_present=0
+
+            if kubectl -n "$PRODUCTION_NAMESPACE" \
+              get secret drfarah-db-secret >/dev/null 2>&1; then
+              db_secret_present=1
+            fi
+
+            if kubectl -n "$PRODUCTION_NAMESPACE" \
+              get secret drfarah-api-secret >/dev/null 2>&1; then
+              api_secret_present=1
+            fi
+
+            if [ "$db_secret_present" -eq 0 ] && [ "$api_secret_present" -eq 0 ]; then
+              if kubectl -n "$PRODUCTION_NAMESPACE" \
+                get pvc data-drfarah-postgres-0 >/dev/null 2>&1; then
+                echo "FAIL: production DB secrets are absent but an initialized PVC exists."
+                echo "Recover the original credentials; do not generate replacements."
+                exit 1
+              fi
+              echo "Production DB/API secrets are absent; running one-time safe bootstrap."
+              sh scripts/bootstrap-production-secrets.sh
+            elif [ "$db_secret_present" -ne "$api_secret_present" ]; then
+              echo "FAIL: production DB/API secret state is partial; refusing to guess or overwrite."
+              exit 1
+            else
+              echo "Existing production DB/API secrets will be validated and preserved."
+            fi
+
             for secret in harbor-regcred drfarah-db-secret drfarah-api-secret; do
               kubectl -n "$PRODUCTION_NAMESPACE" get secret "$secret" >/dev/null || {
                 echo "FAIL: required production secret is missing: $secret"

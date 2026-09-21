@@ -32,6 +32,13 @@ for existing_secret in drfarah-db-secret drfarah-api-secret; do
   fi
 done
 
+if kubectl -n "$production_namespace" \
+  get pvc data-drfarah-postgres-0 >/dev/null 2>&1; then
+  echo "FAIL: a production PostgreSQL PVC already exists without managed secrets." >&2
+  echo "Recover the original credentials; do not generate replacements." >&2
+  exit 1
+fi
+
 for staging_secret in \
   harbor-regcred \
   drfarah-staging-api-secret \

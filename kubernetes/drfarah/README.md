@@ -42,15 +42,21 @@ The API deployment contains a `:prod` image placeholder for both the migration
 init container and API container. Jenkins `main` renders both to the exact
 40-character Git SHA before applying the Deployment.
 
-## Required out-of-band secrets
+## Production secrets
 
-Before production promotion, namespace `drfarah` must contain:
+The production deployment requires:
 
 - `harbor-regcred`
 - `drfarah-db-secret`
 - `drfarah-api-secret`
 
-Jenkins creates/updates `drfarah-backup-ssh` from its existing
+When both DB/API secrets are absent, Jenkins runs
+`scripts/bootstrap-production-secrets.sh` once: it generates an independent
+production DB password and copies only the approved Soria SMTP and Harbor
+credentials from staging without printing values. Existing DB/API secrets are
+preserved and validated. A partial state fails closed.
+
+Jenkins also creates/updates `drfarah-backup-ssh` from its existing
 `hestia-benweb-ssh` credential plus a freshly scanned Hestia host key. Replace
 this with a dedicated restricted backup key after the immediate cutover.
 
