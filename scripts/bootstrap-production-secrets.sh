@@ -4,6 +4,9 @@
 # management shell. Values are generated/copied in memory and never printed.
 # This script deliberately refuses to overwrite initialized production secrets.
 
+# Keep secret material out of logs even if a caller invokes this script from a
+# traced shell (for example Jenkins' default `sh -x` wrapper).
+set +x
 set -eu
 umask 077
 
