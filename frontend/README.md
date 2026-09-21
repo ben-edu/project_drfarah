@@ -31,10 +31,10 @@ Do not reintroduce retired generic AI placeholders. The Services hero is a known
 visual-quality backlog item (too soft/blurred) and should be corrected in a
 focused visual change.
 
-Insurance artwork is a separate cutover concern: `app.js` and `app-v5.js`
-still reference six legacy WordPress insurer images. Production is intentionally
-blocked until those approved originals are stored locally in `frontend/assets/`
-and the hotlinks are removed.
+The legacy WordPress insurer-image hotlinks were removed before production.
+The launch version uses the accessible named insurance text cards already in
+the HTML. Approved local artwork can replace them later without adding a
+runtime dependency on the old host.
 
 ## Legal / noindex
 Legal pages are drafts pending clinic + counsel review. All pages carry
@@ -50,7 +50,8 @@ Final staging origin: `https://staging.drfarahvipurgentcare.com`
 `booking.js` and `registration.js` recognize both final and temporary
 origins during the cutover window. Staging remains `noindex` with
 `robots.txt: Disallow: /`. Production is assembled by Jenkins using the
-production robots/Apache policy only after the legacy redirect inventory and
-other cutover blockers are cleared.
+production robots/Apache policy. The operator accepted an initial targeted
+legacy redirect set for launch while GoDaddy hosting remains available as the
+recovery source and the complete URL inventory is finished after launch.
 
 See `docs/migration/FINAL_DOMAIN_CUTOVER.md`.

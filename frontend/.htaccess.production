@@ -3,9 +3,11 @@ Options -Indexes
 
 ErrorDocument 404 /404.html
 
-# CUTOVER_BLOCKER: complete the legacy WordPress URL inventory and replace this
-# marker only after all valuable old paths have an explicit redirect or an
-# intentional 404/410 decision.
+# LEGACY_REDIRECT_RISK_ACCEPTED: 2026-09-21.
+# The operator explicitly approved launching with the confirmed high-value
+# redirects below while the complete historical WordPress URL inventory is
+# finished after launch. GoDaddy hosting is retained as the recovery source;
+# it must not be deleted during the stabilization window.
 
 <IfModule mod_headers.c>
   # HTML should revalidate; versioned/static assets may be cached by browsers.

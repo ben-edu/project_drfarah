@@ -116,8 +116,8 @@ and `ENVIRONMENT` is `staging` or `prod`.
 | `SMTP_PORT` | `587` | No |
 | `SMTP_USER` | `""` | Yes (for email notifications) |
 | `SMTP_PASSWORD` | `""` | Yes (for email notifications) |
-| `SMTP_FROM` | `REPLACE_BEFORE_PRODUCTION` | Yes |
-| `SMTP_TO` | `REPLACE_BEFORE_PRODUCTION` | Yes |
+| `SMTP_FROM` | `""` | Yes (configured by environment) |
+| `SMTP_TO` | `""` | Yes (configured by environment) |
 | `SMTP_USE_TLS` | `true` | No |
 | `SMTP_TEST_MODE` | `true` | No (set to `false` to send real emails) |
 | `CLEANUP_TOKEN` | `""` | Yes (for CI cleanup endpoint) |
@@ -185,6 +185,7 @@ Staging API: `https://api-staging.drfarahvipurgentcare.com`
 Production API: `https://api.drfarahvipurgentcare.com`
 
 Staging and production use separate namespaces, PostgreSQL instances and
-secrets. Production SMTP identity/recipient must be explicitly confirmed before
-promotion; repository production configuration remains fail-closed while
-`REPLACE_BEFORE_PRODUCTION` markers exist.
+secrets. For the immediate final-domain launch, the operator explicitly
+approved the existing Soria SMTP relay as a temporary production service.
+Non-secret host/from/to values are in the production ConfigMap; credentials
+remain in the production Kubernetes Secret.

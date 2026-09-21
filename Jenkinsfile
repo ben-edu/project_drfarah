@@ -13,10 +13,13 @@ pipeline {
     HARBOR_REGISTRY = 'harbor.proxbenovh.cloud'
     HARBOR_PROJECT = 'devops-project-harbor'
     API_IMAGE_NAME = 'drfarah-api'
+    BACKUP_IMAGE_NAME = 'drfarah-postgres-backup'
 
     KUBECONFIG = '/var/lib/jenkins/.kube/config-afpa-k3s'
     STAGING_NAMESPACE = 'drfarah-staging'
     STAGING_API_URL = 'https://api-staging.drfarahvipurgentcare.com'
+    PRODUCTION_NAMESPACE = 'drfarah'
+    PRODUCTION_API_URL = 'https://api.drfarahvipurgentcare.com'
 
     HESTIA_SSH_HOST = '192.168.100.75'
     HESTIA_SSH_PORT = '2275'
@@ -25,11 +28,15 @@ pipeline {
     STAGING_DOCROOT = '/home/benweb/web/staging.drfarahvipurgentcare.com/public_html'
     ADMIN_FRONTEND_HOST = 'admin-staging.drfarahvipurgentcare.com'
     ADMIN_DOCROOT = '/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html'
-
+    PRODUCTION_FRONTEND_HOST = 'drfarahvipurgentcare.com'
+    PRODUCTION_FRONTEND_DOCROOT = '/home/benweb/web/drfarahvipurgentcare.com/public_html'
+    PRODUCTION_ADMIN_HOST = 'admin.drfarahvipurgentcare.com'
+    PRODUCTION_ADMIN_DOCROOT = '/home/benweb/web/admin.drfarahvipurgentcare.com/public_html'
+    PRODUCTION_BACKUP_DIR = '/home/benweb/backups/drfarah-postgres'
   }
 
   // =========================================================================
-  // JENKINSFILE — Phase 1
+  // JENKINSFILE — staging and production delivery
   //
   // All branches:
   //   - Clean checkout
@@ -46,10 +53,13 @@ pipeline {
   //   - Verify staging API and booking endpoint
   //   - Deploy frontend to staging
   //
-  // main:
-  //   - Validation only
-  //
-  // Production deployment is intentionally disabled.
+  // main only:
+  //   - Fail-closed production preflight
+  //   - Build and push immutable API/backup images
+  //   - Deploy isolated production PostgreSQL/API
+  //   - Run off-cluster backup and disposable restore test
+  //   - Publish crawlable production frontend and production admin SPA
+  //   - Verify final-domain HTTPS/API/redirect/indexing behavior
   // =========================================================================
 
   stages {
@@ -101,6 +111,10 @@ pipeline {
             frontend/styles.css
             frontend/app.js
             frontend/robots.txt
+            frontend/robots.production.txt
+            frontend/.htaccess.production
+            scripts/prepare-production-frontend.sh
+            scripts/bootstrap-production-secrets.sh
             admin/README.md
             api/README.md
             api/Dockerfile
@@ -136,6 +150,17 @@ pipeline {
             api/alembic/versions/0001_initial_bookings.py
             api/alembic/versions/0002_add_scheduling_tables.py
             kubernetes/drfarah/README.md
+            kubernetes/drfarah/namespace.yaml
+            kubernetes/drfarah/postgres-statefulset.yaml
+            kubernetes/drfarah/postgres-service.yaml
+            kubernetes/drfarah/configmap.yaml
+            kubernetes/drfarah/secret.example.yaml
+            kubernetes/drfarah/api-deployment.yaml
+            kubernetes/drfarah/api-service.yaml
+            kubernetes/drfarah/api-ingress.yaml
+            kubernetes/drfarah/postgres-backup-cronjob.yaml
+            kubernetes/drfarah/backup/Dockerfile
+            kubernetes/drfarah/backup/backup.sh
             kubernetes/drfarah-staging/namespace.yaml
             kubernetes/drfarah-staging/postgres-statefulset.yaml
             kubernetes/drfarah-staging/postgres-service.yaml
@@ -177,6 +202,8 @@ pipeline {
           domain='drfarahvipurgentcare.com'
           staging_api="api-staging.${domain}"
           staging_admin="admin-staging.${domain}"
+          production_api="api.${domain}"
+          production_admin="admin.${domain}"
 
           echo "Checking for obsolete nested staging hostnames..."
 
@@ -205,12 +232,23 @@ pipeline {
           require_text Jenkinsfile "STAGING_API_URL = 'https://${staging_api}'"
           require_text Jenkinsfile "ADMIN_FRONTEND_HOST = '${staging_admin}'"
           require_text Jenkinsfile "ADMIN_DOCROOT = '/home/benweb/web/${staging_admin}/public_html'"
+          require_text Jenkinsfile "PRODUCTION_API_URL = 'https://${production_api}'"
+          require_text Jenkinsfile "PRODUCTION_FRONTEND_HOST = '${domain}'"
+          require_text Jenkinsfile "PRODUCTION_FRONTEND_DOCROOT = '/home/benweb/web/${domain}/public_html'"
+          require_text Jenkinsfile "PRODUCTION_ADMIN_HOST = '${production_admin}'"
+          require_text Jenkinsfile "PRODUCTION_ADMIN_DOCROOT = '/home/benweb/web/${production_admin}/public_html'"
           require_text frontend/booking.js "https://${staging_api}/api/v1"
+          require_text frontend/booking.js "https://${production_api}/api/v1"
           require_text frontend/registration.js "https://${staging_api}/api/v1"
+          require_text frontend/registration.js "https://${production_api}/api/v1"
           require_text admin/config.js "h === '${staging_admin}'"
           require_text admin/config.js "https://${staging_api}/api/v1"
+          require_text admin/config.js "h === '${production_admin}'"
+          require_text admin/config.js "https://${production_api}/api/v1"
           require_text kubernetes/drfarah-staging/api-ingress.yaml "host: ${staging_api}"
           require_text kubernetes/drfarah-staging/configmap.yaml "https://${staging_admin}"
+          require_text kubernetes/drfarah/api-ingress.yaml "host: ${production_api}"
+          require_text kubernetes/drfarah/configmap.yaml "https://${production_admin}"
 
           echo "Final-domain hostname contract is consistent."
         '''
@@ -633,7 +671,9 @@ pipeline {
             -w /app \
             node:20-slim \
             node --check frontend/app.js && \
+            node --check frontend/app-v5.js && \
             node --check frontend/booking.js && \
+            node --check frontend/registration.js && \
             node --check admin/app.js
 
           echo "JavaScript syntax passed."
@@ -811,14 +851,211 @@ pipeline {
           done
 
           echo ""
+          echo "=== Production frontend assembly validation ==="
+
+          PROD_VALIDATION_DIR="$(mktemp -d)"
+          trap 'cleanup_frontend; rm -rf "$PROD_VALIDATION_DIR"' EXIT HUP INT TERM
+
+          sh scripts/prepare-production-frontend.sh \
+            frontend \
+            "$PROD_VALIDATION_DIR"
+
+          echo ""
           echo "Frontend validation passed."
         '''
       }
     }
 
+    stage('Production — preflight') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        withCredentials([
+          sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            echo "=== Repository production gates ==="
+
+            if grep -R -nF 'REPLACE_BEFORE_PRODUCTION' kubernetes/drfarah; then
+              echo "FAIL: unresolved production value marker found."
+              exit 1
+            fi
+
+            if grep -qF 'CUTOVER_BLOCKER' frontend/.htaccess.production; then
+              echo "FAIL: legacy redirect cutover blocker remains."
+              exit 1
+            fi
+
+            grep -qF 'LEGACY_REDIRECT_RISK_ACCEPTED: 2026-09-21' \
+              frontend/.htaccess.production || {
+                echo "FAIL: explicit legacy redirect decision is missing."
+                exit 1
+              }
+
+            if grep -qF 'BACKUP_READINESS_BLOCKER' kubernetes/drfarah/README.md; then
+              echo "FAIL: production backup readiness blocker remains."
+              exit 1
+            fi
+
+            if git grep -nF '/wp-content/uploads/' -- frontend; then
+              echo "FAIL: frontend still depends on legacy WordPress assets."
+              exit 1
+            fi
+
+            test -r "$KUBECONFIG" || {
+              echo "FAIL: kubeconfig missing or unreadable."
+              exit 1
+            }
+
+            echo "Repository gates passed."
+            echo ""
+            echo "=== Production namespace and secret preflight ==="
+
+            kubectl apply -f kubernetes/drfarah/namespace.yaml
+
+            for secret in harbor-regcred drfarah-db-secret drfarah-api-secret; do
+              kubectl -n "$PRODUCTION_NAMESPACE" get secret "$secret" >/dev/null || {
+                echo "FAIL: required production secret is missing: $secret"
+                exit 1
+              }
+              echo "OK    secret/$secret"
+            done
+
+            require_secret_key() {
+              secret="$1"
+              key="$2"
+              value="$(
+                kubectl -n "$PRODUCTION_NAMESPACE" \
+                  get secret "$secret" \
+                  -o "jsonpath={.data.${key}}"
+              )"
+
+              if [ -z "$value" ]; then
+                echo "FAIL: secret/$secret is missing key $key"
+                exit 1
+              fi
+
+              echo "OK    secret/$secret key $key"
+            }
+
+            for key in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
+              require_secret_key drfarah-db-secret "$key"
+            done
+
+            for key in DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD SMTP_USER SMTP_PASSWORD; do
+              require_secret_key drfarah-api-secret "$key"
+            done
+
+            prod_db_password="$(
+              kubectl -n "$PRODUCTION_NAMESPACE" \
+                get secret drfarah-db-secret \
+                -o jsonpath='{.data.POSTGRES_PASSWORD}'
+            )"
+            api_db_password="$(
+              kubectl -n "$PRODUCTION_NAMESPACE" \
+                get secret drfarah-api-secret \
+                -o jsonpath='{.data.POSTGRES_PASSWORD}'
+            )"
+            staging_db_password="$(
+              kubectl -n "$STAGING_NAMESPACE" \
+                get secret drfarah-staging-db-secret \
+                -o jsonpath='{.data.POSTGRES_PASSWORD}'
+            )"
+
+            if [ "$prod_db_password" != "$api_db_password" ]; then
+              echo "FAIL: production API and PostgreSQL secrets use different DB passwords."
+              exit 1
+            fi
+
+            if [ "$prod_db_password" = "$staging_db_password" ]; then
+              echo "FAIL: production reuses the staging PostgreSQL password."
+              exit 1
+            fi
+
+            unset prod_db_password api_db_password staging_db_password value
+            echo "Production DB isolation confirmed."
+
+            echo ""
+            echo "=== Hestia production preflight ==="
+
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+
+            ssh $SSH_OPTS \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" \
+              "
+                set -e
+
+                for path in \
+                  '$PRODUCTION_FRONTEND_DOCROOT' \
+                  '$PRODUCTION_ADMIN_DOCROOT'; do
+                  [ -d \"\$path\" ] || {
+                    echo \"ERROR: production docroot is missing: \$path\"
+                    exit 1
+                  }
+                  touch \"\$path/.jenkins-write-test\"
+                  rm -f \"\$path/.jenkins-write-test\"
+                done
+
+                mkdir -p '$PRODUCTION_BACKUP_DIR'
+                chmod 700 '$PRODUCTION_BACKUP_DIR'
+                touch '$PRODUCTION_BACKUP_DIR/.jenkins-write-test'
+                rm -f '$PRODUCTION_BACKUP_DIR/.jenkins-write-test'
+                echo 'Production docroots and backup destination are writable.'
+              "
+
+            echo ""
+            echo "=== Installing backup SSH material in production namespace ==="
+
+            KNOWN_HOSTS="$(mktemp)"
+            SECRET_MANIFEST="$(mktemp)"
+            chmod 600 "$KNOWN_HOSTS" "$SECRET_MANIFEST"
+
+            cleanup_preflight() {
+              rm -f "$KNOWN_HOSTS" "$SECRET_MANIFEST"
+            }
+            trap cleanup_preflight EXIT HUP INT TERM
+
+            ssh-keyscan \
+              -p "$HESTIA_SSH_PORT" \
+              -H "$HESTIA_SSH_HOST" \
+              > "$KNOWN_HOSTS" 2>/dev/null
+
+            test -s "$KNOWN_HOSTS" || {
+              echo "FAIL: unable to capture Hestia SSH host key."
+              exit 1
+            }
+
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              create secret generic drfarah-backup-ssh \
+              --from-file=id_ed25519="$SSH_KEY" \
+              --from-file=known_hosts="$KNOWN_HOSTS" \
+              --dry-run=client \
+              -o yaml \
+              > "$SECRET_MANIFEST"
+
+            kubectl apply -f "$SECRET_MANIFEST"
+            cleanup_preflight
+            trap - EXIT HUP INT TERM
+
+            echo "Production preflight passed."
+          '''
+        }
+      }
+    }
+
     stage('API — build and push to Harbor') {
       when {
-        branch 'dev'
+        anyOf {
+          branch 'dev'
+          branch 'main'
+        }
       }
 
       steps {
@@ -848,7 +1085,15 @@ pipeline {
 
             FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}"
             BUILD_IMAGE="${FULL_IMAGE}:${IMAGE_TAG}"
-            DEV_IMAGE="${FULL_IMAGE}:dev"
+
+            if [ "${BRANCH_NAME:-}" = "main" ]; then
+              API_ALIAS_IMAGE="${FULL_IMAGE}:prod"
+            else
+              API_ALIAS_IMAGE="${FULL_IMAGE}:dev"
+            fi
+
+            BACKUP_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${BACKUP_IMAGE_NAME}:${IMAGE_TAG}"
+            BACKUP_ALIAS_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${BACKUP_IMAGE_NAME}:prod"
 
             DOCKER_CONFIG="${WORKSPACE}/.docker-auth-${BUILD_NUMBER}-$$"
             export DOCKER_CONFIG
@@ -858,7 +1103,9 @@ pipeline {
 
               docker rmi \
                 "$BUILD_IMAGE" \
-                "$DEV_IMAGE" \
+                "$API_ALIAS_IMAGE" \
+                "$BACKUP_IMAGE" \
+                "$BACKUP_ALIAS_IMAGE" \
                 >/dev/null 2>&1 || true
             }
 
@@ -874,11 +1121,11 @@ pipeline {
                   --password-stdin
 
             echo ""
-            echo "=== Building immutable and dev API tags ==="
+            echo "=== Building immutable and environment API tags ==="
 
             docker build \
               -t "$BUILD_IMAGE" \
-              -t "$DEV_IMAGE" \
+              -t "$API_ALIAS_IMAGE" \
               api
 
             echo ""
@@ -887,9 +1134,22 @@ pipeline {
             docker push "$BUILD_IMAGE"
 
             echo ""
-            echo "=== Pushing dev alias ==="
+            echo "=== Pushing API environment alias ==="
 
-            docker push "$DEV_IMAGE"
+            docker push "$API_ALIAS_IMAGE"
+
+            if [ "${BRANCH_NAME:-}" = "main" ]; then
+              echo ""
+              echo "=== Building production backup image ==="
+
+              docker build \
+                -t "$BACKUP_IMAGE" \
+                -t "$BACKUP_ALIAS_IMAGE" \
+                kubernetes/drfarah/backup
+
+              docker push "$BACKUP_IMAGE"
+              docker push "$BACKUP_ALIAS_IMAGE"
+            fi
 
             echo ""
             echo "API image pushed:"
@@ -1385,6 +1645,8 @@ print(json.dumps({
             rsync -av --delete \
               --exclude='.env' \
               --exclude='.well-known' \
+              --exclude='.htaccess.production' \
+              --exclude='robots.production.txt' \
               -e "ssh $SSH_OPTS" \
               frontend/ \
               "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$STAGING_DOCROOT/"
@@ -1572,6 +1834,748 @@ print(json.dumps({
 
             echo ""
             echo "Admin SPA staging deployment passed."
+          '''
+        }
+      }
+    }
+
+    stage('Production — deploy API and PostgreSQL') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        sh '''
+          set -eu
+
+          IMAGE_TAG="$(git rev-parse HEAD)"
+
+          if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
+            exit 1
+          fi
+
+          API_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
+          BACKUP_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${BACKUP_IMAGE_NAME}:${IMAGE_TAG}"
+          API_PLACEHOLDER="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:prod"
+          BACKUP_PLACEHOLDER="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${BACKUP_IMAGE_NAME}:prod"
+
+          RENDERED_API="$(mktemp)"
+          RENDERED_BACKUP="$(mktemp)"
+
+          cleanup_production_manifests() {
+            rm -f "$RENDERED_API" "$RENDERED_BACKUP"
+          }
+          trap cleanup_production_manifests EXIT HUP INT TERM
+
+          sed "s|image: ${API_PLACEHOLDER}|image: ${API_IMAGE}|g" \
+            kubernetes/drfarah/api-deployment.yaml \
+            > "$RENDERED_API"
+
+          sed "s|image: ${BACKUP_PLACEHOLDER}|image: ${BACKUP_IMAGE}|g" \
+            kubernetes/drfarah/postgres-backup-cronjob.yaml \
+            > "$RENDERED_BACKUP"
+
+          API_IMAGE_COUNT="$(grep -cF "image: ${API_IMAGE}" "$RENDERED_API" || true)"
+          BACKUP_IMAGE_COUNT="$(grep -cF "image: ${BACKUP_IMAGE}" "$RENDERED_BACKUP" || true)"
+
+          if [ "$API_IMAGE_COUNT" -ne 2 ]; then
+            echo "FAIL: expected immutable API image twice, found $API_IMAGE_COUNT."
+            exit 1
+          fi
+
+          if [ "$BACKUP_IMAGE_COUNT" -ne 1 ]; then
+            echo "FAIL: expected immutable backup image once, found $BACKUP_IMAGE_COUNT."
+            exit 1
+          fi
+
+          if grep -qE 'image:.*:prod\b' "$RENDERED_API" "$RENDERED_BACKUP"; then
+            echo "FAIL: a :prod image placeholder remains in rendered manifests."
+            grep -nE 'image:.*:prod\b' "$RENDERED_API" "$RENDERED_BACKUP" || true
+            exit 1
+          fi
+
+          echo "=== Applying production namespace and base resources ==="
+
+          kubectl apply \
+            -f kubernetes/drfarah/namespace.yaml \
+            -f kubernetes/drfarah/configmap.yaml \
+            -f kubernetes/drfarah/postgres-service.yaml \
+            -f kubernetes/drfarah/postgres-statefulset.yaml \
+            -f kubernetes/drfarah/api-service.yaml \
+            -f kubernetes/drfarah/api-ingress.yaml
+
+          echo ""
+          echo "=== Applying immutable production workloads ==="
+
+          kubectl apply -f "$RENDERED_API"
+          kubectl apply -f "$RENDERED_BACKUP"
+
+          echo ""
+          echo "=== Waiting for production PostgreSQL ==="
+
+          kubectl \
+            -n "$PRODUCTION_NAMESPACE" \
+            rollout status statefulset/drfarah-postgres \
+            --timeout=240s
+
+          echo ""
+          echo "=== Waiting for production API ==="
+
+          kubectl \
+            -n "$PRODUCTION_NAMESPACE" \
+            rollout status deployment/drfarah-api \
+            --timeout=240s
+
+          DEPLOYED_API_IMAGE="$(
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              get deployment drfarah-api \
+              -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
+          )"
+          DEPLOYED_MIGRATION_IMAGE="$(
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              get deployment drfarah-api \
+              -o jsonpath='{.spec.template.spec.initContainers[?(@.name=="db-migrate")].image}'
+          )"
+          DEPLOYED_BACKUP_IMAGE="$(
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              get cronjob drfarah-postgres-backup \
+              -o jsonpath='{.spec.jobTemplate.spec.template.spec.containers[?(@.name=="backup")].image}'
+          )"
+
+          [ "$DEPLOYED_API_IMAGE" = "$API_IMAGE" ] || {
+            echo "FAIL: production API image is not the promoted Git SHA."
+            exit 1
+          }
+
+          [ "$DEPLOYED_MIGRATION_IMAGE" = "$API_IMAGE" ] || {
+            echo "FAIL: production migration image is not the promoted Git SHA."
+            exit 1
+          }
+
+          [ "$DEPLOYED_BACKUP_IMAGE" = "$BACKUP_IMAGE" ] || {
+            echo "FAIL: production backup image is not the promoted Git SHA."
+            exit 1
+          }
+
+          cleanup_production_manifests
+          trap - EXIT HUP INT TERM
+          echo "Production API/PostgreSQL rollout passed."
+        '''
+      }
+    }
+
+    stage('Production — verify API') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        sh '''
+          set -eu
+
+          echo "=== Production API liveness ==="
+
+          LIVE_RESPONSE="$(mktemp)"
+          READY_RESPONSE="$(mktemp)"
+          SERVICES_RESPONSE="$(mktemp)"
+          CORS_HEADERS="$(mktemp)"
+
+          cleanup_api_checks() {
+            rm -f "$LIVE_RESPONSE" "$READY_RESPONSE" "$SERVICES_RESPONSE" "$CORS_HEADERS"
+          }
+          trap cleanup_api_checks EXIT HUP INT TERM
+
+          live_status="000"
+          for attempt in $(seq 1 24); do
+            live_status="$(
+              curl -sS \
+                -o "$LIVE_RESPONSE" \
+                -w '%{http_code}' \
+                "${PRODUCTION_API_URL}/api/v1/health/live" \
+                || true
+            )"
+
+            [ -n "$live_status" ] || live_status="000"
+
+            if [ "$live_status" = "200" ]; then
+              echo "Liveness passed on attempt $attempt."
+              break
+            fi
+
+            echo "  attempt $attempt/24 -> HTTP $live_status"
+            sleep 5
+          done
+
+          [ "$live_status" = "200" ] || {
+            echo "FAIL: production liveness returned HTTP $live_status"
+            kubectl -n "$PRODUCTION_NAMESPACE" get pods -o wide || true
+            kubectl -n "$PRODUCTION_NAMESPACE" logs deployment/drfarah-api --tail=120 || true
+            exit 1
+          }
+
+          python3 - "$LIVE_RESPONSE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+if payload.get("status") != "ok" or payload.get("environment") != "prod":
+    raise SystemExit("FAIL: liveness did not identify the production API")
+PY
+
+          echo ""
+          echo "=== Production API readiness ==="
+
+          ready_status="$(
+            curl -sS \
+              -o "$READY_RESPONSE" \
+              -w '%{http_code}' \
+              "${PRODUCTION_API_URL}/api/v1/health/ready" \
+              || true
+          )"
+
+          [ "$ready_status" = "200" ] || {
+            echo "FAIL: production readiness returned HTTP $ready_status"
+            cat "$READY_RESPONSE"
+            exit 1
+          }
+
+          python3 - "$READY_RESPONSE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+if payload.get("status") != "ok" or payload.get("environment") != "prod":
+    raise SystemExit("FAIL: readiness did not identify the production API")
+PY
+
+          echo ""
+          echo "=== Production service catalog ==="
+
+          services_status="$(
+            curl -sS \
+              -o "$SERVICES_RESPONSE" \
+              -w '%{http_code}' \
+              "${PRODUCTION_API_URL}/api/v1/services" \
+              || true
+          )"
+
+          [ "$services_status" = "200" ] || {
+            echo "FAIL: production services returned HTTP $services_status"
+            exit 1
+          }
+
+          SERVICE_COUNT="$(
+            python3 - "$SERVICES_RESPONSE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+print(len(payload.get("services", [])))
+PY
+          )"
+
+          [ "$SERVICE_COUNT" -gt 0 ] || {
+            echo "FAIL: production service catalog is empty."
+            exit 1
+          }
+
+          echo "Production service catalog contains $SERVICE_COUNT active service(s)."
+          echo ""
+          echo "=== Production CORS contract ==="
+
+          for origin in \
+            "https://drfarahvipurgentcare.com" \
+            "https://admin.drfarahvipurgentcare.com"; do
+            : > "$CORS_HEADERS"
+
+            cors_status="$(
+              curl -sS \
+                -o /dev/null \
+                -D "$CORS_HEADERS" \
+                -w '%{http_code}' \
+                -X OPTIONS \
+                -H "Origin: $origin" \
+                -H 'Access-Control-Request-Method: GET' \
+                "${PRODUCTION_API_URL}/api/v1/services" \
+                || true
+            )"
+
+            case "$cors_status" in
+              200|204) ;;
+              *)
+                echo "FAIL: CORS preflight for $origin returned HTTP $cors_status"
+                exit 1
+                ;;
+            esac
+
+            grep -qiF "access-control-allow-origin: $origin" "$CORS_HEADERS" || {
+              echo "FAIL: production API did not allow CORS origin $origin"
+              exit 1
+            }
+
+            echo "OK    $origin"
+          done
+
+          cleanup_api_checks
+          trap - EXIT HUP INT TERM
+          echo "Production API verification passed."
+        '''
+      }
+    }
+
+    stage('Production — backup and restore test') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        withCredentials([
+          sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            JOB_NAME="drfarah-backup-verify-${BUILD_NUMBER}"
+            BACKUP_LOG="$(mktemp)"
+            LOCAL_BACKUP="$(mktemp)"
+            RESTORE_CONTAINER="drfarah-restore-${BUILD_NUMBER}-$$"
+            RESTORE_PASSWORD="restore_${BUILD_NUMBER}_$$"
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+
+            cleanup_backup_test() {
+              docker rm -f "$RESTORE_CONTAINER" >/dev/null 2>&1 || true
+              kubectl -n "$PRODUCTION_NAMESPACE" \
+                delete job "$JOB_NAME" --ignore-not-found=true \
+                >/dev/null 2>&1 || true
+              rm -f "$BACKUP_LOG" "$LOCAL_BACKUP"
+            }
+            trap cleanup_backup_test EXIT HUP INT TERM
+
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              delete job "$JOB_NAME" --ignore-not-found=true \
+              >/dev/null
+
+            echo "=== Starting immediate off-cluster backup ==="
+
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              create job \
+              --from=cronjob/drfarah-postgres-backup \
+              "$JOB_NAME"
+
+            if ! kubectl -n "$PRODUCTION_NAMESPACE" \
+              wait \
+              --for=condition=complete \
+              "job/$JOB_NAME" \
+              --timeout=600s; then
+              echo "FAIL: production backup Job did not complete."
+              kubectl -n "$PRODUCTION_NAMESPACE" \
+                describe job "$JOB_NAME" || true
+              kubectl -n "$PRODUCTION_NAMESPACE" \
+                logs "job/$JOB_NAME" --all-containers=true --tail=200 || true
+              exit 1
+            fi
+
+            kubectl -n "$PRODUCTION_NAMESPACE" \
+              logs "job/$JOB_NAME" \
+              > "$BACKUP_LOG"
+
+            BACKUP_NAME="$(
+              sed -n 's/^BACKUP_COMPLETE=//p' "$BACKUP_LOG" \
+                | tail -n 1
+            )"
+
+            case "$BACKUP_NAME" in
+              drfarah-*.dump) ;;
+              *)
+                echo "FAIL: backup Job did not return a valid archive name."
+                cat "$BACKUP_LOG"
+                exit 1
+                ;;
+            esac
+
+            if ! printf '%s' "$BACKUP_NAME" | grep -qE '^drfarah-[A-Za-z0-9._-]+[.]dump$'; then
+              echo "FAIL: unsafe backup archive name returned."
+              exit 1
+            fi
+
+            echo "Backup Job completed: $BACKUP_NAME"
+            echo ""
+            echo "=== Fetching exact off-cluster archive ==="
+
+            remote_mode="$(
+              ssh $SSH_OPTS \
+                "$HESTIA_SSH_USER@$HESTIA_SSH_HOST" \
+                "test -s '$PRODUCTION_BACKUP_DIR/$BACKUP_NAME' && stat -c '%a' '$PRODUCTION_BACKUP_DIR/$BACKUP_NAME'"
+            )"
+
+            [ "$remote_mode" = "600" ] || {
+              echo "FAIL: remote backup mode is $remote_mode, expected 600."
+              exit 1
+            }
+
+            scp \
+              -i "$SSH_KEY" \
+              -P "$HESTIA_SSH_PORT" \
+              -o StrictHostKeyChecking=accept-new \
+              -o BatchMode=yes \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$PRODUCTION_BACKUP_DIR/$BACKUP_NAME" \
+              "$LOCAL_BACKUP"
+
+            test -s "$LOCAL_BACKUP" || {
+              echo "FAIL: downloaded backup archive is empty."
+              exit 1
+            }
+
+            chmod 600 "$LOCAL_BACKUP"
+
+            echo ""
+            echo "=== Restoring into disposable PostgreSQL 16 ==="
+
+            docker run -d \
+              --name "$RESTORE_CONTAINER" \
+              --tmpfs /var/lib/postgresql/data \
+              -e POSTGRES_USER=restore_test \
+              -e POSTGRES_PASSWORD="$RESTORE_PASSWORD" \
+              -e POSTGRES_DB=restore_test \
+              postgres:16-alpine \
+              >/dev/null
+
+            restore_ready=0
+            for attempt in $(seq 1 30); do
+              if docker exec "$RESTORE_CONTAINER" \
+                pg_isready -U restore_test -d restore_test \
+                >/dev/null 2>&1; then
+                restore_ready=1
+                break
+              fi
+              sleep 1
+            done
+
+            [ "$restore_ready" -eq 1 ] || {
+              echo "FAIL: disposable restore database did not become ready."
+              docker logs --tail 100 "$RESTORE_CONTAINER" || true
+              exit 1
+            }
+
+            docker cp "$LOCAL_BACKUP" "$RESTORE_CONTAINER:/backup.dump"
+
+            docker exec "$RESTORE_CONTAINER" \
+              pg_restore \
+                --no-owner \
+                --no-privileges \
+                -U restore_test \
+                -d restore_test \
+                /backup.dump
+
+            RESTORED_TABLE_COUNT="$(
+              docker exec "$RESTORE_CONTAINER" \
+                psql \
+                  -U restore_test \
+                  -d restore_test \
+                  -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+            )"
+
+            [ "$RESTORED_TABLE_COUNT" -gt 0 ] || {
+              echo "FAIL: restored production backup contains no public tables."
+              exit 1
+            }
+
+            RESTORED_REVISION="$(
+              docker exec "$RESTORE_CONTAINER" \
+                psql \
+                  -U restore_test \
+                  -d restore_test \
+                  -Atqc 'SELECT version_num FROM alembic_version LIMIT 1;'
+            )"
+
+            [ -n "$RESTORED_REVISION" ] || {
+              echo "FAIL: restored production backup has no Alembic revision."
+              exit 1
+            }
+
+            echo "Restore test passed with $RESTORED_TABLE_COUNT public table(s)."
+            echo "Daily CronJob remains active; retention is 30 days on Hestia."
+
+            cleanup_backup_test
+            trap - EXIT HUP INT TERM
+          '''
+        }
+      }
+    }
+
+    stage('Production — deploy public frontend') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        withCredentials([
+          sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+            PRODUCTION_BUILD_DIR="$(mktemp -d)"
+
+            cleanup_production_frontend() {
+              rm -rf "$PRODUCTION_BUILD_DIR"
+            }
+            trap cleanup_production_frontend EXIT HUP INT TERM
+
+            echo "=== Assembling production frontend ==="
+
+            sh scripts/prepare-production-frontend.sh \
+              frontend \
+              "$PRODUCTION_BUILD_DIR"
+
+            echo ""
+            echo "=== Publishing production frontend ==="
+
+            rsync -av --delete \
+              --exclude='.env' \
+              --exclude='.well-known' \
+              -e "ssh $SSH_OPTS" \
+              "$PRODUCTION_BUILD_DIR/" \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$PRODUCTION_FRONTEND_DOCROOT/"
+
+            echo ""
+            echo "=== Production frontend smoke test ==="
+
+            production_paths="
+              /
+              /about
+              /services
+              /book
+              /patient-registration
+              /privacy
+              /robots.txt
+              /sitemap.xml
+              /styles.css
+              /app.js
+              /booking.js
+              /registration.js
+              /assets/favicon.svg
+            "
+
+            for path in $production_paths; do
+              status="$(
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "https://${PRODUCTION_FRONTEND_HOST}${path}" \
+                  || true
+              )"
+
+              [ -n "$status" ] || status="000"
+
+              if [ "$status" != "200" ]; then
+                echo "FAIL  $path -> $status"
+                exit 1
+              fi
+
+              echo "OK    $path -> $status"
+            done
+
+            HOME_HTML="$(mktemp)"
+            ROBOTS_FILE="$(mktemp)"
+
+            curl -fsS \
+              "https://${PRODUCTION_FRONTEND_HOST}/" \
+              > "$HOME_HTML"
+
+            curl -fsS \
+              "https://${PRODUCTION_FRONTEND_HOST}/robots.txt" \
+              > "$ROBOTS_FILE"
+
+            grep -qF 'Dr. Farah' "$HOME_HTML" || {
+              echo "FAIL: production homepage marker is absent."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            }
+
+            if grep -qF 'noindex,nofollow,noarchive' "$HOME_HTML"; then
+              echo "FAIL: production homepage is still noindexed."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            fi
+
+            if grep -qF '/wp-content/uploads/' "$HOME_HTML"; then
+              echo "FAIL: production homepage still contains a WordPress asset dependency."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            fi
+
+            grep -qF 'Allow: /' "$ROBOTS_FILE" || {
+              echo "FAIL: production robots.txt is not crawlable."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            }
+
+            if grep -qF 'Disallow: /' "$ROBOTS_FILE"; then
+              echo "FAIL: staging robots.txt was published to production."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            fi
+
+            rm -f "$HOME_HTML" "$ROBOTS_FILE"
+
+            LEGACY_RESULT="$(
+              curl -sS \
+                -L \
+                --max-redirs 5 \
+                -o /dev/null \
+                -w '%{http_code}|%{url_effective}' \
+                "https://www.drfarahvipurgentcare.com/about-us/" \
+                || true
+            )"
+
+            [ "$LEGACY_RESULT" = '200|https://drfarahvipurgentcare.com/about' ] || {
+              echo "FAIL: www/legacy redirect chain is incorrect: $LEGACY_RESULT"
+              exit 1
+            }
+
+            cleanup_production_frontend
+            trap - EXIT HUP INT TERM
+            echo "Production frontend deployment passed."
+          '''
+        }
+      }
+    }
+
+    stage('Production — deploy admin SPA') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        withCredentials([
+          sshUserPrivateKey(
+            credentialsId: 'hestia-benweb-ssh',
+            keyFileVariable: 'SSH_KEY'
+          )
+        ]) {
+          sh '''
+            set -eu
+
+            SSH_OPTS="-i $SSH_KEY -p $HESTIA_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
+
+            echo "=== Publishing production admin SPA ==="
+
+            rsync -av --delete \
+              --exclude='.env' \
+              --exclude='.well-known' \
+              -e "ssh $SSH_OPTS" \
+              admin/ \
+              "$HESTIA_SSH_USER@$HESTIA_SSH_HOST:$PRODUCTION_ADMIN_DOCROOT/"
+
+            echo ""
+            echo "=== Production admin smoke test ==="
+
+            admin_paths="
+              /
+              /index.html
+              /app.js
+              /config.js
+              /styles.css
+            "
+
+            for path in $admin_paths; do
+              status="$(
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "https://${PRODUCTION_ADMIN_HOST}${path}" \
+                  || true
+              )"
+
+              [ -n "$status" ] || status="000"
+
+              if [ "$status" != "200" ]; then
+                echo "FAIL  $path -> $status"
+                exit 1
+              fi
+
+              echo "OK    $path -> $status"
+            done
+
+            ADMIN_HTML="$(mktemp)"
+            ADMIN_CONFIG="$(mktemp)"
+
+            curl -fsS \
+              "https://${PRODUCTION_ADMIN_HOST}/" \
+              > "$ADMIN_HTML"
+
+            curl -fsS \
+              "https://${PRODUCTION_ADMIN_HOST}/config.js" \
+              > "$ADMIN_CONFIG"
+
+            grep -qF 'noindex,nofollow,noarchive' "$ADMIN_HTML" || {
+              echo "FAIL: production admin is missing noindex protection."
+              rm -f "$ADMIN_HTML" "$ADMIN_CONFIG"
+              exit 1
+            }
+
+            grep -qF "h === 'admin.drfarahvipurgentcare.com'" "$ADMIN_CONFIG" || {
+              echo "FAIL: production admin hostname mapping is absent."
+              rm -f "$ADMIN_HTML" "$ADMIN_CONFIG"
+              exit 1
+            }
+
+            grep -qF 'https://api.drfarahvipurgentcare.com/api/v1' "$ADMIN_CONFIG" || {
+              echo "FAIL: production admin API mapping is absent."
+              rm -f "$ADMIN_HTML" "$ADMIN_CONFIG"
+              exit 1
+            }
+
+            grep -qF 'https://keycloak.soria-academie.fr' "$ADMIN_CONFIG" || {
+              echo "FAIL: production admin Keycloak mapping is absent."
+              rm -f "$ADMIN_HTML" "$ADMIN_CONFIG"
+              exit 1
+            }
+
+            rm -f "$ADMIN_HTML" "$ADMIN_CONFIG"
+
+            echo ""
+            echo "=== Final production endpoint check ==="
+
+            for endpoint in \
+              "https://${PRODUCTION_FRONTEND_HOST}/" \
+              "https://${PRODUCTION_ADMIN_HOST}/" \
+              "${PRODUCTION_API_URL}/api/v1/health/live" \
+              "${PRODUCTION_API_URL}/api/v1/health/ready"; do
+              status="$(
+                curl -sS \
+                  --connect-timeout 8 \
+                  --max-time 20 \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "$endpoint" \
+                  || true
+              )"
+
+              if [ "$status" != "200" ]; then
+                echo "FAIL  $endpoint -> $status"
+                exit 1
+              fi
+
+              echo "OK    $endpoint -> 200"
+            done
+
+            echo "Production admin and final endpoint checks passed."
           '''
         }
       }

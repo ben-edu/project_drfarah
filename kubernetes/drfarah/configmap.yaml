@@ -1,5 +1,6 @@
 # Non-secret configuration for the Dr. Farah PRODUCTION API.
-# Do not deploy while REPLACE_BEFORE_PRODUCTION markers remain.
+# Soria SMTP is an explicitly approved temporary production relay. Credentials
+# remain in drfarah-api-secret and must never be committed here.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,9 +21,9 @@ data:
   KEYCLOAK_JWKS_URL: "https://keycloak.soria-academie.fr/realms/drfarah/protocol/openid-connect/certs"
   KEYCLOAK_AUDIENCE: "drfarah-admin"
   KEYCLOAK_VERIFY_AUD: "false"
-  SMTP_HOST: "REPLACE_BEFORE_PRODUCTION"
+  SMTP_HOST: "mail.soria-academie.fr"
   SMTP_PORT: "587"
-  SMTP_FROM: "REPLACE_BEFORE_PRODUCTION"
-  SMTP_TO: "REPLACE_BEFORE_PRODUCTION"
+  SMTP_FROM: "contact@soria-academie.fr"
+  SMTP_TO: "appointment@soria-academie.fr"
   SMTP_USE_TLS: "true"
   SMTP_TEST_MODE: "false"

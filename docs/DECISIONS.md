@@ -39,7 +39,9 @@ deployment cannot overwrite the production admin SPA. See
 - **API:** FastAPI on K3s / BM2, Traefik ingress.
 - **Database:** PostgreSQL, dedicated database and credentials for `drfarah`.
 - **Admin auth:** Keycloak realm `drfarah`, client `drfarah-admin`, PKCE S256.
-- **Email:** SORIA SMTP for testing; clinic-approved sender for production.
+- **Email:** Soria SMTP is explicitly approved as the temporary production
+  relay for the immediate cutover. GoDaddy/Microsoft 365 evaluation follows
+  after launch.
 - **Registry:** `harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api`.
 
 ## Product scope

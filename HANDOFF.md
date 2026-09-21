@@ -1,332 +1,158 @@
-# HANDOFF — 2026-09-20 — Final Domain Migration Preparation
+# HANDOFF — 2026-09-21 — Production activation
 
-## Read this first
+## Authoritative project state
 
-This is the current operational handoff for the Dr. Farah website project.
+Repository: `ben-edu/project_drfarah`
 
-Authoritative implementation repository:
+Integration branch: `dev`
 
-`ben-edu/project_drfarah`
+Final-domain migration merge on `dev`:
+`9e5c70e52e0f27435c0c5f32c5b48fa52bbff6c5`
 
-Current integration branch:
+Jenkins `dev` build 5 completed successfully and deployed the final staging
+hosts.
 
-`dev`
+Detailed runbook: `docs/migration/FINAL_DOMAIN_CUTOVER.md`
 
-Current final-domain migration branch:
-
-`chore/final-domain-migration`
-
-Detailed cutover runbook:
-
-`docs/migration/FINAL_DOMAIN_CUTOVER.md`
-
-For infrastructure details, use `ben-edu/infra-docs`; live infrastructure wins
-when documentation and runtime disagree.
-
----
-
-## Current deployed state before domain cutover
-
-The latest website/application feature release is merged to `dev` and was
-successfully deployed to the temporary staging environment.
-
-Last known green integration commit before this migration work:
-
-`8b3731bfd7ca736b211514b911a6758ab791463b`
-
-That release includes:
-
-- revised premium public website and navigation;
-- PRP Treatments page;
-- Weight Loss Program page;
-- combined Traveler & Telehealth entry point;
-- IV Therapy & Wellness page;
-- Personal Injury / attorney-lien page;
-- enhanced Pre-Operative Clearance lien wording;
-- variable fees presented with `Starting From` where appropriate;
-- public booking against real API services/availability;
-- online Patient Registration with Save / Resume / Submit;
-- PostgreSQL persistence;
-- Alembic head `0003`;
-- Keycloak-protected Admin appointment management;
-- Admin Patient Registration review.
-
-Known UI backlog:
-
-- the Services-page IV hero image is still visually too soft/blurred and should
-  be sharpened in a later focused visual fix;
-- critical homepage/service imagery still uses the temporary `app-v5` runtime
-  reconstruction workaround. It is stable enough for staging but should
-  eventually be replaced by direct static assets.
-
-AI Virtual Assistant / Digital Concierge is explicitly postponed.
-
----
-
-## Current temporary environment
-
-The currently deployed temporary environment uses:
-
-- frontend staging: `https://staging.drfarah.proxbenovh.cloud`
-- API staging: `https://api.staging.drfarah.proxbenovh.cloud`
-- admin SPA: `https://admin.drfarah.proxbenovh.cloud`
-- Keycloak: `https://keycloak.soria-academie.fr/realms/drfarah`
-
-The temporary admin hostname is effectively a staging admin because the
-`dev` Jenkins pipeline deploys to it.
-
----
-
-## Approved final environment map
+## Environment map
 
 ### Production
 
-- frontend: `https://drfarahvipurgentcare.com`
-- www: `https://www.drfarahvipurgentcare.com` → 301 to apex
+- public site: `https://drfarahvipurgentcare.com`
+- canonical alias: `https://www.drfarahvipurgentcare.com` → apex
 - API: `https://api.drfarahvipurgentcare.com`
 - admin: `https://admin.drfarahvipurgentcare.com`
+- Kubernetes namespace: `drfarah`
 
 ### Staging
 
-- frontend: `https://staging.drfarahvipurgentcare.com`
+- public site: `https://staging.drfarahvipurgentcare.com`
 - API: `https://api-staging.drfarahvipurgentcare.com`
 - admin: `https://admin-staging.drfarahvipurgentcare.com`
+- Kubernetes namespace: `drfarah-staging`
 
-The separate staging admin is intentional. Sharing one admin hostname between
-`dev` and `main` would let a staging deploy overwrite the production SPA.
+Do not use the obsolete nested `.staging.` hostname form; both final staging
+service names use a hyphen.
 
-Keycloak stays at `keycloak.soria-academie.fr`; only client redirect URIs and
-web origins need the new admin domains.
-
----
-
-## Migration branch state
-
-Do **not** merge `chore/final-domain-migration` to `dev` until the operator
-preflight below is complete.
-
-Repository preparation already on the branch includes:
-
-- final-domain API selection in `frontend/booking.js`;
-- final-domain API selection in `frontend/registration.js`;
-- environment-aware `admin/config.js`;
-- final staging CORS origins;
-- final staging Traefik API host while temporarily retaining the old host;
-- final production canonical URLs and sitemap;
-- production robots policy;
-- production Apache/cutover rules;
-- production Kubernetes namespace/API/PostgreSQL manifests;
-- fail-closed Jenkins `main` production stages;
-- final staging hostname/docroot targets in Jenkins;
-- production hostname/docroot targets are documented for the later production-activation step;
-- domain migration runbook.
-
-Transition support for the old temporary hosts is intentional until the new
-hosts are verified.
-
----
-
-## Operator-owned prerequisites before merge to dev
-
-### 1. GoDaddy DNS
-
-Preserve nameservers and all unrelated mail records (MX/SPF/DKIM/DMARC).
-
-Prepare:
-
-- apex `@` → BM1/web HAProxy;
-- `www` → apex;
-- `staging` → BM1/web HAProxy;
-- `admin` → BM1/web HAProxy;
-- `admin.staging` → BM1/web HAProxy;
-- `api` → BM2/API HAProxy;
-- `api.staging` → BM2/API HAProxy.
-
-Check stale A/AAAA/CNAME conflicts. Reduce apex/www TTL before final cutover and
-record the current WordPress DNS target for rollback.
-
-### 2. Hestia domains/docroots
-
-Create/verify, owned and writable by `benweb`:
-
-- `/home/benweb/web/drfarahvipurgentcare.com/public_html`
-- `/home/benweb/web/staging.drfarahvipurgentcare.com/public_html`
-- `/home/benweb/web/admin.drfarahvipurgentcare.com/public_html`
-- `/home/benweb/web/admin-staging.drfarahvipurgentcare.com/public_html`
-
-### 3. HAProxy and TLS
-
-Configure final frontend/admin routes on BM1 and API routes on BM2.
-Install valid certificates for all final hostnames before browser testing.
-Because the staging API/admin names are hyphenated one-label subdomains,
-`*.drfarahvipurgentcare.com` covers them; the apex
-`drfarahvipurgentcare.com` still needs an explicit SAN or a separate
-certificate.
-
-### 4. Keycloak
-
-Realm: `drfarah`  
-Client: `drfarah-admin`
-
-Add:
-
-Valid redirect URIs:
-- `https://admin.drfarahvipurgentcare.com/*`
-- `https://admin-staging.drfarahvipurgentcare.com/*`
-
-Valid post-logout redirect URIs:
-- same values
-
-Web origins:
-- `https://admin.drfarahvipurgentcare.com`
-- `https://admin-staging.drfarahvipurgentcare.com`
-
-Keep the old temporary admin URI/origin during the transition, then remove it
-after stable cutover. Do not use a broad wildcard. Enable/require MFA for real
-staff before production.
-
-### 5. Production Kubernetes secrets
-
-In namespace `drfarah`, verify/create:
-
-- `harbor-regcred`
-- `drfarah-db-secret`
-- `drfarah-api-secret`
-
-Production DB credentials must be independent from staging.
-
-### 6. Production SMTP identity
-
-Confirm the non-secret production values:
-
-- SMTP host;
-- SMTP from address;
-- clinic notification recipient.
-
-Real SMTP username/password remain out of Git and belong in
-`drfarah-api-secret`.
-
-The production ConfigMap intentionally contains
-`REPLACE_BEFORE_PRODUCTION` markers until these values are confirmed.
-
-### 7. Legacy WordPress preservation
-
-Before apex DNS cutover:
-
-- back up/export the old WordPress files and database;
-- export/crawl the complete legacy URL inventory / XML sitemap;
-- retain old DNS target and hosting for rollback;
-- prepare 301 mappings for valuable legacy URLs.
-
-The production Apache file intentionally contains a `CUTOVER_BLOCKER` marker
-until the full redirect inventory is reviewed.
-
----
-
-## Repository-side cutover blockers
-
-Production deployment is intentionally fail-closed until all of these are resolved:
-
-1. `REPLACE_BEFORE_PRODUCTION` values in
-   `kubernetes/drfarah/configmap.yaml` — production SMTP host/from/to;
-2. `CUTOVER_BLOCKER` in `frontend/.htaccess.production` — full legacy URL
-   inventory / redirect decisions;
-3. legacy insurer images are still hotlinked from
-   `drfarahvipurgentcare.com/wp-content/...` in `app.js` / `app-v5.js`.
-   The six approved artwork files must be copied into `frontend/assets/` and
-   referenced locally before apex cutover;
-4. `BACKUP_READINESS_BLOCKER` in `kubernetes/drfarah/README.md` — production
-   PostgreSQL backup destination, retention, restore procedure and a restore
-   test are not yet verified.
-
-Do not remove a blocker merely to make Jenkins green. Clear each one only after
-its prerequisite is actually satisfied.
-
----
-
-## Required migration sequence
-
-1. Finish operator DNS/Hestia/HAProxy/TLS/Keycloak prerequisites for the **new
-   staging hosts**.
-2. Run CI on `chore/final-domain-migration`.
-3. Review PR and merge to `dev`.
-4. Jenkins `dev` deploys to:
-   - `staging.drfarahvipurgentcare.com`
-   - `api-staging.drfarahvipurgentcare.com`
-   - `admin-staging.drfarahvipurgentcare.com`
-5. Verify staging end to end:
-   - public pages;
-   - booking;
-   - availability;
-   - Patient Registration Save/Resume/Submit;
-   - admin Keycloak login;
-   - appointment and registration admin views;
-   - CORS;
-   - noindex + robots Disallow.
-6. Complete production SMTP, secrets and legacy redirect inventory.
-7. Back up legacy WordPress and record rollback DNS.
-8. After explicit human approval of the exact green `dev` SHA, activate the production Jenkins stages in a focused follow-up PR only after all production blockers are cleared.
-9. Promote that approved production-ready SHA to `main` and deploy the isolated production API/DB/frontend/admin through Jenkins.
-10. Validate production routing with `curl --resolve` before apex DNS switch.
-11. Switch apex/www DNS.
-12. Verify canonical, robots, sitemap, redirects, booking, API, admin and
-    Keycloak after public cutover.
-13. Submit the new sitemap in Google Search Console.
-14. Keep old WordPress hosting and temporary Dr. Farah routes available during
-    the stabilization/rollback window.
-
----
-
-## SEO / legacy URL warning
-
-The current production domain already has indexed WordPress content. The domain
-itself staying the same does not protect rankings for old paths that disappear.
-
-Known examples that require redirect decisions include:
-
-- `/about-us/`
-- `/contact-us/`
-- `/prp-prf-exosomes-center/`
-- `/urgent-care-near-you/`
-- `/vip-urgent-care/`
-- `/faq/`
-- `/blog/`
-- multiple indexed article URLs.
-
-Some obvious structural redirects are already drafted, but the list is not
-complete. Do not declare production cutover ready until the full legacy URL
-inventory has been captured.
-
----
-
-## Security / privacy boundaries
-
-- Never expose Keycloak, database, Harbor, SMTP or Jenkins secrets.
-- Staging and production databases/secrets remain separate.
-- Browser traffic uses public API hostnames, never private cluster IPs.
-- Patient Registration currently collects demographic/contact data only; do not
-  casually extend it to clinical documents/history.
-- Admin tokens stay in memory through `keycloak-js`.
-- Production deployment must go through Jenkins; do not manually rsync the final
-  site as a normal deployment method.
-
----
-
-## New-session startup protocol
-
-A new AI/tab should:
-
-1. read this `HANDOFF.md`;
-2. read `docs/migration/FINAL_DOMAIN_CUTOVER.md`;
-3. inspect current `dev`, `main`, and open PRs;
-4. inspect current Jenkins status;
-5. inspect live DNS/HAProxy/Hestia/Kubernetes/Keycloak state when relevant;
-6. never assume this migration branch has been merged;
-7. preserve all fail-closed blockers until their prerequisites are actually met.
-
-
-## 2026-09-20 — Migration CI retrigger
-
-- Jenkins HTTPS/reachability issue was corrected by the operator.
-- PR #40 remains the authoritative final-domain migration PR. Its active Jenkins change is deliberately limited to final-staging deployment; production deployment activation is deferred until staging acceptance.
-- Re-trigger CI on this branch after the Jenkins recovery; do not merge to `dev` until the final staging DNS/Hestia/HAProxy/TLS/Keycloak prerequisites in this handoff are complete.
+Keycloak remains at
+`https://keycloak.soria-academie.fr/realms/drfarah`, client
+`drfarah-admin`.
+
+## Verified infrastructure
+
+- authoritative GoDaddy DNS points BM1 web/admin hosts to `87.98.174.211`;
+- authoritative GoDaddy DNS points BM2 API hosts to `51.75.57.153`;
+- `www` is a CNAME to the apex;
+- obsolete dotted staging names do not resolve;
+- no unsupported AAAA records are present;
+- HAProxy HTTP/HTTPS frontend rules are attached on both bare metals;
+- HTTP-01 ACME routing and final-host certificates are valid;
+- Hestia production/staging public and admin docroots exist and are writable;
+- final staging Keycloak redirect, logout and Web Origin entries are present.
+
+## Accepted staging evidence
+
+External checks returned:
+
+- staging frontend: HTTP 200, valid TLS;
+- staging admin: HTTP 200, valid TLS;
+- staging API liveness: HTTP 200, valid TLS;
+- staging API readiness: HTTP 200, valid TLS.
+
+The staging API HAProxy backend sends the correct `Host` and
+`X-Forwarded-Host`: `api-staging.drfarahvipurgentcare.com`.
+
+## Explicit launch decisions
+
+The operator approved the following temporary launch decisions on 2026-09-21:
+
+1. Keep the existing GoDaddy WordPress hosting intact as the recovery source;
+   a separate WordPress export is not required before this immediate launch.
+2. Use the Soria SMTP relay temporarily in production:
+   - host `mail.soria-academie.fr`;
+   - port `587` with STARTTLS;
+   - sender `contact@soria-academie.fr`;
+   - clinic recipient `appointment@soria-academie.fr`.
+3. Finish the complete historical WordPress URL/SEO inventory after launch.
+   Confirmed high-value redirects ship now and the old hosting must remain
+   available during stabilization.
+4. Remove runtime insurer-image hotlinks to WordPress. Launch uses the named,
+   accessible insurance text cards already present in the HTML; approved local
+   artwork can be added later.
+
+GoDaddy/Microsoft 365 SMTP migration is a separate post-launch task. Do not
+change MX/SPF/DKIM/DMARC records as part of the website deployment.
+
+## Production delivery now implemented
+
+The Jenkins `main` path is fail-closed and performs, in order:
+
+1. repository, Kubernetes secret and Hestia preflight;
+2. immutable API and PostgreSQL-backup image build/push to Harbor;
+3. isolated production PostgreSQL/API deployment in namespace `drfarah`;
+4. external production API liveness, readiness, environment and CORS checks;
+5. immediate PostgreSQL backup to Hestia and restore into disposable
+   PostgreSQL 16;
+6. crawlable production frontend assembly and publication;
+7. production admin SPA publication;
+8. final frontend/admin/API HTTPS checks.
+
+The daily database backup CronJob:
+
+- runs at `09:17 UTC`;
+- sends a custom-format `pg_dump` over SSH to
+  `/home/benweb/backups/drfarah-postgres` on Hestia;
+- uses directory mode `0700`, archive mode `0600`, and 30-day retention;
+- stores data outside the production PVC and cluster nodes.
+
+Frontend/admin publication does not happen unless the immediate off-cluster
+archive passes the disposable restore test.
+
+## One required operator action before promotion to `main`
+
+Create independent production DB/API secrets and copy only the already
+approved SMTP and Harbor credentials from staging:
+
+```bash
+sh scripts/bootstrap-production-secrets.sh
+```
+
+Run it from a trusted Kubernetes management shell in the production-activation
+branch checkout. The script:
+
+- prints no secret values;
+- generates a new independent production database password;
+- refuses to overwrite existing production DB/API secrets;
+- creates `harbor-regcred`, `drfarah-db-secret`, and
+  `drfarah-api-secret` in namespace `drfarah`.
+
+Do not paste credential values into chat, Git, or Jenkins logs.
+
+## Promotion order
+
+1. Validate the production-activation branch in Jenkins.
+2. Merge its PR into `dev` and require a green final staging deployment.
+3. Run the one-time production secret bootstrap above.
+4. Open/merge the exact approved `dev` state into `main`.
+5. Require the complete green `main` production pipeline.
+6. Verify public booking/services, admin Keycloak login, redirects, robots and
+   sitemap from an external host.
+
+Do not manually rsync production content around Jenkins; Jenkins is the
+authoritative deployment path.
+
+## Post-launch follow-up
+
+- test a controlled real booking and confirm both patient and clinic email;
+- complete the old WordPress URL/blog inventory and add missing targeted 301s;
+- retain GoDaddy hosting and temporary `proxbenovh.cloud` routes during the
+  stabilization window;
+- replace the shared Hestia deployment key used by the backup CronJob with a
+  dedicated restricted backup-only key;
+- evaluate GoDaddy/Microsoft 365 SMTP AUTH and sender policy before replacing
+  Soria SMTP;
+- submit the final sitemap and review 404/5xx/auth/CORS logs;
+- remove temporary Keycloak/CORS/HAProxy compatibility entries only after
+  stable verification;
+- improve the remaining reconstructed/placeholder imagery in a separate visual
+  release.
