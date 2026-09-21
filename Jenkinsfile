@@ -640,6 +640,46 @@ pipeline {
       }
     }
 
+    stage('Production backup image — validation') {
+      steps {
+        sh '''
+          set -eu
+
+          UNIQUE_SUFFIX="${BUILD_NUMBER}-$$"
+          IMAGE_NAME="drfarah-postgres-backup:test-build-${UNIQUE_SUFFIX}"
+
+          cleanup_backup_image() {
+            docker rmi "$IMAGE_NAME" >/dev/null 2>&1 || true
+          }
+          trap cleanup_backup_image EXIT HUP INT TERM
+
+          echo "=== Building production PostgreSQL backup image ==="
+
+          docker build \
+            -t "$IMAGE_NAME" \
+            kubernetes/drfarah/backup
+
+          echo ""
+          echo "=== Validating backup runtime tools ==="
+
+          docker run --rm \
+            --entrypoint /bin/sh \
+            "$IMAGE_NAME" \
+            -c '
+              set -e
+              command -v pg_dump >/dev/null
+              command -v pg_restore >/dev/null
+              command -v ssh >/dev/null
+              command -v scp >/dev/null
+              test -x /usr/local/bin/drfarah-backup
+              sh -n /usr/local/bin/drfarah-backup
+            '
+
+          echo "Production backup image validation passed."
+        '''
+      }
+    }
+
     stage('Frontend — validation') {
       steps {
         sh '''
