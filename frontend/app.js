@@ -174,48 +174,8 @@
     });
   }
 
-  // Use insurer artwork from the clinic's legacy public site during staging.
-  var insuranceGrid = document.querySelector('.insurance__logos');
-  if (insuranceGrid) {
-    var insurerLogos = [
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/6.png',
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/14.png',
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/3.png',
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/21.png',
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/aetna.jpg',
-      'https://drfarahvipurgentcare.com/wp-content/uploads/2025/02/22.png'
-    ];
-    insuranceGrid.innerHTML = '';
-    insuranceGrid.classList.add('insurance__logos--artwork');
-    insurerLogos.forEach(function (src) {
-      var card = document.createElement('div');
-      card.className = 'insurance-logo insurance-logo--artwork';
-      var img = document.createElement('img');
-      img.src = src;
-      img.alt = 'Insurance plan logo accepted or referenced by Dr. Farah VIP Urgent Care';
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.referrerPolicy = 'no-referrer';
-      var fallback = document.createElement('span');
-      fallback.className = 'insurance-logo__fallback';
-      fallback.textContent = 'Insurance plan';
-      fallback.hidden = true;
-      img.addEventListener('error', function () {
-        img.hidden = true;
-        fallback.hidden = false;
-        card.classList.add('insurance-logo--fallback');
-      });
-      card.appendChild(img);
-      card.appendChild(fallback);
-      insuranceGrid.appendChild(card);
-    });
-    var insuranceAction = document.querySelector('.insurance__action');
-    if (insuranceAction) {
-      insuranceAction.textContent = 'Call 310-467-0101 to verify coverage';
-      insuranceAction.setAttribute('aria-label', 'Call Dr. Farah VIP Urgent Care at 310-467-0101 to verify insurance coverage');
-      insuranceAction.setAttribute('title', 'Calls the clinic directly');
-    }
-  }
+  // Insurance plans remain as accessible text cards from the HTML. Approved
+  // local artwork can replace them later without depending on legacy WordPress.
 
   // Make pre-op phone scheduling explicit until dedicated online slots exist.
   if (pagePath === '/pre-op-clearance') {

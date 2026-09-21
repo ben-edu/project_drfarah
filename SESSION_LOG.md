@@ -1337,3 +1337,51 @@ preflight with the matching `Access-Control-Allow-Origin` response header.
 No merge or deployment was performed. PR #40 remains the controlled migration
 branch until operator TLS/HAProxy/Hestia/Keycloak prerequisites and CI are
 ready.
+
+---
+
+## 2026-09-21 — Final staging accepted and production activation prepared
+
+### Verified result
+
+- PR #40 was merged to `dev` at
+  `9e5c70e52e0f27435c0c5f32c5b48fa52bbff6c5`.
+- Jenkins `dev` build 5 completed successfully.
+- final staging frontend/admin returned HTTP 200 with valid TLS;
+- final staging API liveness/readiness returned HTTP 200 with valid TLS;
+- HAProxy staging frontend rules and API forwarded-host values were corrected;
+- the operator confirmed final Keycloak staging URI/origin entries.
+
+### Operator decisions
+
+- retain GoDaddy WordPress hosting as the recovery source without delaying the
+  immediate launch for a separate export;
+- use Soria SMTP temporarily in production;
+- complete the exhaustive WordPress redirect/SEO inventory after launch;
+- remove the insurer-artwork hotlinks and use existing accessible text cards.
+
+### Production activation implementation
+
+- enabled fail-closed `main` deployment stages for production API/PostgreSQL,
+  frontend and admin;
+- added an isolated, immutable production backup image and daily CronJob;
+- configured SSH transfer to the independent Hestia backup directory with
+  30-day retention;
+- added an immediate off-cluster backup plus disposable PostgreSQL restore test
+  before frontend/admin publication;
+- added a production frontend assembly script that replaces staging robots and
+  Apache policy and removes noindex without editing staging source files;
+- removed all six runtime WordPress insurer-image hotlinks;
+- set the approved temporary Soria SMTP non-secret production values;
+- recorded the accepted legacy redirect risk while retaining confirmed
+  high-value redirects and GoDaddy recovery hosting;
+- added a one-time production secret bootstrap that generates an independent
+  DB password, copies only approved SMTP/Harbor credentials from staging, never
+  prints values, and refuses destructive overwrite;
+- added production API environment/CORS checks, crawlability checks, canonical
+  www/legacy redirect verification, admin noindex and final endpoint checks.
+
+On a fresh production namespace, Jenkins runs the safe one-time secret
+bootstrap automatically. A partial pre-existing DB/API secret state fails
+closed. Production promotion still requires a green production-activation PR
+before merging the approved state to `main`.

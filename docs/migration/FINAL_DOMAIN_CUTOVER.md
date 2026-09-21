@@ -1,7 +1,7 @@
 # Final Domain Migration — drfarahvipurgentcare.com
 
 **Prepared:** 2026-09-20  
-**Status:** PRE-CUTOVER / DO NOT MERGE OR PROMOTE UNTIL OPERATOR PREFLIGHT IS COMPLETE
+**Status:** PRODUCTION ACTIVATION IN PROGRESS — staging accepted 2026-09-21
 
 ## Target environment map
 
@@ -42,9 +42,9 @@ Prepare or verify these records:
 - `www` → **CNAME @** (or equivalent apex alias/redirect strategy)
 - `staging` → **A 87.98.174.211**
 - `admin` → **A 87.98.174.211**
-- `admin.staging` → **A 87.98.174.211**
+- `admin-staging` → **A 87.98.174.211**
 - `api` → **A 51.75.57.153** (BM2 API HAProxy)
-- `api.staging` → **A 51.75.57.153**
+- `api-staging` → **A 51.75.57.153**
 
 These are the currently documented platform edge IPs; verify the live HAProxy
 addresses immediately before editing DNS.
@@ -118,7 +118,9 @@ by the project security requirements.
 
 ### Production Kubernetes prerequisites
 
-Verify live `drfarah` namespace and create/verify:
+Verify live `drfarah` namespace and create/verify (or allow the first `main`
+deployment to perform the safe one-time bootstrap when both DB/API secrets are
+absent):
 - `harbor-regcred`
 - `drfarah-db-secret`
 - `drfarah-api-secret`
@@ -144,17 +146,11 @@ the operator and clinic explicitly approve it.
 
 ### Production PostgreSQL backup / restore
 
-Production data protection is a launch requirement, not a post-cutover task.
-
-Before promotion to `main`:
-- choose a backup destination outside the production PVC/node;
-- define an automated schedule and retention period;
-- encrypt/protect backup credentials outside Git;
-- document restore commands;
-- perform and record at least one restore test to a disposable database.
-
-`kubernetes/drfarah/README.md` contains `BACKUP_READINESS_BLOCKER` until this
-is complete.
+Production data protection is implemented as a fail-closed `main` deployment
+gate. A daily CronJob writes encrypted-in-transit logical backups to the Hestia
+host outside the production PVC/node, retains 30 days, and the deployment
+restores the immediate off-cluster archive into disposable PostgreSQL before
+publishing the frontend/admin. See `kubernetes/drfarah/README.md`.
 
 ## Repository-owned migration work
 
@@ -173,24 +169,12 @@ The migration branch must prepare:
 9. production smoke checks that are read-only wherever possible;
 10. updated project handoff and environment documentation.
 
-## Legacy insurer artwork dependency
+## Insurer presentation at launch
 
-The current frontend still references six insurance images from the legacy
-WordPress host:
-
-- `/wp-content/uploads/2025/02/6.png`
-- `/wp-content/uploads/2025/02/14.png`
-- `/wp-content/uploads/2025/02/3.png`
-- `/wp-content/uploads/2025/02/21.png`
-- `/wp-content/uploads/2025/02/aetna.jpg`
-- `/wp-content/uploads/2025/02/22.png`
-
-This is safe only while the legacy WordPress origin still serves those files.
-After the apex domain points at the new Hestia site, those hotlinks are not a
-stable dependency. Copy the approved originals into `frontend/assets/`, keep
-their insurer identity/alt text accurate, and replace both `app.js` and
-`app-v5.js` references before production promotion. Jenkins deliberately
-blocks `main` while these legacy hotlinks remain.
+The six legacy WordPress image hotlinks were removed before production.
+Insurance plans are presented as the accessible, named text cards already in
+the HTML. Approved local artwork can replace those cards later without a
+runtime dependency on GoDaddy/WordPress.
 
 ## Legacy WordPress / SEO cutover
 
@@ -216,8 +200,11 @@ Known publicly indexed examples include:
 - `/blog/`
 - multiple PRP / urgent-care blog article slugs
 
-The complete redirect map remains a cutover blocker until the old sitemap/URL
-inventory is captured.
+The operator explicitly accepted launching with the confirmed high-value
+redirects while the complete old sitemap/URL inventory is finished after
+launch. GoDaddy hosting remains the recovery source and must not be deleted
+during stabilization. This accepted SEO/redirect risk is recorded in
+`frontend/.htaccess.production`.
 
 ## Pre-DNS validation with --resolve
 

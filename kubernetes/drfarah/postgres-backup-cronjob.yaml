@@ -1,0 +1,57 @@
+# Daily production PostgreSQL backup to Hestia, outside the Kubernetes PVC and
+# cluster nodes. Jenkins replaces the :prod image placeholder with the exact
+# immutable Git SHA and performs a restore test before frontend publication.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: drfarah-postgres-backup
+  namespace: drfarah
+  labels:
+    app: drfarah-postgres-backup
+spec:
+  schedule: "17 09 * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: drfarah-postgres-backup
+        spec:
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: harbor-regcred
+          containers:
+            - name: backup
+              image: harbor.proxbenovh.cloud/devops-project-harbor/drfarah-postgres-backup:prod
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: drfarah-db-secret
+              env:
+                - name: POSTGRES_HOST
+                  value: drfarah-postgres
+                - name: POSTGRES_PORT
+                  value: "5432"
+                - name: BACKUP_SSH_HOST
+                  value: "192.168.100.75"
+                - name: BACKUP_SSH_PORT
+                  value: "2275"
+                - name: BACKUP_SSH_USER
+                  value: benweb
+                - name: BACKUP_REMOTE_DIR
+                  value: /home/benweb/backups/drfarah-postgres
+              volumeMounts:
+                - name: backup-ssh
+                  mountPath: /run/secrets/backup-ssh
+                  readOnly: true
+          volumes:
+            - name: backup-ssh
+              secret:
+                secretName: drfarah-backup-ssh
+                defaultMode: 0400
