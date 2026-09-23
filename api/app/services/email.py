@@ -16,28 +16,22 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def _build_notification_body(booking: dict) -> tuple[str, str]:
-    """Build plain-text and HTML notification body for clinic review."""
-    subject = f"[Dr. Farah] New booking request — {booking['first_name']} {booking['last_name']}"
+def _build_notification_body(_booking: dict) -> tuple[str, str]:
+    """Build a privacy-preserving notification for clinic review.
 
-    body = f"""New appointment request received.
+    The booking payload is intentionally not interpolated into the message.
+    Appointment and patient details remain in the authenticated admin portal.
+    """
+    subject = "[Dr. Farah] New appointment request received"
 
-Patient: {booking['first_name']} {booking['last_name']}
-Service: {booking['service_type']}
-Visit:   {booking['visit_type']}
-Day:     {booking['preferred_day']}
-Time:    {booking['preferred_time']}
-Window:  {booking.get('time_window') or 'Any'}
-Reason:  {booking['reason_category']}
+    body = f"""A new appointment request has been received.
 
-Contact:
-  Email: {booking['email']}
-  Phone: {booking['phone']}
+For privacy, no patient or appointment details are included in this email.
 
-Status:  requested
+Review the request in the secure admin portal:
+{settings.ADMIN_PORTAL_URL}
 
 This is an automated notification — do not reply.
-Review the request and follow the clinic's standard confirmation process.
 """
 
     return subject, body
