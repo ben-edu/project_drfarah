@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     SMTP_TO: str = Field(default="")
     SMTP_USE_TLS: bool = Field(default=True)
     SMTP_TEST_MODE: bool = Field(default=True)
+    ADMIN_PORTAL_URL: str = Field(
+        default="https://admin-staging.drfarahvipurgentcare.com"
+    )
 
     # --- Keycloak / OIDC ---
     # Non-secret values; safe in ConfigMap.
