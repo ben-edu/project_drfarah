@@ -1,6 +1,6 @@
 # Non-secret configuration for the Dr. Farah PRODUCTION API.
-# Soria SMTP is an explicitly approved temporary production relay. Credentials
-# remain in drfarah-api-secret and must never be committed here.
+# Brevo's HTTPS API is the primary transactional email transport. The API key
+# and SMTP rollback credentials remain in drfarah-api-secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,9 +21,15 @@ data:
   KEYCLOAK_JWKS_URL: "https://keycloak.soria-academie.fr/realms/drfarah/protocol/openid-connect/certs"
   KEYCLOAK_AUDIENCE: "drfarah-admin"
   KEYCLOAK_VERIFY_AUD: "false"
-  SMTP_HOST: "mail.soria-academie.fr"
+  ADMIN_PORTAL_URL: "https://admin.drfarahvipurgentcare.com"
+  EMAIL_TRANSPORT: "brevo_api"
+  EMAIL_FROM_NAME: "Dr. Farah VIP Urgent Care"
+  EMAIL_TIMEOUT_SECONDS: "20"
+  EMAIL_MAX_ATTEMPTS: "3"
+  BREVO_API_URL: "https://api.brevo.com/v3/smtp/email"
+  SMTP_HOST: "smtp-relay.brevo.com"
   SMTP_PORT: "587"
-  SMTP_FROM: "contact@soria-academie.fr"
-  SMTP_TO: "appointment@soria-academie.fr"
+  SMTP_FROM: "notifications@drfarahvipurgentcare.com"
+  SMTP_TO: "eskandari_farah@yahoo.com,info@drfarahvipurgentcare.com"
   SMTP_USE_TLS: "true"
   SMTP_TEST_MODE: "false"

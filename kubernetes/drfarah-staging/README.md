@@ -49,7 +49,7 @@ Namespace and all resources are deployed and running:
 - `drfarah-staging-db-secret` — `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - `drfarah-staging-api-secret` — `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SMTP_*`
 - `harbor-regcred` — Docker registry pull secret (copied from `toilettage`)
-- SMTP credentials copied from toilettage SMTP pattern
+- Brevo SMTP credentials are stored only in the API Secret
 
 ## Image tagging
 

@@ -544,7 +544,7 @@ Do not create clinical tables or collect clinical data “for later.”
 | DB | PostgreSQL, dedicated database and credentials for `drfarah` | cluster / BM2 |
 | Admin frontend | Static SPA on the separate admin domain | Hestia / BM1 |
 | Admin auth | Keycloak realm `drfarah`, client `drfarah-admin`, Authorization Code + PKCE S256 | Keycloak / BM2 |
-| Email | SORIA SMTP for testing; clinic-approved sender for production | shared/external service |
+| Email | Brevo transactional SMTP with a domain-authenticated clinic sender | external service |
 | Container registry | `harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api` | Harbor / BM1 |
 | Ingress | Traefik and ClusterIP service only | K3s / BM2 |
 | Observability | Structured logs, health/readiness endpoints, and integration with the existing monitoring platform where available | BM2 |
