@@ -1,5 +1,6 @@
 # Non-secret configuration for the drfarah API — STAGING environment.
-# Secrets (database password, SMTP credentials) are in drfarah-staging-api-secret.
+# Secrets (database password, Brevo API key, SMTP rollback credentials) are
+# in drfarah-staging-api-secret.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -17,6 +18,11 @@ data:
   CORS_ORIGINS: "https://staging.drfarahvipurgentcare.com,https://admin-staging.drfarahvipurgentcare.com,https://staging.drfarah.proxbenovh.cloud,https://admin.drfarah.proxbenovh.cloud"
   TRUST_PROXY: "true"
   ADMIN_PORTAL_URL: "https://admin-staging.drfarahvipurgentcare.com"
+  EMAIL_TRANSPORT: "brevo_api"
+  EMAIL_FROM_NAME: "Dr. Farah VIP Urgent Care"
+  EMAIL_TIMEOUT_SECONDS: "20"
+  EMAIL_MAX_ATTEMPTS: "3"
+  BREVO_API_URL: "https://api.brevo.com/v3/smtp/email"
   SMTP_HOST: "smtp-relay.brevo.com"
   SMTP_PORT: "587"
   SMTP_FROM: "notifications@drfarahvipurgentcare.com"
