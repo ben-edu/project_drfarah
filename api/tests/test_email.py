@@ -26,7 +26,9 @@ def clean_smtp_env():
     os.environ["SMTP_USER"] = "test-login@smtp-brevo.com"
     os.environ["SMTP_PASSWORD"] = "test-password"
     os.environ["SMTP_FROM"] = "notifications@drfarahvipurgentcare.com"
-    os.environ["SMTP_TO"] = "clinic-inbox@example.com"
+    os.environ["SMTP_TO"] = (
+        "clinic-primary@example.com,clinic-secondary@example.com"
+    )
     os.environ["SMTP_USE_TLS"] = "true"
     os.environ["SMTP_TEST_MODE"] = "false"
     os.environ["ADMIN_PORTAL_URL"] = "https://admin-staging.drfarahvipurgentcare.com"
@@ -74,12 +76,14 @@ class TestEmailNotification:
             result = send_booking_notification(BOOKING_DATA)
 
             assert result is True
-            mock_smtp.assert_called_once_with("smtp-relay.brevo.com", 587, timeout=15)
-            mock_server.starttls.assert_called_once()
-            mock_server.login.assert_called_once_with(
+            assert mock_smtp.call_count == 2
+            mock_smtp.assert_any_call("smtp-relay.brevo.com", 587, timeout=15)
+            assert mock_server.starttls.call_count == 2
+            assert mock_server.login.call_count == 2
+            mock_server.login.assert_any_call(
                 "test-login@smtp-brevo.com", "test-password"
             )
-            mock_server.send_message.assert_called_once()
+            assert mock_server.send_message.call_count == 2
 
     def test_sender_address_is_correct(self, clean_smtp_env):
         from app.services.email import send_booking_notification
@@ -90,9 +94,30 @@ class TestEmailNotification:
 
             send_booking_notification(BOOKING_DATA)
 
-            sent_msg = mock_server.send_message.call_args[0][0]
-            assert sent_msg["From"] == "notifications@drfarahvipurgentcare.com"
-            assert sent_msg["To"] == "clinic-inbox@example.com"
+            sent_messages = [
+                call.args[0] for call in mock_server.send_message.call_args_list
+            ]
+            assert [message["To"] for message in sent_messages] == [
+                "clinic-primary@example.com",
+                "clinic-secondary@example.com",
+            ]
+            assert all(
+                message["From"] == "notifications@drfarahvipurgentcare.com"
+                for message in sent_messages
+            )
+
+    def test_recipient_list_trims_and_deduplicates(self, clean_smtp_env):
+        from app.services.email import settings
+
+        settings.SMTP_TO = (
+            " clinic-primary@example.com,clinic-secondary@example.com,"
+            "clinic-primary@example.com, "
+        )
+
+        assert settings.smtp_to_list == [
+            "clinic-primary@example.com",
+            "clinic-secondary@example.com",
+        ]
 
     def test_no_secrets_in_log_on_failure(self, clean_smtp_env, capsys):
         from app.services.email import send_booking_notification
@@ -157,3 +182,12 @@ class TestEmailNotification:
 
         result = send_booking_notification(BOOKING_DATA)
         assert result is False
+
+    def test_no_recipients_returns_false(self, clean_smtp_env):
+        from app.services.email import send_booking_notification, settings
+
+        settings.SMTP_TO = " , "
+
+        with patch("app.services.email.smtplib.SMTP") as mock_smtp:
+            assert send_booking_notification(BOOKING_DATA) is False
+            mock_smtp.assert_not_called()
