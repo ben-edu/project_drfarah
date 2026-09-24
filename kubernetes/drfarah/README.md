@@ -52,7 +52,7 @@ The production deployment requires:
 
 When both DB/API secrets are absent, Jenkins runs
 `scripts/bootstrap-production-secrets.sh` once: it generates an independent
-production DB password and copies only the approved Soria SMTP and Harbor
+production DB password and copies only the approved Brevo SMTP and Harbor
 credentials from staging without printing values. Existing DB/API secrets are
 preserved and validated. A partial state fails closed.
 
@@ -62,11 +62,13 @@ this with a dedicated restricted backup key after the immediate cutover.
 
 Real secret values must never be committed.
 
-## Approved temporary launch decisions
+## Transactional email
 
-The operator explicitly approved the Soria SMTP relay as the temporary
-production email service. Non-secret host/from/to values are in
-`configmap.yaml`; credentials stay in `drfarah-api-secret`.
+Brevo is the approved outbound transactional relay. Non-secret host/from/to
+values are in `configmap.yaml`; credentials stay in `drfarah-api-secret`.
+Multiple clinic recipients are comma-separated and receive separate messages.
+Email content contains no patient or appointment details and directs staff to
+the authenticated admin portal.
 
 The operator also accepted launching with the confirmed high-value legacy
 redirects while the complete WordPress URL inventory is finished after launch.
