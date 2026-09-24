@@ -85,10 +85,19 @@ def _send_email_message(
 
 
 def send_booking_notification(booking: dict) -> bool:
-    """Send a booking notification email to the clinic mailbox.
+    """Send a separate booking notification to each clinic mailbox.
 
-    Returns True if the email was sent (or test-logged), False on failure.
-    Does NOT raise exceptions — failures are logged, not propagated.
+    Separate messages keep recipient addresses private from one another and let
+    delivery continue when one mailbox fails. Returns True only when at least
+    one recipient exists and every delivery succeeds (or is test-logged).
     """
     subject, body = _build_notification_body(booking)
-    return _send_email_message(settings.SMTP_TO, subject, body)
+    recipients = settings.smtp_to_list
+    if not recipients:
+        logger.warning("No clinic notification recipients configured.")
+        return False
+
+    results = [
+        _send_email_message(recipient, subject, body) for recipient in recipients
+    ]
+    return all(results)
