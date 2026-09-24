@@ -2338,7 +2338,9 @@ PY
                     -U restore_test \
                     -d restore_test \
                   >/dev/null 2>&1 \
-                && docker exec "$RESTORE_CONTAINER" \
+                && docker exec \
+                  -e PGPASSWORD="$RESTORE_PASSWORD" \
+                  "$RESTORE_CONTAINER" \
                   psql \
                     -h 127.0.0.1 \
                     -U restore_test \
@@ -2363,7 +2365,9 @@ PY
 
             docker cp "$LOCAL_BACKUP" "$RESTORE_CONTAINER:/backup.dump"
 
-            docker exec "$RESTORE_CONTAINER" \
+            docker exec \
+              -e PGPASSWORD="$RESTORE_PASSWORD" \
+              "$RESTORE_CONTAINER" \
               pg_restore \
                 -h 127.0.0.1 \
                 --no-owner \
@@ -2373,7 +2377,9 @@ PY
                 /backup.dump
 
             RESTORED_TABLE_COUNT="$(
-              docker exec "$RESTORE_CONTAINER" \
+              docker exec \
+                -e PGPASSWORD="$RESTORE_PASSWORD" \
+                "$RESTORE_CONTAINER" \
                 psql \
                   -h 127.0.0.1 \
                   -U restore_test \
@@ -2387,7 +2393,9 @@ PY
             }
 
             RESTORED_REVISION="$(
-              docker exec "$RESTORE_CONTAINER" \
+              docker exec \
+                -e PGPASSWORD="$RESTORE_PASSWORD" \
+                "$RESTORE_CONTAINER" \
                 psql \
                   -h 127.0.0.1 \
                   -U restore_test \
