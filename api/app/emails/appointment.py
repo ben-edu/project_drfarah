@@ -109,9 +109,17 @@ def send_appointment_emails(appt, service_name: str) -> None:
     except Exception:
         logger.warning("Failed to send patient confirmation for appointment %s", appt.id)
 
-    # Clinic notification
-    try:
-        subj, text, html = build_clinic_notification(appt, service_name)
-        _send_email_message(settings.SMTP_TO, subj, text, html)
-    except Exception:
-        logger.warning("Failed to send clinic notification for appointment %s", appt.id)
+    # Clinic notifications are sent separately so recipient addresses stay
+    # private and a failed mailbox does not block the remaining recipients.
+    subj, text, html = build_clinic_notification(appt, service_name)
+    recipients = settings.smtp_to_list
+    if not recipients:
+        logger.warning("No clinic notification recipients configured.")
+
+    for recipient in recipients:
+        try:
+            _send_email_message(recipient, subj, text, html)
+        except Exception:
+            logger.warning(
+                "Failed to send clinic notification for appointment %s", appt.id
+            )
