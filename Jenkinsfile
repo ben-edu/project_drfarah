@@ -2328,10 +2328,24 @@ PY
               >/dev/null
 
             restore_ready=0
-            for attempt in $(seq 1 30); do
-              if docker exec "$RESTORE_CONTAINER" \
-                pg_isready -U restore_test -d restore_test \
-                >/dev/null 2>&1; then
+            for attempt in $(seq 1 60); do
+              if docker exec "$RESTORE_CONTAINER" sh -ec \
+                '[ "$(cat /proc/1/comm)" = "postgres" ]' \
+                >/dev/null 2>&1 \
+                && docker exec "$RESTORE_CONTAINER" \
+                  pg_isready \
+                    -h 127.0.0.1 \
+                    -U restore_test \
+                    -d restore_test \
+                  >/dev/null 2>&1 \
+                && docker exec "$RESTORE_CONTAINER" \
+                  psql \
+                    -h 127.0.0.1 \
+                    -U restore_test \
+                    -d restore_test \
+                    -Atqc 'SELECT 1;' \
+                  2>/dev/null \
+                  | grep -qx '1'; then
                 restore_ready=1
                 break
               fi
@@ -2339,7 +2353,10 @@ PY
             done
 
             [ "$restore_ready" -eq 1 ] || {
-              echo "FAIL: disposable restore database did not become ready."
+              echo "FAIL: disposable restore database did not become stably ready."
+              docker inspect \
+                --format 'Container state: {{json .State}}' \
+                "$RESTORE_CONTAINER" || true
               docker logs --tail 100 "$RESTORE_CONTAINER" || true
               exit 1
             }
@@ -2348,6 +2365,7 @@ PY
 
             docker exec "$RESTORE_CONTAINER" \
               pg_restore \
+                -h 127.0.0.1 \
                 --no-owner \
                 --no-privileges \
                 -U restore_test \
@@ -2357,6 +2375,7 @@ PY
             RESTORED_TABLE_COUNT="$(
               docker exec "$RESTORE_CONTAINER" \
                 psql \
+                  -h 127.0.0.1 \
                   -U restore_test \
                   -d restore_test \
                   -Atqc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
@@ -2370,6 +2389,7 @@ PY
             RESTORED_REVISION="$(
               docker exec "$RESTORE_CONTAINER" \
                 psql \
+                  -h 127.0.0.1 \
                   -U restore_test \
                   -d restore_test \
                   -Atqc 'SELECT version_num FROM alembic_version LIMIT 1;'
