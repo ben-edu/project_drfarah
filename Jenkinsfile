@@ -50,7 +50,7 @@ pipeline {
   // dev only:
   //   - Build and push API image to Harbor
   //   - Deploy API and PostgreSQL resources to staging
-  //   - Verify staging API and booking endpoint
+  //   - Verify staging API and appointment endpoint
   //   - Deploy frontend to staging
   //
   // main only:
@@ -1512,56 +1512,8 @@ pipeline {
           echo "Availability returned ${SLOT_COUNT} slot(s)."
           echo "First available slot: $SLOT_START"
 
-          echo ""
-          echo "=== Staging booking smoke test ==="
-
-          RESPONSE_FILE="$(mktemp)"
-
-          booking_status="$(
-            curl -sS \
-              -o "$RESPONSE_FILE" \
-              -w '%{http_code}' \
-              -X POST \
-              -H 'Content-Type: application/json' \
-              -d '{
-                "service_type": "CI smoke test",
-                "visit_type": "Clinic visit",
-                "preferred_day": "Monday",
-                "preferred_time": "9:00 AM",
-                "time_window": "Morning",
-                "first_name": "Jenkins",
-                "last_name": "SmokeTest",
-                "email": "smoke-test@example.com",
-                "phone": "+1-555-000-0000",
-                "reason_category": "General appointment request"
-              }' \
-              "${STAGING_API_URL}/api/v1/bookings" \
-              || true
-          )"
-
-          if [ -z "$booking_status" ]; then
-            booking_status="000"
-          fi
-
-          if [ "$booking_status" != "201" ]; then
-            echo "FAIL: booking smoke test returned HTTP $booking_status"
-            echo "Response body:"
-            cat "$RESPONSE_FILE"
-            rm -f "$RESPONSE_FILE"
-            exit 1
-          fi
-
-          echo "Booking endpoint returned HTTP 201."
-
-          grep -q '"id"' "$RESPONSE_FILE" || {
-            echo "FAIL: booking response does not contain an id."
-            cat "$RESPONSE_FILE"
-            rm -f "$RESPONSE_FILE"
-            exit 1
-          }
-
-          echo "Booking response contains an id."
-          rm -f "$RESPONSE_FILE"
+          # The deprecated /api/v1/bookings endpoint is covered by API tests.
+          # Do not POST it from CI because it sends an operational email by design.
 
           echo ""
           echo "=== Staging appointment smoke test ==="
