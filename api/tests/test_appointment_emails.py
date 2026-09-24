@@ -254,6 +254,103 @@ class TestSendAppointmentEmails:
 
 
 # ---------------------------------------------------------------------------
+# Patient status notification unit tests
+# ---------------------------------------------------------------------------
+
+class TestPatientStatusNotificationTemplate:
+    @pytest.mark.parametrize(
+        ("new_status", "expected_subject", "expected_outcome"),
+        [
+            (
+                "confirmed",
+                "Your appointment is confirmed",
+                "confirmed by the clinic",
+            ),
+            (
+                "cancelled",
+                "Your appointment has been cancelled",
+                "appointment has been cancelled",
+            ),
+        ],
+    )
+    def test_status_message_is_clear_and_privacy_safe(
+        self,
+        new_status,
+        expected_subject,
+        expected_outcome,
+    ):
+        from app.emails.appointment import build_patient_status_notification
+
+        subject, text, html = build_patient_status_notification(new_status)
+        combined = "\n".join((subject, text, html))
+
+        assert expected_subject in subject
+        assert expected_outcome in combined
+        assert "appointment details are not included" in combined
+        assert "310-467-0101" in combined
+        assert "911" in combined
+
+        for forbidden in (
+            "Jane",
+            "Doe",
+            "jane@example.com",
+            "+1-310-555-0189",
+            "General appointment request",
+            "Urgent care",
+            "August 04, 2026",
+            "10:00 AM",
+            "Reference 42",
+        ):
+            assert forbidden not in combined
+
+    def test_unsupported_status_is_rejected(self):
+        from app.emails.appointment import build_patient_status_notification
+
+        with pytest.raises(ValueError, match="confirmed or cancelled"):
+            build_patient_status_notification("completed")
+
+
+class TestSendPatientStatusNotification:
+    @pytest.mark.parametrize("new_status", ["confirmed", "cancelled"])
+    def test_sends_once_to_patient(self, new_status):
+        from app.emails import appointment as mod
+
+        appt = _make_appt(email="patient@test.com")
+
+        with patch.object(
+            mod,
+            "_send_email_message",
+            return_value=True,
+        ) as mock_send:
+            result = mod.send_patient_status_notification(appt, new_status)
+
+        assert result is True
+        mock_send.assert_called_once()
+        args = mock_send.call_args.args
+        assert args[0] == "patient@test.com"
+        assert new_status in args[1].lower()
+        assert len(args) == 4
+
+    def test_provider_rejection_returns_false(self):
+        from app.emails import appointment as mod
+
+        appt = _make_appt()
+        with patch.object(mod, "_send_email_message", return_value=False):
+            assert mod.send_patient_status_notification(appt, "confirmed") is False
+
+    def test_never_raises_on_provider_exception(self):
+        from app.emails import appointment as mod
+
+        appt = _make_appt()
+        with patch.object(
+            mod,
+            "_send_email_message",
+            side_effect=RuntimeError("provider unavailable"),
+        ):
+            assert mod.send_patient_status_notification(appt, "cancelled") is False
+
+
+# ---------------------------------------------------------------------------
 # Integration: email is triggered during appointment creation
 # ---------------------------------------------------------------------------
 
