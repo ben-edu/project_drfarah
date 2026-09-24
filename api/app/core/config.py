@@ -64,6 +64,12 @@ class Settings(BaseSettings):
         default="https://admin-staging.drfarahvipurgentcare.com"
     )
 
+    @property
+    def smtp_to_list(self) -> list[str]:
+        """Return unique clinic recipients from the comma-separated setting."""
+        recipients = (address.strip() for address in self.SMTP_TO.split(","))
+        return list(dict.fromkeys(address for address in recipients if address))
+
     # --- Keycloak / OIDC ---
     # Non-secret values; safe in ConfigMap.
     KEYCLOAK_ISSUER: str = Field(
