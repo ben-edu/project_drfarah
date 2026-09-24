@@ -396,11 +396,17 @@ def _smtp_env_for_multipart():
     import os
     saved = {}
     for k in (
+        "EMAIL_TRANSPORT", "EMAIL_FROM_NAME", "EMAIL_TIMEOUT_SECONDS",
+        "EMAIL_MAX_ATTEMPTS", "BREVO_API_URL", "BREVO_API_KEY",
         "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
         "SMTP_FROM", "SMTP_TO", "SMTP_USE_TLS", "SMTP_TEST_MODE",
         "ADMIN_PORTAL_URL",
     ):
         saved[k] = os.environ.get(k)
+    os.environ["EMAIL_TRANSPORT"] = "smtp"
+    os.environ["EMAIL_TIMEOUT_SECONDS"] = "20"
+    os.environ["EMAIL_MAX_ATTEMPTS"] = "3"
+    os.environ["BREVO_API_KEY"] = ""
     os.environ["SMTP_HOST"] = "smtp-relay.brevo.com"
     os.environ["SMTP_PORT"] = "587"
     os.environ["SMTP_USER"] = "test-login@smtp-brevo.com"
