@@ -46,6 +46,7 @@ class Settings(BaseSettings):
 
     # --- Trusted proxy ---
     # In production/staging, requests arrive through Traefik and HAProxy.
+    # Trust the X-Forwarded-* headers from the cluster network.
     TRUST_PROXY: bool = Field(default=False)
 
     # --- Transactional email ---
@@ -79,15 +80,18 @@ class Settings(BaseSettings):
         return list(dict.fromkeys(address for address in recipients if address))
 
     # --- Keycloak / OIDC ---
+    # Non-secret values; safe in ConfigMap.
     KEYCLOAK_ISSUER: str = Field(
         default="https://keycloak.soria-academie.fr/realms/drfarah"
     )
     KEYCLOAK_JWKS_URL: str = Field(
         default="https://keycloak.soria-academie.fr/realms/drfarah/protocol/openid-connect/certs"
     )
-    KEYCLOAK_AUDIENCE: str = Field(default="drfarah-admin")
+    KEYCLOAK_AUDIENCE: str = Field(
+        default="drfarah-admin"
+    )
     # Keycloak public clients often omit the standard "aud" claim and rely on
-    # "azp" (authorized party) instead. Start lenient and enforce azp match
+    # "azp" (authorized party) instead.  Start lenient and enforce azp match
     # only when this flag is explicitly turned on.
     KEYCLOAK_VERIFY_AUD: bool = Field(default=False)
 
