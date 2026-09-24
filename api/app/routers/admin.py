@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.auth import get_current_user, require_realm_role
 from app.core.database import get_db
+from app.emails.appointment import send_patient_status_notification
 from app.models.appointment import Appointment
 from app.models.patient_registration import PatientRegistration
 from app.schemas.admin import (
@@ -273,8 +274,10 @@ def patch_admin_appointment(
 ):
     """Update an appointment's status.
 
-    Requires clinic-staff (or clinic-admin, which inherits it).
-    Does NOT send patient notification emails in this step.
+    Requires clinic-staff (or clinic-admin, which inherits it). A real
+    transition to confirmed or cancelled triggers a privacy-safe patient
+    email after the status is committed. Email failure never rolls back the
+    status change.
     """
     appt = (
         db.query(Appointment)
@@ -285,16 +288,39 @@ def patch_admin_appointment(
     if appt is None:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
-    appt.status = body.status.value
+    previous_status = appt.status
+    new_status = body.status.value
+
+    appt.status = new_status
     appt.updated_at = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
     db.refresh(appt)
 
     logger.info(
-        "Admin status update: appointment %s -> %s by staff",
+        "Admin status update: appointment %s %s -> %s by staff",
         appointment_id,
-        body.status.value,
+        previous_status,
+        new_status,
     )
+
+    if previous_status != new_status and new_status in {"confirmed", "cancelled"}:
+        try:
+            accepted = send_patient_status_notification(appt, new_status)
+        except Exception:
+            # Defensive guard: the email orchestrator is designed never to
+            # raise, but a provider or future implementation must not turn a
+            # persisted status change into an API failure.
+            logger.exception(
+                "Unexpected patient status email failure for appointment %s",
+                appointment_id,
+            )
+        else:
+            if not accepted:
+                logger.warning(
+                    "Patient %s email was not accepted for appointment %s",
+                    new_status,
+                    appointment_id,
+                )
 
     return _admin_appointment_detail(appt)
 
