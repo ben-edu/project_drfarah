@@ -1,8 +1,9 @@
 """Privacy-preserving appointment email templates.
 
-Two generic emails per appointment:
+Privacy-safe transactional emails:
   1. Patient acknowledgement — confirms receipt without appointment details
   2. Clinic notification — directs staff to the authenticated admin portal
+  3. Patient status notification — confirms or cancels without appointment details
 
 When SMTP_TEST_MODE=true, emails are logged instead of sent.
 """
@@ -60,6 +61,57 @@ def build_patient_confirmation(appt, service_name: str) -> tuple[str, str, str]:
     return subject, text, html
 
 
+def build_patient_status_notification(status: str) -> tuple[str, str, str]:
+    """Build a privacy-safe confirmation or cancellation email.
+
+    Only the status outcome is included. Appointment, patient, service, and
+    scheduling details remain in the application database.
+
+    Returns (subject, text_body, html_body).
+    """
+    if status == "confirmed":
+        subject = "Your appointment is confirmed — Dr. Farah"
+        outcome = "Your appointment request has been confirmed by the clinic."
+        next_step = (
+            f"If you need to change or cancel it, call {CLINIC_PHONE}."
+        )
+    elif status == "cancelled":
+        subject = "Your appointment has been cancelled — Dr. Farah"
+        outcome = "Your appointment has been cancelled."
+        next_step = (
+            f"If this was unexpected or you want another appointment, "
+            f"call {CLINIC_PHONE}."
+        )
+    else:
+        raise ValueError(
+            "Patient status notifications support only confirmed or cancelled"
+        )
+
+    text = (
+        "Hello,\n\n"
+        f"{outcome}\n\n"
+        "For your privacy, appointment details are not included in this email.\n\n"
+        f"{next_step}\n\n"
+        "In an emergency, call 911.\n\n"
+        "— Dr. Farah VIP Urgent Care\n"
+    )
+
+    html = (
+        '<div style="max-width:600px;margin:0 auto;font-family:'
+        "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,"
+        'Arial,sans-serif;color:#1a1a2e;line-height:1.6;">\n'
+        "<p>Hello,</p>\n"
+        f"<p>{outcome}</p>\n"
+        "<p>For your privacy, appointment details are not included in this email.</p>\n"
+        f"<p>{next_step}</p>\n"
+        "<p>In an emergency, call 911.</p>\n"
+        "<p style='color:#6b7280;'>— Dr. Farah VIP Urgent Care</p>\n"
+        "</div>\n"
+    )
+
+    return subject, text, html
+
+
 def build_clinic_notification(appt, service_name: str) -> tuple[str, str, str]:
     """Build a generic clinic notification without patient details.
 
@@ -95,6 +147,35 @@ def build_clinic_notification(appt, service_name: str) -> tuple[str, str, str]:
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
+
+
+def send_patient_status_notification(appt, new_status: str) -> bool:
+    """Notify the patient of a confirmed or cancelled appointment.
+
+    Delivery is best-effort and this function never raises. A False result
+    means the status update remains valid but the message was not accepted.
+    """
+    try:
+        subject, text, html = build_patient_status_notification(new_status)
+        accepted = _send_email_message(appt.email, subject, text, html)
+    except Exception:
+        logger.exception(
+            "Failed to send %s notification for appointment %s",
+            new_status,
+            appt.id,
+        )
+        return False
+
+    if not accepted:
+        logger.warning(
+            "%s notification was not accepted for appointment %s",
+            new_status.capitalize(),
+            appt.id,
+        )
+        return False
+
+    return True
+
 
 def send_appointment_emails(appt, service_name: str) -> None:
     """Send confirmation to patient and notification to clinic.
