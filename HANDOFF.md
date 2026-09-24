@@ -68,11 +68,13 @@ The operator approved the following temporary launch decisions on 2026-09-21:
 
 1. Keep the existing GoDaddy WordPress hosting intact as the recovery source;
    a separate WordPress export is not required before this immediate launch.
-2. Use the Soria SMTP relay temporarily in production:
-   - host `mail.soria-academie.fr`;
+2. The temporary Soria outbound relay was superseded by Brevo on 2026-09-24:
+   - host `smtp-relay.brevo.com`;
    - port `587` with STARTTLS;
-   - sender `contact@soria-academie.fr`;
-   - clinic recipient `appointment@soria-academie.fr`.
+   - sender `notifications@drfarahvipurgentcare.com`;
+   - two clinic recipients, configured as a comma-separated `SMTP_TO` value;
+   - one separate message per clinic recipient;
+   - SMTP credentials remain in Kubernetes Secrets.
 3. Finish the complete historical WordPress URL/SEO inventory after launch.
    Confirmed high-value redirects ship now and the old hosting must remain
    available during stabilization.
@@ -80,8 +82,9 @@ The operator approved the following temporary launch decisions on 2026-09-21:
    accessible insurance text cards already present in the HTML; approved local
    artwork can be added later.
 
-GoDaddy/Microsoft 365 SMTP migration is a separate post-launch task. Do not
-change MX/SPF/DKIM/DMARC records as part of the website deployment.
+The Microsoft 365 mailbox remains the inbound service for the clinic domain.
+Brevo is only the website's outbound transactional relay; this change does not
+require replacing the Microsoft MX records.
 
 ## Production delivery now implemented
 
@@ -152,8 +155,9 @@ authoritative deployment path.
   stabilization window;
 - replace the shared Hestia deployment key used by the backup CronJob with a
   dedicated restricted backup-only key;
-- evaluate GoDaddy/Microsoft 365 SMTP AUTH and sender policy before replacing
-  Soria SMTP;
+- validate Brevo delivery to both clinic recipients with one controlled real
+  booking;
+- add a generic, non-clinical mobile notification channel after provider setup;
 - submit the final sitemap and review 404/5xx/auth/CORS logs;
 - remove temporary Keycloak/CORS/HAProxy compatibility entries only after
   stable verification;

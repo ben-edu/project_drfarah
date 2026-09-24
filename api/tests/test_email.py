@@ -16,18 +16,22 @@ def clean_smtp_env():
     for k in (
         "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
         "SMTP_FROM", "SMTP_TO", "SMTP_USE_TLS", "SMTP_TEST_MODE",
+        "ADMIN_PORTAL_URL",
     ):
         saved[k] = os.environ.get(k)
     for k in saved:
         os.environ.pop(k, None)
-    os.environ["SMTP_HOST"] = "mail.soria-academie.fr"
+    os.environ["SMTP_HOST"] = "smtp-relay.brevo.com"
     os.environ["SMTP_PORT"] = "587"
-    os.environ["SMTP_USER"] = "contact@soria-academie.fr"
+    os.environ["SMTP_USER"] = "test-login@smtp-brevo.com"
     os.environ["SMTP_PASSWORD"] = "test-password"
-    os.environ["SMTP_FROM"] = "contact@soria-academie.fr"
-    os.environ["SMTP_TO"] = "appointments@drfarah.proxbenovh.cloud"
+    os.environ["SMTP_FROM"] = "notifications@drfarahvipurgentcare.com"
+    os.environ["SMTP_TO"] = (
+        "clinic-primary@example.com,clinic-secondary@example.com"
+    )
     os.environ["SMTP_USE_TLS"] = "true"
     os.environ["SMTP_TEST_MODE"] = "false"
+    os.environ["ADMIN_PORTAL_URL"] = "https://admin-staging.drfarahvipurgentcare.com"
 
     from app.core.config import get_settings
     get_settings.cache_clear()
@@ -72,10 +76,14 @@ class TestEmailNotification:
             result = send_booking_notification(BOOKING_DATA)
 
             assert result is True
-            mock_smtp.assert_called_once_with("mail.soria-academie.fr", 587, timeout=15)
-            mock_server.starttls.assert_called_once()
-            mock_server.login.assert_called_once_with("contact@soria-academie.fr", "test-password")
-            mock_server.send_message.assert_called_once()
+            assert mock_smtp.call_count == 2
+            mock_smtp.assert_any_call("smtp-relay.brevo.com", 587, timeout=15)
+            assert mock_server.starttls.call_count == 2
+            assert mock_server.login.call_count == 2
+            mock_server.login.assert_any_call(
+                "test-login@smtp-brevo.com", "test-password"
+            )
+            assert mock_server.send_message.call_count == 2
 
     def test_sender_address_is_correct(self, clean_smtp_env):
         from app.services.email import send_booking_notification
@@ -86,9 +94,30 @@ class TestEmailNotification:
 
             send_booking_notification(BOOKING_DATA)
 
-            sent_msg = mock_server.send_message.call_args[0][0]
-            assert sent_msg["From"] == "contact@soria-academie.fr"
-            assert sent_msg["To"] == "appointments@drfarah.proxbenovh.cloud"
+            sent_messages = [
+                call.args[0] for call in mock_server.send_message.call_args_list
+            ]
+            assert [message["To"] for message in sent_messages] == [
+                "clinic-primary@example.com",
+                "clinic-secondary@example.com",
+            ]
+            assert all(
+                message["From"] == "notifications@drfarahvipurgentcare.com"
+                for message in sent_messages
+            )
+
+    def test_recipient_list_trims_and_deduplicates(self, clean_smtp_env):
+        from app.services.email import settings
+
+        settings.SMTP_TO = (
+            " clinic-primary@example.com,clinic-secondary@example.com,"
+            "clinic-primary@example.com, "
+        )
+
+        assert settings.smtp_to_list == [
+            "clinic-primary@example.com",
+            "clinic-secondary@example.com",
+        ]
 
     def test_no_secrets_in_log_on_failure(self, clean_smtp_env, capsys):
         from app.services.email import send_booking_notification
@@ -121,26 +150,24 @@ class TestEmailNotification:
             assert result is True
             mock_smtp.assert_not_called()
 
-    def test_subject_contains_patient_name(self, clean_smtp_env):
+    def test_subject_excludes_patient_name(self, clean_smtp_env):
         from app.services.email import _build_notification_body
 
         subject, body = _build_notification_body(BOOKING_DATA)
-        assert "Jane" in subject
-        assert "Doe" in subject
+        assert "Jane" not in subject
+        assert "Doe" not in subject
         assert "Dr. Farah" in subject
 
-    def test_body_does_not_contain_clinical_free_text(self, clean_smtp_env):
+    def test_body_excludes_all_booking_details(self, clean_smtp_env):
         from app.services.email import _build_notification_body
 
         subject, body = _build_notification_body(BOOKING_DATA)
-        # Body contains structured booking data only.
-        assert "Urgent or acute care" in body
-        assert "jane@example.com" in body
-        assert "+1-310-555-0189" in body
-        # No clinical free text fields exist.
-        assert "symptoms" not in body.lower()
-        assert "diagnosis" not in body.lower()
-        assert "medication" not in body.lower()
+        for sensitive_value in BOOKING_DATA.values():
+            if sensitive_value:
+                assert str(sensitive_value) not in subject
+                assert str(sensitive_value) not in body
+        assert "https://admin-staging.drfarahvipurgentcare.com" in body
+        assert "no patient or appointment details" in body.lower()
 
     def test_smtp_not_configured_returns_false(self):
         os.environ["SMTP_HOST"] = ""
@@ -155,3 +182,12 @@ class TestEmailNotification:
 
         result = send_booking_notification(BOOKING_DATA)
         assert result is False
+
+    def test_no_recipients_returns_false(self, clean_smtp_env):
+        from app.services.email import send_booking_notification, settings
+
+        settings.SMTP_TO = " , "
+
+        with patch("app.services.email.smtplib.SMTP") as mock_smtp:
+            assert send_booking_notification(BOOKING_DATA) is False
+            mock_smtp.assert_not_called()

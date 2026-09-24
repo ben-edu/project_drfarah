@@ -66,32 +66,38 @@ class TestPatientConfirmationTemplate:
         subject, text, html = build_patient_confirmation(appt, "Urgent or acute care")
         assert "Dr. Farah" in subject
 
-    def test_body_contains_service_name(self):
+    def test_body_excludes_service_name(self):
         from app.emails.appointment import build_patient_confirmation
         appt = _make_appt()
         subject, text, html = build_patient_confirmation(appt, "VIP or mobile visit")
-        assert "VIP or mobile visit" in text
-        assert "VIP or mobile visit" in html
+        assert "VIP or mobile visit" not in text
+        assert "VIP or mobile visit" not in html
 
-    def test_body_contains_patient_name(self):
+    def test_body_excludes_patient_name(self):
         from app.emails.appointment import build_patient_confirmation
         appt = _make_appt(first_name="Maria", last_name="Garcia")
         subject, text, html = build_patient_confirmation(appt, "Urgent care")
-        assert "Maria" in text
+        assert "Maria" not in text
+        assert "Garcia" not in text
+        assert "Maria" not in html
+        assert "Garcia" not in html
 
-    def test_body_contains_reference(self):
+    def test_body_excludes_reference(self):
         from app.emails.appointment import build_patient_confirmation
         appt = _make_appt(appt_id=42)
         subject, text, html = build_patient_confirmation(appt, "Urgent care")
-        assert "42" in text
+        assert "42" not in text
+        assert "42" not in html
 
-    def test_body_contains_pacific_time(self):
+    def test_body_excludes_appointment_time(self):
         from app.emails.appointment import build_patient_confirmation
         local = datetime.datetime(2026, 8, 4, 10, 0, tzinfo=CLINIC_TZ)
         appt = _make_appt(starts_at=local.astimezone(datetime.timezone.utc))
         subject, text, html = build_patient_confirmation(appt, "Urgent care")
-        assert "August 04, 2026" in text
-        assert "10:00 AM PT" in text
+        assert "August 04, 2026" not in text
+        assert "10:00 AM PT" not in text
+        assert "August 04, 2026" not in html
+        assert "10:00 AM PT" not in html
 
     def test_body_contains_emergency_line(self):
         from app.emails.appointment import build_patient_confirmation
@@ -105,12 +111,12 @@ class TestPatientConfirmationTemplate:
         subject, text, html = build_patient_confirmation(appt, "Urgent care")
         assert "310-467-0101" in text
 
-    def test_html_contains_table(self):
+    def test_html_contains_privacy_notice(self):
         from app.emails.appointment import build_patient_confirmation
         appt = _make_appt()
         subject, text, html = build_patient_confirmation(appt, "Urgent care")
-        assert "<table" in html
-        assert "</table>" in html
+        assert "appointment details are not included" in html
+        assert "<table" not in html
 
     def test_no_clinical_free_text(self):
         from app.emails.appointment import build_patient_confirmation
@@ -121,43 +127,50 @@ class TestPatientConfirmationTemplate:
 
 
 class TestClinicNotificationTemplate:
-    def test_subject_contains_patient_name(self):
+    def test_subject_excludes_patient_name(self):
         from app.emails.appointment import build_clinic_notification
         appt = _make_appt(first_name="Carlos", last_name="Lopez")
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "Carlos" in subject
-        assert "Lopez" in subject
+        assert "Carlos" not in subject
+        assert "Lopez" not in subject
 
-    def test_body_contains_patient_contact(self):
+    def test_body_excludes_patient_contact(self):
         from app.emails.appointment import build_clinic_notification
         appt = _make_appt(email="carlos@test.com", phone="+1-555-000-1111")
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "carlos@test.com" in text
-        assert "+1-555-000-1111" in text
+        assert "carlos@test.com" not in text
+        assert "+1-555-000-1111" not in text
+        assert "carlos@test.com" not in html
+        assert "+1-555-000-1111" not in html
 
-    def test_body_contains_reason_category(self):
+    def test_body_excludes_reason_category(self):
         from app.emails.appointment import build_clinic_notification
         appt = _make_appt(reason="General appointment request")
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "General appointment request" in text
+        assert "General appointment request" not in text
+        assert "General appointment request" not in html
 
-    def test_body_contains_reference(self):
+    def test_body_excludes_reference(self):
         from app.emails.appointment import build_clinic_notification
-        appt = _make_appt(appt_id=7)
+        appt = _make_appt(appt_id=987654321)
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "7" in text
+        assert "987654321" not in text
+        assert "987654321" not in html
 
-    def test_body_contains_status(self):
+    def test_body_excludes_status(self):
         from app.emails.appointment import build_clinic_notification
         appt = _make_appt(status="pending")
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "pending" in text
+        assert "pending" not in text
+        assert "pending" not in html
 
-    def test_html_contains_table(self):
+    def test_body_links_to_secure_admin_portal(self):
         from app.emails.appointment import build_clinic_notification
         appt = _make_appt()
         subject, text, html = build_clinic_notification(appt, "Urgent care")
-        assert "<table" in html
+        assert settings.ADMIN_PORTAL_URL in text
+        assert settings.ADMIN_PORTAL_URL in html
+        assert "<table" not in html
 
 
 # ---------------------------------------------------------------------------
@@ -165,55 +178,79 @@ class TestClinicNotificationTemplate:
 # ---------------------------------------------------------------------------
 
 class TestSendAppointmentEmails:
-    def test_calls_send_for_patient_and_clinic(self):
+    def test_calls_send_for_patient_and_each_clinic_recipient(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt(email="patient@test.com")
+        monkeypatch.setattr(
+            mod.settings,
+            "SMTP_TO",
+            "clinic-primary@example.com,clinic-secondary@example.com",
+        )
 
         with patch.object(mod, "_send_email_message") as mock_send:
             mock_send.return_value = True
             mod.send_appointment_emails(appt, "Urgent care")
 
-            assert mock_send.call_count == 2
+            assert mock_send.call_count == 3
             # First call: patient confirmation (4 args: to, subj, text, html)
             patient_args = mock_send.call_args_list[0][0]
             assert patient_args[0] == "patient@test.com"
             assert len(patient_args) == 4  # text + html both passed
-            # Second call: clinic notification — must go to SMTP_TO, not SMTP_FROM
-            clinic_args = mock_send.call_args_list[1][0]
-            assert clinic_args[0] == settings.SMTP_TO
-            assert len(clinic_args) == 4  # text + html both passed
+            clinic_recipients = [
+                call.args[0] for call in mock_send.call_args_list[1:]
+            ]
+            assert clinic_recipients == [
+                "clinic-primary@example.com",
+                "clinic-secondary@example.com",
+            ]
+            assert all(len(call.args) == 4 for call in mock_send.call_args_list[1:])
 
-    def test_patient_failure_does_not_block_clinic(self):
+    def test_patient_failure_does_not_block_clinic(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt()
+        monkeypatch.setattr(
+            mod.settings,
+            "SMTP_TO",
+            "clinic-primary@example.com,clinic-secondary@example.com",
+        )
 
         with patch.object(mod, "_send_email_message") as mock_send:
-            # First call (patient) raises, second (clinic) succeeds.
-            mock_send.side_effect = [RuntimeError("boom"), True]
+            # Patient raises; both clinic deliveries still run.
+            mock_send.side_effect = [RuntimeError("boom"), True, True]
             # Should not raise.
             mod.send_appointment_emails(appt, "Urgent care")
-            assert mock_send.call_count == 2
+            assert mock_send.call_count == 3
 
-    def test_clinic_failure_does_not_block_patient(self):
+    def test_one_clinic_failure_does_not_block_other_recipient(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt()
+        monkeypatch.setattr(
+            mod.settings,
+            "SMTP_TO",
+            "clinic-primary@example.com,clinic-secondary@example.com",
+        )
 
         with patch.object(mod, "_send_email_message") as mock_send:
-            # First call (patient) succeeds, second (clinic) raises.
-            mock_send.side_effect = [True, RuntimeError("boom")]
+            # Patient succeeds; first clinic fails; second clinic still runs.
+            mock_send.side_effect = [True, RuntimeError("boom"), True]
             # Should not raise.
             mod.send_appointment_emails(appt, "Urgent care")
-            assert mock_send.call_count == 2
+            assert mock_send.call_count == 3
 
-    def test_never_raises_even_on_total_failure(self):
+    def test_never_raises_even_on_total_failure(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt()
+        monkeypatch.setattr(
+            mod.settings,
+            "SMTP_TO",
+            "clinic-primary@example.com,clinic-secondary@example.com",
+        )
 
         with patch.object(mod, "_send_email_message") as mock_send:
             mock_send.side_effect = RuntimeError("total failure")
             # Must not raise.
             mod.send_appointment_emails(appt, "Urgent care")
-            assert mock_send.call_count == 2
+            assert mock_send.call_count == 3
 
 
 # ---------------------------------------------------------------------------
@@ -361,16 +398,20 @@ def _smtp_env_for_multipart():
     for k in (
         "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
         "SMTP_FROM", "SMTP_TO", "SMTP_USE_TLS", "SMTP_TEST_MODE",
+        "ADMIN_PORTAL_URL",
     ):
         saved[k] = os.environ.get(k)
-    os.environ["SMTP_HOST"] = "mail.soria-academie.fr"
+    os.environ["SMTP_HOST"] = "smtp-relay.brevo.com"
     os.environ["SMTP_PORT"] = "587"
-    os.environ["SMTP_USER"] = "contact@soria-academie.fr"
+    os.environ["SMTP_USER"] = "test-login@smtp-brevo.com"
     os.environ["SMTP_PASSWORD"] = "test-password"
-    os.environ["SMTP_FROM"] = "contact@soria-academie.fr"
-    os.environ["SMTP_TO"] = "appointments@drfarah.proxbenovh.cloud"
+    os.environ["SMTP_FROM"] = "notifications@drfarahvipurgentcare.com"
+    os.environ["SMTP_TO"] = (
+        "clinic-primary@example.com,clinic-secondary@example.com"
+    )
     os.environ["SMTP_USE_TLS"] = "true"
     os.environ["SMTP_TEST_MODE"] = "false"
+    os.environ["ADMIN_PORTAL_URL"] = "https://admin-staging.drfarahvipurgentcare.com"
 
     from app.core.config import get_settings
     get_settings.cache_clear()
@@ -460,6 +501,20 @@ class TestSendEmailMessageMultipart:
             result = send_booking_notification(booking)
             assert result is True
 
-            sent_msg = mock_server.send_message.call_args[0][0]
-            assert sent_msg.get_content_type() == "text/plain"
-            assert "Jane" in sent_msg.get_content()
+            sent_messages = [
+                call.args[0] for call in mock_server.send_message.call_args_list
+            ]
+            assert [message["To"] for message in sent_messages] == [
+                "clinic-primary@example.com",
+                "clinic-secondary@example.com",
+            ]
+            assert all(
+                message.get_content_type() == "text/plain"
+                for message in sent_messages
+            )
+            assert all("Jane" not in message.get_content() for message in sent_messages)
+            assert all(
+                "https://admin-staging.drfarahvipurgentcare.com"
+                in message.get_content()
+                for message in sent_messages
+            )
