@@ -25,6 +25,6 @@ data:
   SMTP_HOST: "smtp-relay.brevo.com"
   SMTP_PORT: "587"
   SMTP_FROM: "notifications@drfarahvipurgentcare.com"
-  SMTP_TO: "appointment@soria-academie.fr"
+  SMTP_TO: "eskandari_farah@yahoo.com,info@drfarahvipurgentcare.com"
   SMTP_USE_TLS: "true"
   SMTP_TEST_MODE: "false"
