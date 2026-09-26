@@ -2127,19 +2127,42 @@ PY
           echo ""
           echo "=== Production API readiness ==="
 
-          ready_status="$(
-            curl -sS \
-              -o "$READY_RESPONSE" \
-              -w '%{http_code}' \
-              "${PRODUCTION_API_URL}/api/v1/health/ready" \
-              || true
-          )"
+          ready_status="000"
+          readiness_ok=0
 
-          [ "$ready_status" = "200" ] || {
+          for attempt in $(seq 1 12); do
+            : > "$READY_RESPONSE"
+
+            ready_status="$(curl -sS --connect-timeout 5 --max-time 20 -o "$READY_RESPONSE" -w '%{http_code}' "${PRODUCTION_API_URL}/api/v1/health/ready" || true)"
+            [ -n "$ready_status" ] || ready_status="000"
+
+            if [ "$ready_status" = "200" ]; then
+              readiness_ok=1
+              echo "Readiness passed on attempt $attempt."
+              break
+            fi
+
+            echo "  readiness attempt $attempt/12 -> HTTP $ready_status"
+            case "$ready_status" in
+              000|502|503|504)
+                if [ "$attempt" -lt 12 ]; then
+                  sleep 5
+                fi
+                ;;
+              *)
+                echo "Non-retryable production readiness response."
+                break
+                ;;
+            esac
+          done
+
+          if [ "$readiness_ok" -ne 1 ]; then
             echo "FAIL: production readiness returned HTTP $ready_status"
             cat "$READY_RESPONSE"
+            kubectl -n "$PRODUCTION_NAMESPACE" get pods -o wide || true
+            kubectl -n "$PRODUCTION_NAMESPACE" logs deployment/drfarah-api --tail=120 || true
             exit 1
-          }
+          fi
 
           python3 - "$READY_RESPONSE" <<'PY'
 import json
