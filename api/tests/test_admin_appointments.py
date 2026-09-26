@@ -548,19 +548,72 @@ class TestPatchAppointment:
         )
         assert resp.status_code == 403
 
-    def test_no_emails_sent_on_status_change(self, admin_client, monkeypatch):
-        """Admin status changes must NOT trigger patient emails."""
+    @pytest.mark.parametrize("target_status", ["confirmed", "cancelled"])
+    def test_patient_email_sent_for_notifiable_transition(
+        self,
+        admin_client,
+        monkeypatch,
+        target_status,
+    ):
         db = admin_client._test_db
         appt = _seed_appointment(db, status="pending")
+        calls = []
 
-        # Guard: if anything tries to call send_appointment_emails, fail.
-        called = []
-
-        def _fake_send(*args, **kwargs):
-            called.append(True)
+        def _fake_send(sent_appt, new_status):
+            calls.append((sent_appt.id, new_status))
+            return True
 
         monkeypatch.setattr(
-            "app.emails.appointment.send_appointment_emails", _fake_send
+            "app.routers.admin.send_patient_status_notification",
+            _fake_send,
+        )
+
+        headers = _auth_headers(admin_client, roles=["clinic-staff"])
+        resp = admin_client.patch(
+            f"/api/v1/admin/appointments/{appt.id}",
+            json={"status": target_status},
+            headers=headers,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == target_status
+        assert calls == [(appt.id, target_status)]
+
+    @pytest.mark.parametrize("target_status", ["pending", "completed", "no_show"])
+    def test_patient_email_not_sent_for_other_statuses(
+        self,
+        admin_client,
+        monkeypatch,
+        target_status,
+    ):
+        db = admin_client._test_db
+        appt = _seed_appointment(db, status="confirmed")
+        calls = []
+
+        monkeypatch.setattr(
+            "app.routers.admin.send_patient_status_notification",
+            lambda *args, **kwargs: calls.append((args, kwargs)),
+        )
+
+        headers = _auth_headers(admin_client, roles=["clinic-staff"])
+        resp = admin_client.patch(
+            f"/api/v1/admin/appointments/{appt.id}",
+            json={"status": target_status},
+            headers=headers,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == target_status
+        assert calls == []
+
+    def test_no_duplicate_email_for_same_status(self, admin_client, monkeypatch):
+        db = admin_client._test_db
+        appt = _seed_appointment(db, status="confirmed")
+        calls = []
+
+        monkeypatch.setattr(
+            "app.routers.admin.send_patient_status_notification",
+            lambda *args, **kwargs: calls.append((args, kwargs)),
         )
 
         headers = _auth_headers(admin_client, roles=["clinic-staff"])
@@ -569,7 +622,38 @@ class TestPatchAppointment:
             json={"status": "confirmed"},
             headers=headers,
         )
+
         assert resp.status_code == 200
-        assert len(called) == 0, (
-            "send_appointment_emails was called — admin PATCH must NOT send emails"
+        assert calls == []
+
+    def test_email_failure_does_not_rollback_status(
+        self,
+        admin_client,
+        monkeypatch,
+    ):
+        db = admin_client._test_db
+        appt = _seed_appointment(db, status="pending")
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("email provider unavailable")
+
+        monkeypatch.setattr(
+            "app.routers.admin.send_patient_status_notification",
+            _raise,
         )
+
+        headers = _auth_headers(admin_client, roles=["clinic-staff"])
+        resp = admin_client.patch(
+            f"/api/v1/admin/appointments/{appt.id}",
+            json={"status": "cancelled"},
+            headers=headers,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelled"
+
+        from app.models.appointment import Appointment
+
+        db.expire_all()
+        updated = db.query(Appointment).filter(Appointment.id == appt.id).first()
+        assert updated.status == "cancelled"

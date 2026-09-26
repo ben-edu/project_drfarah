@@ -50,7 +50,7 @@ pipeline {
   // dev only:
   //   - Build and push API image to Harbor
   //   - Deploy API and PostgreSQL resources to staging
-  //   - Verify staging API and booking endpoint
+  //   - Verify staging API and appointment endpoint
   //   - Deploy frontend to staging
   //
   // main only:
@@ -1355,31 +1355,101 @@ HESTIA_PREFLIGHT
           sh '''
             set -eu
 
-            echo "=== CI cleanup ==="
+            echo "=== Waiting for public staging readiness ==="
 
-            CLEANUP_RESPONSE="$(mktemp)"
+            public_ready_status="000"
 
-            set +x
-            cleanup_status="$(
-              curl -sS \
-                -o "$CLEANUP_RESPONSE" \
-                -w '%{http_code}' \
-                -X POST \
-                -H "Authorization: Bearer ${CLEANUP_TOKEN}" \
-                "${STAGING_API_URL}/api/v1/internal/cleanup-ci" \
-                || true
-            )"
-            set -x
+            for attempt in $(seq 1 18); do
+              public_ready_status="$(
+                curl -sS \
+                  --connect-timeout 5 \
+                  --max-time 10 \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "${STAGING_API_URL}/api/v1/health/ready" \
+                  || true
+              )"
 
-            if [ "$cleanup_status" != "200" ]; then
-              echo "FAIL: CI cleanup returned HTTP $cleanup_status"
-              cat "$CLEANUP_RESPONSE"
-              rm -f "$CLEANUP_RESPONSE"
+              if [ -z "$public_ready_status" ]; then
+                public_ready_status="000"
+              fi
+
+              if [ "$public_ready_status" = "200" ]; then
+                echo "Public staging readiness passed on attempt $attempt."
+                break
+              fi
+
+              echo "  readiness attempt $attempt/18 -> HTTP $public_ready_status"
+              sleep 5
+            done
+
+            if [ "$public_ready_status" != "200" ]; then
+              echo "FAIL: public staging readiness returned HTTP $public_ready_status"
               exit 1
             fi
 
-            echo "CI cleanup returned HTTP 200."
-            rm -f "$CLEANUP_RESPONSE"
+            echo ""
+            echo "=== CI cleanup ==="
+
+            CLEANUP_RESPONSE="$(mktemp)"
+            cleanup_status="000"
+            cleanup_ok=0
+
+            cleanup_temp() {
+              rm -f "$CLEANUP_RESPONSE"
+            }
+            trap cleanup_temp EXIT HUP INT TERM
+
+            for attempt in $(seq 1 6); do
+              : > "$CLEANUP_RESPONSE"
+
+              set +x
+              cleanup_status="$(
+                curl -sS \
+                  --connect-timeout 5 \
+                  --max-time 20 \
+                  -o "$CLEANUP_RESPONSE" \
+                  -w '%{http_code}' \
+                  -X POST \
+                  -H "Authorization: Bearer ${CLEANUP_TOKEN}" \
+                  "${STAGING_API_URL}/api/v1/internal/cleanup-ci" \
+                  || true
+              )"
+              set -x
+
+              if [ -z "$cleanup_status" ]; then
+                cleanup_status="000"
+              fi
+
+              if [ "$cleanup_status" = "200" ]; then
+                cleanup_ok=1
+                echo "CI cleanup returned HTTP 200 on attempt $attempt."
+                break
+              fi
+
+              echo "  cleanup attempt $attempt/6 -> HTTP $cleanup_status"
+
+              case "$cleanup_status" in
+                000|502|503|504)
+                  if [ "$attempt" -lt 6 ]; then
+                    sleep 5
+                  fi
+                  ;;
+                *)
+                  echo "Non-retryable cleanup response."
+                  break
+                  ;;
+              esac
+            done
+
+            if [ "$cleanup_ok" -ne 1 ]; then
+              echo "FAIL: CI cleanup returned HTTP $cleanup_status"
+              cat "$CLEANUP_RESPONSE"
+              exit 1
+            fi
+
+            cleanup_temp
+            trap - EXIT HUP INT TERM
           '''
         }
 
@@ -1520,56 +1590,8 @@ HESTIA_PREFLIGHT
           echo "Availability returned ${SLOT_COUNT} slot(s)."
           echo "First available slot: $SLOT_START"
 
-          echo ""
-          echo "=== Staging booking smoke test ==="
-
-          RESPONSE_FILE="$(mktemp)"
-
-          booking_status="$(
-            curl -sS \
-              -o "$RESPONSE_FILE" \
-              -w '%{http_code}' \
-              -X POST \
-              -H 'Content-Type: application/json' \
-              -d '{
-                "service_type": "CI smoke test",
-                "visit_type": "Clinic visit",
-                "preferred_day": "Monday",
-                "preferred_time": "9:00 AM",
-                "time_window": "Morning",
-                "first_name": "Jenkins",
-                "last_name": "SmokeTest",
-                "email": "smoke-test@example.com",
-                "phone": "+1-555-000-0000",
-                "reason_category": "General appointment request"
-              }' \
-              "${STAGING_API_URL}/api/v1/bookings" \
-              || true
-          )"
-
-          if [ -z "$booking_status" ]; then
-            booking_status="000"
-          fi
-
-          if [ "$booking_status" != "201" ]; then
-            echo "FAIL: booking smoke test returned HTTP $booking_status"
-            echo "Response body:"
-            cat "$RESPONSE_FILE"
-            rm -f "$RESPONSE_FILE"
-            exit 1
-          fi
-
-          echo "Booking endpoint returned HTTP 201."
-
-          grep -q '"id"' "$RESPONSE_FILE" || {
-            echo "FAIL: booking response does not contain an id."
-            cat "$RESPONSE_FILE"
-            rm -f "$RESPONSE_FILE"
-            exit 1
-          }
-
-          echo "Booking response contains an id."
-          rm -f "$RESPONSE_FILE"
+          # The deprecated /api/v1/bookings endpoint is covered by API tests.
+          # Do not POST it from CI because it sends an operational email by design.
 
           echo ""
           echo "=== Staging appointment smoke test ==="
