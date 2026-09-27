@@ -16,8 +16,8 @@ Google Maps. Cookie banner is necessary-only with a working acknowledge button.
 ## API wiring (book.html + booking.js)
 booking.js derives API_BASE from hostname (staging/prod), calls
 GET /services, GET /availability, POST /appointments (handles 201/409/422).
-Times shown in America/Los_Angeles. Contact form has no backend yet; it
-validates and directs urgent matters to the phone.
+Times shown in America/Los_Angeles. Until a validated ContactRequest backend
+exists, the contact page offers only working phone and online-booking actions.
 
 ## Extensionless URLs
 Links use /services etc. Verified working on staging: nginx proxies extensionless

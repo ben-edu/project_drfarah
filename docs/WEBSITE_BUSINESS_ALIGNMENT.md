@@ -21,7 +21,7 @@ This iteration aligns the public website with Dr. Farah's requested changes and 
 - Booking reason categories and first-party acquisition-context support are added without collecting a clinical narrative for marketing attribution.
 - Browser-generated acquisition markers are constrained to the real `appointments.source` VARCHAR(32) database boundary, and the API validation now matches that boundary.
 - Primary navigation is normalized across the static pages at runtime during this incremental rollout.
-- The existing general contact form no longer displays a false success message: until a real ContactRequest backend exists, it clearly states that the message was not transmitted and directs the user to phone/booking.
+- Until a real ContactRequest backend exists, the public contact page does not present a message form. It directs users to working phone and online-booking paths instead.
 
 ## Deliberately not implemented yet
 
