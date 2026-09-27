@@ -280,35 +280,3 @@
     }
   }
 })();
-
-// Contact form: never pretend to transmit until a ContactRequest API exists.
-(function () {
-  'use strict';
-  var f = document.getElementById('contactForm');
-  if (!f) return;
-  var msg = document.getElementById('contactMsg');
-  f.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = document.getElementById('cname');
-    var email = document.getElementById('cemail');
-    var cat = document.getElementById('ccat');
-    var body = document.getElementById('cmsg');
-    var consent = document.getElementById('cconsent');
-    var ok = true;
-    [name, email, cat, body].forEach(function (el) {
-      if (!el.value.trim()) { el.style.borderColor = 'var(--gold)'; ok = false; }
-      else el.style.borderColor = '';
-    });
-    if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-      email.style.borderColor = 'var(--gold)'; ok = false;
-    }
-    if (!consent.checked) ok = false;
-    if (!ok) {
-      msg.className = 'form__msg is-err';
-      msg.textContent = 'Please complete the required fields and agree to the privacy policy.';
-      return;
-    }
-    msg.className = 'form__msg is-err';
-    msg.textContent = 'Online general messaging is not enabled yet. Your message was not sent. Please call 310-467-0101, or use online booking for an appointment.';
-  });
-})();
