@@ -5,7 +5,7 @@
 For a change limited to public page HTML, CSS, approved image/font files,
 production redirects, robots, or sitemap:
 
-1. Create a `static/*` branch from current `main`.
+1. Create a `fix/static-*` branch from current `main`.
 2. Make and review the change. Let Jenkins finish the branch build before
    opening the PR, so an old branch check cannot be left pending if Jenkins
    disables the branch job after discovering the PR.
@@ -42,7 +42,7 @@ changed. Production's eight legacy redirects are checked for a direct HTTPS
 
 A Markdown-only change (`docs/**/*.md` or a root `*.md`) is classified `docs`:
 repository checks run, but no application test or deployment is repeated.
-Use a `docs/*` branch from `main` for one PR if it is independent of pending
+Use a `fix/docs-*` branch from `main` for one PR if it is independent of pending
 development work.
 
 Unknown history, a missing previous successful SHA, an unrecognized path,

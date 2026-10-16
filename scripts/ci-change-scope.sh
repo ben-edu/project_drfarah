@@ -20,12 +20,12 @@ case "${BRANCH_NAME:-}" in
     fi
     ;;
   *)
-    # static/* and docs/* branches start at main and can use one PR to main.
+    # fix/static-* and fix/docs-* branches start at main for one PR to main.
     # Other branches continue to compare with dev. PR targets take precedence.
     target="${CHANGE_TARGET:-}"
     if [ -z "$target" ]; then
       case "${BRANCH_NAME:-}" in
-        static/*|docs/*) target=main ;;
+        fix/static-*|fix/docs-*) target=main ;;
         *) target=dev ;;
       esac
     fi
