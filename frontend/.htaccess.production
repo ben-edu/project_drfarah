@@ -28,16 +28,16 @@ ErrorDocument 404 /404.html
   RewriteRule ^ https://drfarahvipurgentcare.com%{REQUEST_URI} [R=301,L]
 
   # Clear legacy page and trailing-slash aliases.
-  RewriteRule ^booking/?$ /book [R=301,L,NC]
-  RewriteRule ^services/$ /services [R=301,L,NC]
+  RewriteRule ^booking/?$ https://drfarahvipurgentcare.com/book [R=301,L,NC]
+  RewriteRule ^services/$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
 
   # Confirmed legacy WordPress structural redirects.
-  RewriteRule ^about-us/?$ /about [R=301,L,NC]
-  RewriteRule ^contact-us/?$ /contact [R=301,L,NC]
-  RewriteRule ^prp-prf-exosomes-center/?$ /prp-treatments [R=301,L,NC]
-  RewriteRule ^urgent-care-near-you/?$ /services [R=301,L,NC]
-  RewriteRule ^vip-urgent-care/?$ /services [R=301,L,NC]
-  RewriteRule ^faq/?$ /services [R=301,L,NC]
+  RewriteRule ^about-us/?$ https://drfarahvipurgentcare.com/about [R=301,L,NC]
+  RewriteRule ^contact-us/?$ https://drfarahvipurgentcare.com/contact [R=301,L,NC]
+  RewriteRule ^prp-prf-exosomes-center/?$ https://drfarahvipurgentcare.com/prp-treatments [R=301,L,NC]
+  RewriteRule ^urgent-care-near-you/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
+  RewriteRule ^vip-urgent-care/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
+  RewriteRule ^faq/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
 
   # Existing image-runtime behavior retained until the critical-image cleanup is
   # replaced by direct static assets.
