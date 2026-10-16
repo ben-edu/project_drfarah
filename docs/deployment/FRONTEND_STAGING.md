@@ -12,6 +12,14 @@
 | `dev` | final staging | Jenkins deploys |
 | `main` | production | Jenkins deploys only after production gates are cleared |
 
+For a small static website edit, the shorter `static/*` → PR to `main` path
+is available. It skips the `dev` deployment and repeats none of the API,
+PostgreSQL, backup-image, or restore work when the change classifier confirms
+that only approved frontend files changed since the last successful production
+build. Production preflight, frontend assembly, publication, redirect checks,
+and live smoke checks still run. See [Fast releases](FAST_RELEASES.md) for the
+exact eligible paths and procedure.
+
 ## Final staging targets
 
 | Component | Host / target |
