@@ -86,6 +86,12 @@ pipeline {
       }
     }
 
+    stage('Change scope — self-test') {
+      steps {
+        sh 'sh scripts/test-ci-change-scope.sh'
+      }
+    }
+
     stage('Build metadata') {
       steps {
         sh '''
