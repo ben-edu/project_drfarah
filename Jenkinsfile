@@ -71,6 +71,27 @@ pipeline {
       }
     }
 
+    stage('Classify change scope') {
+      steps {
+        script {
+          env.CI_CHANGE_SCOPE = sh(
+            script: 'sh scripts/ci-change-scope.sh',
+            returnStdout: true
+          ).trim()
+          if (!['full', 'static', 'docs'].contains(env.CI_CHANGE_SCOPE)) {
+            error "Invalid CI change scope: ${env.CI_CHANGE_SCOPE}"
+          }
+          echo "CI change scope: ${env.CI_CHANGE_SCOPE}"
+        }
+      }
+    }
+
+    stage('Change scope — self-test') {
+      steps {
+        sh 'sh scripts/test-ci-change-scope.sh'
+      }
+    }
+
     stage('Build metadata') {
       steps {
         sh '''
@@ -310,6 +331,9 @@ pipeline {
     }
 
     stage('API — tests') {
+      when {
+        expression { env.CI_CHANGE_SCOPE == 'full' }
+      }
       steps {
         dir('api') {
           sh '''
@@ -351,6 +375,9 @@ pipeline {
     }
 
     stage('API — PostgreSQL integration tests') {
+      when {
+        expression { env.CI_CHANGE_SCOPE == 'full' }
+      }
       steps {
         dir('api') {
           sh '''
@@ -439,6 +466,9 @@ pipeline {
     }
 
     stage('API — Docker build validation') {
+      when {
+        expression { env.CI_CHANGE_SCOPE == 'full' }
+      }
       steps {
         dir('api') {
           sh '''
@@ -641,6 +671,9 @@ pipeline {
     }
 
     stage('Production backup image — validation') {
+      when {
+        expression { env.CI_CHANGE_SCOPE == 'full' }
+      }
       steps {
         sh '''
           set -eu
@@ -681,6 +714,9 @@ pipeline {
     }
 
     stage('Frontend — validation') {
+      when {
+        expression { env.CI_CHANGE_SCOPE != 'docs' }
+      }
       steps {
         sh '''
           set -eu
@@ -908,7 +944,10 @@ pipeline {
 
     stage('Production — preflight') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE != 'docs' }
+        }
       }
 
       steps {
@@ -1129,9 +1168,12 @@ HESTIA_PREFLIGHT
 
     stage('API — build and push to Harbor') {
       when {
-        anyOf {
-          branch 'dev'
-          branch 'main'
+        allOf {
+          anyOf {
+            branch 'dev'
+            branch 'main'
+          }
+          expression { env.CI_CHANGE_SCOPE == 'full' }
         }
       }
 
@@ -1238,7 +1280,10 @@ HESTIA_PREFLIGHT
 
     stage('API — deploy staging manifests') {
       when {
-        branch 'dev'
+        allOf {
+          branch 'dev'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -1341,7 +1386,10 @@ HESTIA_PREFLIGHT
 
     stage('API — staging health check') {
       when {
-        branch 'dev'
+        allOf {
+          branch 'dev'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -1701,7 +1749,10 @@ print(json.dumps({
 
     stage('Frontend — deploy staging') {
       when {
-        branch 'dev'
+        allOf {
+          branch 'dev'
+          expression { env.CI_CHANGE_SCOPE != 'docs' }
+        }
       }
 
       steps {
@@ -1852,7 +1903,10 @@ print(json.dumps({
 
     stage('Admin SPA — deploy staging') {
       when {
-        branch 'dev'
+        allOf {
+          branch 'dev'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -1940,7 +1994,10 @@ print(json.dumps({
 
     stage('Production — deploy API and PostgreSQL') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -2066,7 +2123,10 @@ print(json.dumps({
 
     stage('Production — verify API') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -2254,7 +2314,10 @@ PY
 
     stage('Production — backup and restore test') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE == 'full' }
+        }
       }
 
       steps {
@@ -2465,7 +2528,10 @@ PY
 
     stage('Production — deploy public frontend') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE != 'docs' }
+        }
       }
 
       steps {
@@ -2598,6 +2664,31 @@ PY
               exit 1
             }
 
+            # These redirects are installed only on production. Check the first
+            # Location header so a hidden http -> https hop cannot pass.
+            for mapping in \
+              'booking/|book' \
+              'services/|services' \
+              'about-us/|about' \
+              'contact-us/|contact' \
+              'prp-prf-exosomes-center/|prp-treatments' \
+              'urgent-care-near-you/|services' \
+              'vip-urgent-care/|services' \
+              'faq/|services'; do
+              source_path="${mapping%%|*}"
+              target_path="${mapping#*|}"
+              headers="$(curl -fsS -D - -o /dev/null \
+                "https://${PRODUCTION_FRONTEND_HOST}/${source_path}")"
+              response_code="$(printf '%s\n' "$headers" | awk '$1 ~ /^HTTP/ {code=$2} END {print code}')"
+              location="$(printf '%s\n' "$headers" | tr -d '\\r' | awk 'tolower($1)=="location:" {print $2; exit}')"
+              expected="https://${PRODUCTION_FRONTEND_HOST}/${target_path}"
+              if [ "$response_code" != '301' ] || [ "$location" != "$expected" ]; then
+                echo "FAIL: ${source_path} -> ${response_code} ${location} (expected 301 ${expected})"
+                exit 1
+              fi
+              echo "OK    ${source_path} -> ${expected}"
+            done
+
             cleanup_production_frontend
             trap - EXIT HUP INT TERM
             echo "Production frontend deployment passed."
@@ -2608,7 +2699,10 @@ PY
 
     stage('Production — deploy admin SPA') {
       when {
-        branch 'main'
+        allOf {
+          branch 'main'
+          expression { env.CI_CHANGE_SCOPE != 'docs' }
+        }
       }
 
       steps {
