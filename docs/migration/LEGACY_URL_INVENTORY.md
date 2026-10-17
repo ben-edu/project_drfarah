@@ -1,23 +1,44 @@
-# Legacy WordPress URL inventory — partial, 2026-10-08
+# Legacy WordPress URL inventory — partial, updated 2026-10-17
 
 ## Sources and limits
 
-- The previous WordPress [blog index](https://drfarahvipurgentcare.com/blog/) remains in a search snapshot crawled before cutover; it lists the 20 article paths below. Opening those links through the search service on 2026-10-08 returned 404. The index itself is a historical snapshot, not a live WordPress sitemap.
-- Additional old URLs are visible in search results. This is **not** a complete historical crawl. Do not call the migration inventory complete until the retained WordPress site/export and Google Search Console data have been compared.
-- The production Apache policy is `frontend/.htaccess.production`. Its six existing structural redirects remain in force. The two extra mappings in this PR cover clear same-intent routes only.
+- The previous WordPress [blog index](https://drfarahvipurgentcare.com/blog/) remains in a pre-cutover search snapshot. The original 20 article paths below came from that snapshot. Search results from October 2026 exposed 20 more article paths; search indexes can be stale and are **not** a WordPress export.
+- This document now lists 46 distinct article paths (the original 20, the 20 newly found paths, and six previously noted search-visible paths), plus two archive paths and eight structural redirects. A further article title has no verified URL.
+- This is **not** a complete historical crawl. The retained WordPress post list
+  has not been inspected, so these search results cannot prove that every old
+  article has been identified. Search Console data may help discover missed
+  URLs, but is not needed to decide the content policy below.
+- On 2026-10-17, direct production HTTP checks returned `301` with an immediate `https://drfarahvipurgentcare.com/...` Location for all eight redirects in `frontend/.htaccess.production`. **All 46 known article paths and both archive paths returned `404`**. Unknown historical paths use the site's default 404 unless a specific replacement is later approved.
+
+## Content ownership decision — 2026-10-17
+
+The site owner decided to retire the old WordPress articles. Public content is
+maintained only in the Dr. Farah GitHub repository. Do not import, rewrite or
+republish a WordPress-only article as part of this migration. Do not redirect
+retired articles to a loosely related service page or the homepage.
+
+All 46 known article paths and both archives return genuine `404` on the new
+site. That is an appropriate response for removed content with no equivalent
+replacement; an explicit `410` rule is not required. This removes the articles
+from the live website without access to the old WordPress installation. The
+retained WordPress database has **not** been inspected or purged. Physical
+deletion there remains a separate access-dependent request, not a prerequisite
+for the live site. Preserve the rollback backup; do not remove shared media or
+WordPress pages as part of an article-only purge.
 
 ## Unambiguous page mappings
 
 | Old path | New path | Decision |
 | --- | --- | --- |
-| `/booking` and `/booking/` | `/book` | Add 301; new booking page is the replacement flow. |
-| `/services/` | `/services` | Add 301 to the canonical extensionless services URL; match only the trailing-slash path to avoid a redirect loop. |
+| `/booking` and `/booking/` | `/book` | Live 301; new booking page is the replacement flow. |
+| `/services/` | `/services` | Live 301 to the canonical extensionless URL; match only the trailing-slash path to avoid a redirect loop. |
 
-Existing source-controlled 301s: `/about-us/` → `/about`, `/contact-us/` → `/contact`, `/prp-prf-exosomes-center/` → `/prp-treatments`, `/urgent-care-near-you/` → `/services`, `/vip-urgent-care/` → `/services`, `/faq/` → `/services`. Their live HTTP responses still need verification.
+The other six live 301s are `/about-us/` → `/about`, `/contact-us/` → `/contact`, `/prp-prf-exosomes-center/` → `/prp-treatments`, `/urgent-care-near-you/` → `/services`, `/vip-urgent-care/` → `/services`, and `/faq/` → `/services`. The check above verified their first response and direct HTTPS Location.
 
-## Blog articles needing a content decision
+## Retired WordPress articles found in the old blog index
 
-Each path below appeared on the old blog index. The 2026-10-08 fetch returned 404. Do not redirect these to a broad service or home page without confirming that the destination contains the corresponding content. Keep their status under review while clinical claims and original copy are checked.
+Each path below appeared on the old blog index and returned 404 in the complete
+2026-10-17 live check. These articles are retired by the content decision above.
 
 - `/what-to-expect-your-regenerative-treatment-journey-at-dr-farahs-la-clinic/`
 - `/how-prp-and-prf-and-exosomes-work/`
@@ -40,12 +61,68 @@ Each path below appeared on the old blog index. The 2026-10-08 fetch returned 40
 - `/urgent-care-for-allergies-la/`
 - `/urgent-care-for-minor-burns-and-wound-care-in-los-angeles/`
 
-Other search-visible old routes to investigate: `/blog/`, `/category/blog/`, `/guide-to-urgent-care-visits/`, `/private-urgent-care-appointments/`, `/urgent-care-vs-emergency-room/`, `/urgent-care-for-cough-los-angeles/`, `/concierge-urgent-care-clinic/`, `/walk-in-clinic-vs-appointment-your-options-at-dr-farahs-la-urgent-care/`. The archive/category paths have no current equivalent and must not be sent to the homepage by a blanket rule.
+## Additional article paths found in 2026 search snapshots
+
+These 20 exact paths were visible as old-site results or as a link from an old
+article. They are retired WordPress-only content, **not** approved redirect
+targets. Every path below returned 404 on 2026-10-17.
+
+Urgent care, wounds and infections:
+
+- `/why-physician-led-urgent-care-feels-better/`
+- `/when-do-you-need-stitches-for-a-cut/`
+- `/when-do-stitches-need-removal/`
+- `/how-to-treat-bronchitis/`
+- `/same-day-laceration-repair-when-to-go/`
+- `/same-day-stitches-appointment/`
+- `/allergic-reaction-treatment-options/`
+- `/doctor-for-bladder-infection/`
+- `/minor-injury-urgent-care-treatment/`
+- `/bronchitis-treatment-without-er-visits/`
+- `/rapid-asthma-flare-treatment/`
+- `/medical-glue-vs-stitches/`
+
+IV care and dehydration:
+
+- `/iv-hydration-vs-oral-rehydration/`
+- `/how-to-treat-dehydration/`
+- `/how-nad-iv-therapy-works/`
+- `/myers-cocktail-iv-review/`
+- `/best-treatments-for-dehydration-recovery/`
+
+Weight management:
+
+- `/is-semaglutide-safe-for-obesity/`
+- `/who-qualifies-for-tirzepatide-treatment/`
+- `/how-tirzepatide-supports-metabolic-health/`
+
+The archived blog index also mentions an article titled “Semaglutide vs
+Tirzepatide: Which Fits Best?”, but its exact URL has not been verified and is
+**not** counted among the paths above. It is covered by the same retirement
+decision.
+
+## Other previously found paths
+
+- Articles: `/guide-to-urgent-care-visits/`, `/private-urgent-care-appointments/`, `/urgent-care-vs-emergency-room/`, `/urgent-care-for-cough-los-angeles/`, `/concierge-urgent-care-clinic/`, `/walk-in-clinic-vs-appointment-your-options-at-dr-farahs-la-urgent-care/`.
+- Archives: `/blog/` and `/category/blog/` (both live 404 on 2026-10-17).
+
+The archives have no current equivalent and must not be sent to the homepage by
+a blanket rule. The six article paths above are retired too.
 
 ## To complete the migration
 
-1. Export the old WordPress published URL list or XML sitemap from the retained GoDaddy installation, plus Search Console indexed/traffic URLs. Compare and de-duplicate against this partial list, including query-string and pagination variants.
-2. For each article, choose one of: preserve a clinically reviewed article at its old slug; consolidate into a truly equivalent new page with a 301; or retire it with a real 404/410. The clinic must review current medical and service claims before republishing old copy.
-3. After branch CI and staging review, verify production HTTP status and `Location` for the redirects, representative unmapped articles, canonical tags, `/robots.txt`, and `/sitemap.xml`. Keep staging noindexed and do not publish by hand outside Jenkins.
+1. Keep the eight verified structural 301s and the default genuine 404 for
+   retired articles and archives. Do not blanket-redirect unknown URLs.
+2. If physical deletion from the retained WordPress installation is still
+   required, obtain authorized access independently of the current domain,
+   list `post` records in every status, compare with these 46 known paths,
+   remove only confirmed WordPress-only posts, and verify the final count.
+   Do not delete `page` records, shared media or the rollback backup. This
+   operation cannot be completed from the GitHub repository or current DNS.
+3. Google Search Console review and any requests to hide still-visible old
+   search results are handled by Dr. Farah. The current site's 404/301 behavior
+   is ready for that review. The historical list may be incomplete because no
+   WordPress export was available.
+4. Keep staging noindexed and deploy repository changes only through Jenkins.
 
 Google Search Central guidance: [site moves](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes), [crawl errors](https://developers.google.com/search/docs/crawling-indexing/troubleshoot-crawling-errors).

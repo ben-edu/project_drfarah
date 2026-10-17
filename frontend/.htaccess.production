@@ -10,11 +10,11 @@ ErrorDocument 404 /404.html
 # it must not be deleted during the stabilization window.
 
 <IfModule mod_headers.c>
-  # HTML should revalidate; versioned/static assets may be cached by browsers.
-  <FilesMatch "\.html$">
+  # Unversioned HTML/CSS/JS should revalidate; images and fonts may be cached.
+  <FilesMatch "\.(?:html|css|js)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
-  <FilesMatch "\.(?:css|js|svg|webp|jpg|jpeg|png|gif|ico|woff2?)$">
+  <FilesMatch "\.(?:svg|webp|jpg|jpeg|png|gif|ico|woff2?)$">
     Header set Cache-Control "public, max-age=86400"
   </FilesMatch>
 </IfModule>
@@ -38,14 +38,6 @@ ErrorDocument 404 /404.html
   RewriteRule ^urgent-care-near-you/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
   RewriteRule ^vip-urgent-care/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
   RewriteRule ^faq/?$ https://drfarahvipurgentcare.com/services [R=301,L,NC]
-
-  # Existing image-runtime behavior retained until the critical-image cleanup is
-  # replaced by direct static assets.
-  RewriteRule ^app\.js$ app-v5.js [L]
-  RewriteRule ^assets/hero-treatment\.jpg$ assets/critical-image-placeholder.svg [L]
-  RewriteRule ^assets/home-hero-doctor\.webp$ assets/critical-image-placeholder.svg [L]
-  RewriteCond %{HTTP_REFERER} /services(?:$|[/?#]) [NC]
-  RewriteRule ^assets/reception-vip\.jpg$ assets/critical-image-placeholder.svg [L]
 
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d

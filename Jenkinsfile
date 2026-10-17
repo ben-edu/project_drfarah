@@ -739,6 +739,18 @@ pipeline {
             echo "OK    $file"
           done
 
+          echo "=== WebP asset integrity ==="
+          python3 - <<'PY'
+from pathlib import Path
+
+for path in sorted(Path('frontend/assets').glob('*.webp')):
+    data = path.read_bytes()
+    if (len(data) < 20 or data[:4] != b'RIFF' or data[8:12] != b'WEBP'
+            or int.from_bytes(data[4:8], 'little') + 8 != len(data)):
+        raise SystemExit(f'FAIL: truncated or invalid WebP asset: {path}')
+    print(f'OK    {path}')
+PY
+
           echo ""
           echo "=== JavaScript syntax ==="
 
@@ -747,7 +759,6 @@ pipeline {
             -w /app \
             node:20-slim \
             node --check frontend/app.js && \
-            node --check frontend/app-v5.js && \
             node --check frontend/booking.js && \
             node --check frontend/registration.js && \
             node --check admin/app.js
@@ -903,10 +914,11 @@ pipeline {
             /booking.js
             /robots.txt
             /sitemap.xml
-            /assets/hero-treatment.jpg
-            /assets/consult-rejuvenation.jpg
-            /assets/mobile-visit.jpg
-            /assets/reception-vip.jpg
+            /assets/home-hero-doctor.webp
+            /assets/dr-farah-portrait.webp
+            /assets/service-iv-treatment.webp
+            /assets/dr-farah-clinic.webp
+            /assets/clinic-exterior.webp
             /assets/favicon.svg
           "
 
@@ -1866,10 +1878,11 @@ print(json.dumps({
               /booking.js
               /robots.txt
               /sitemap.xml
-              /assets/hero-treatment.jpg
-              /assets/consult-rejuvenation.jpg
-              /assets/mobile-visit.jpg
-              /assets/reception-vip.jpg
+              /assets/home-hero-doctor.webp
+              /assets/dr-farah-portrait.webp
+              /assets/service-iv-treatment.webp
+              /assets/dr-farah-clinic.webp
+              /assets/clinic-exterior.webp
               /assets/favicon.svg
           "
 

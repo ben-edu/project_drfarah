@@ -25,11 +25,12 @@ requests to Apache, which honors the shipped .htaccess (AllowOverride All).
 Keep .htaccess.
 
 ## Assets
-The frontend now includes approved Dr. Farah/clinic imagery plus a temporary
-runtime reconstruction workaround for several critical hero/physician images.
-Do not reintroduce retired generic AI placeholders. The Services hero is a known
-visual-quality backlog item (too soft/blurred) and should be corrected in a
-focused visual change.
+The frontend uses direct local WebP files for its approved Dr. Farah/clinic
+photographs. The previous Base64 runtime reconstruction, broken WebP files and
+unused generic AI placeholders have been retired. Keep the source image bytes
+intact and verify that every WebP decodes after upload. The IV photograph used
+in the Services and IV heroes is only 500×281; a sharper original from the
+clinic is still needed to improve its large-screen quality.
 
 The legacy WordPress insurer-image hotlinks were removed before production.
 The launch version uses the accessible named insurance text cards already in
@@ -37,9 +38,9 @@ the HTML. Approved local artwork can replace them later without adding a
 runtime dependency on the old host.
 
 ## Legal / noindex
-Legal pages are drafts pending clinic + counsel review. All pages carry
-noindex,nofollow,noarchive and robots.txt disallows all (temporary staging domain).
-Remove at final-domain migration (1E).
+Legal pages remain drafts pending clinic and counsel review. Source HTML carries
+`noindex,nofollow,noarchive` for staging; production assembly removes that tag
+and publishes the crawlable production robots policy. Staging remains noindexed.
 
 
 ## Final-domain migration
