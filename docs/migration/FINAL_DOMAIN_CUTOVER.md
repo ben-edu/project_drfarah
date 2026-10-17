@@ -209,9 +209,11 @@ during stabilization. This accepted SEO/redirect risk is recorded in
 Post-cutover content decision (2026-10-17): the owner retired all WordPress-only
 articles. The GitHub repository is the source for public content. Keep the eight
 verified structural 301 redirects, but do not import the old articles or redirect
-them to loosely related pages. Their missing URLs return 404 on the new site.
-Deleting the old WordPress post records is a separate pending operation requiring
-access to the retained installation; preserve the rollback backup. See
+them to loosely related pages. All 46 known article URLs and both archive URLs
+returned live 404s on 2026-10-17; the eight structural redirects returned direct
+301s. Deleting old WordPress post records is a separate access-dependent
+operation, not a prerequisite for the live site. Google account work is assigned
+to Dr. Farah. Preserve the rollback backup. See
 [Legacy URL inventory](LEGACY_URL_INVENTORY.md) for known paths and verification.
 
 ## Pre-DNS validation with --resolve

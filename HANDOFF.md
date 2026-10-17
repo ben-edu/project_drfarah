@@ -1,4 +1,33 @@
-# HANDOFF — 2026-09-27 — Production live; public-copy cleanup accepted on staging
+# HANDOFF — production live (historical 2026-09-27 snapshot)
+
+## Current addendum — 2026-10-17
+
+The dated production/staging SHA table and immediate delivery order below are
+historical. Before this change, `main` was at `e44ffc4d9140613092cdd5e096c47b1fafa0fa78`
+with Jenkins `main/13` successful; `dev` was at
+`f0e67ab692836401ef8695c5539883d24d918c94`, ten commits behind `main`.
+Current GitHub branch state and Jenkins deployment evidence still govern releases.
+
+The owner retired WordPress-only articles. All 46 known old article paths and
+both blog archives returned genuine 404 on production; eight structural paths
+returned direct HTTPS 301s. The current site needs no blanket redirect or
+WordPress login for this behavior. Physical removal of retained GoDaddy post
+records remains inaccessible without old-host administration and is separate
+from live site behavior. Google Search Console, Business Profile and Ads work
+is assigned to Dr. Farah.
+
+This change replaces truncated WebP assets with the exact decodable approved
+photos already used by the site, serves them directly in the HTML, and removes
+the JavaScript/Base64 image workaround. It must pass staging and production CI
+and a live visual/HTTP check before being described as deployed. A higher
+resolution clinic-approved IV photograph is still needed to sharpen the large
+Services/IV hero; upscaling the small source would not restore detail.
+
+The remaining clinic/operator inputs from the table below are not verified by
+this engineering change: final approved clinic facts and legal/review copy;
+whether a contact form is wanted; receipt and staff-MFA evidence; a dedicated
+backup-only key and a recovery decision for temporary infrastructure routes;
+any approved video material. Do not silently present these as completed.
 
 ## Authoritative project state
 
