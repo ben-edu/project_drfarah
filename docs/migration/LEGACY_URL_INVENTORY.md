@@ -8,7 +8,7 @@
   has not been inspected, so these search results cannot prove that every old
   article has been identified. Search Console data may help discover missed
   URLs, but is not needed to decide the content policy below.
-- On 2026-10-17, direct production HTTP checks returned `301` with an immediate `https://drfarahvipurgentcare.com/...` Location for all eight redirects in `frontend/.htaccess.production`. Representative old article paths and `/blog/` returned `404`; the full article list was not individually checked.
+- On 2026-10-17, direct production HTTP checks returned `301` with an immediate `https://drfarahvipurgentcare.com/...` Location for all eight redirects in `frontend/.htaccess.production`. **All 46 known article paths and both archive paths returned `404`**. Unknown historical paths use the site's default 404 unless a specific replacement is later approved.
 
 ## Content ownership decision — 2026-10-17
 
@@ -17,13 +17,14 @@ maintained only in the Dr. Farah GitHub repository. Do not import, rewrite or
 republish a WordPress-only article as part of this migration. Do not redirect
 retired articles to a loosely related service page or the homepage.
 
-The old article paths already checked on the new site return genuine `404`.
-That is an appropriate permanent response for removed content with no equivalent
-replacement; an explicit `410` rule is not required. The old WordPress **post
-records** must still be removed from the retained WordPress installation when
-administrative access is available. A `404` from the new site does not prove
-that the old installation's database has been cleaned. Keep the rollback backup
-and avoid deleting WordPress pages or shared media as part of a post-only purge.
+All 46 known article paths and both archives return genuine `404` on the new
+site. That is an appropriate response for removed content with no equivalent
+replacement; an explicit `410` rule is not required. This removes the articles
+from the live website without access to the old WordPress installation. The
+retained WordPress database has **not** been inspected or purged. Physical
+deletion there remains a separate access-dependent request, not a prerequisite
+for the live site. Preserve the rollback backup; do not remove shared media or
+WordPress pages as part of an article-only purge.
 
 ## Unambiguous page mappings
 
@@ -36,8 +37,8 @@ The other six live 301s are `/about-us/` → `/about`, `/contact-us/` → `/cont
 
 ## Retired WordPress articles found in the old blog index
 
-Each path below appeared on the old blog index. The 2026-10-08 fetch returned
-404. These articles are retired by the content ownership decision above.
+Each path below appeared on the old blog index and returned 404 in the complete
+2026-10-17 live check. These articles are retired by the content decision above.
 
 - `/what-to-expect-your-regenerative-treatment-journey-at-dr-farahs-la-clinic/`
 - `/how-prp-and-prf-and-exosomes-work/`
@@ -64,9 +65,7 @@ Each path below appeared on the old blog index. The 2026-10-08 fetch returned
 
 These 20 exact paths were visible as old-site results or as a link from an old
 article. They are retired WordPress-only content, **not** approved redirect
-targets. Live spot checks on `/why-physician-led-urgent-care-feels-better/`,
-`/how-tirzepatide-supports-metabolic-health/`, and
-`/bronchitis-treatment-without-er-visits/` returned 404 on 2026-10-17.
+targets. Every path below returned 404 on 2026-10-17.
 
 Urgent care, wounds and infections:
 
@@ -105,29 +104,25 @@ decision.
 ## Other previously found paths
 
 - Articles: `/guide-to-urgent-care-visits/`, `/private-urgent-care-appointments/`, `/urgent-care-vs-emergency-room/`, `/urgent-care-for-cough-los-angeles/`, `/concierge-urgent-care-clinic/`, `/walk-in-clinic-vs-appointment-your-options-at-dr-farahs-la-urgent-care/`.
-- Archives: `/blog/` (live 404 on 2026-10-17) and `/category/blog/` (not rechecked).
+- Archives: `/blog/` and `/category/blog/` (both live 404 on 2026-10-17).
 
 The archives have no current equivalent and must not be sent to the homepage by
 a blanket rule. The six article paths above are retired too.
 
 ## To complete the migration
 
-1. With authorized access to the retained WordPress installation, list its
-   `post` records across all statuses and verify which are WordPress-only.
-   Remove those posts there, including the Trash, and confirm the post count
-   afterwards. Do not purge `page` records, shared media, or the rollback
-   backup as part of this operation. The GitHub repository contains no copies
-   of the 46 listed article pages.
-2. Compare the WordPress post list with these 46 known paths and the unverified
-   article title to catch additional old posts. A WordPress export or Search
-   Console report can help with completeness, but traffic data is no longer
-   needed to decide whether to keep the old articles.
-3. Keep the eight verified structural 301s. On the new site, leave retired
-   article and archive URLs as genuine 404s unless the owner later approves a
-   specific new equivalent in the GitHub repository. Do not blanket-redirect
-   unknown old URLs.
-4. After WordPress deletion, verify a sample of retired article URLs, canonical
-   tags, `/robots.txt`, and `/sitemap.xml`. Keep staging noindexed and
-   deploy repository changes only through Jenkins.
+1. Keep the eight verified structural 301s and the default genuine 404 for
+   retired articles and archives. Do not blanket-redirect unknown URLs.
+2. If physical deletion from the retained WordPress installation is still
+   required, obtain authorized access independently of the current domain,
+   list `post` records in every status, compare with these 46 known paths,
+   remove only confirmed WordPress-only posts, and verify the final count.
+   Do not delete `page` records, shared media or the rollback backup. This
+   operation cannot be completed from the GitHub repository or current DNS.
+3. Google Search Console review and any requests to hide still-visible old
+   search results are handled by Dr. Farah. The current site's 404/301 behavior
+   is ready for that review. The historical list may be incomplete because no
+   WordPress export was available.
+4. Keep staging noindexed and deploy repository changes only through Jenkins.
 
 Google Search Central guidance: [site moves](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes), [crawl errors](https://developers.google.com/search/docs/crawling-indexing/troubleshoot-crawling-errors).

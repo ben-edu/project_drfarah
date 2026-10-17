@@ -19,7 +19,7 @@
    CSS-only background, so the portrait remains visible in normal and cached
    browser states. The background remains only as a fallback. */
 .hero__media{
-  background:url('assets/home-hero-doctor.webp') center 38% / cover no-repeat;
+  background:url('assets/home-hero-doctor.webp?v=20261017-1') center 38% / cover no-repeat;
 }
 .hero__media > img{
   opacity:1;

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var REVISION = '20260919-1';
+  var REVISION = '20261017-1';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
   // Keep the approved refinement layer, but load a new revision so staging
@@ -13,120 +13,6 @@
     refinement.setAttribute('data-drfarah-refinement', 'true');
     document.head.appendChild(refinement);
   }
-
-  // Critical imagery is stored as exact base64 text chunks because the previous
-  // binary upload path changed the image bytes. Never clear the existing image
-  // first: replace it only after the reconstructed WebP has decoded successfully.
-  var reliableImages = {
-    '/': [
-      {
-        selector: '.hero__media img',
-        parts: ['/image-data-v5/home-01.txt', '/image-data-v5/home-02.txt', '/image-data-v5/home-03.txt'],
-        alt: ''
-      },
-      {
-        selector: '.doctor__media img',
-        parts: ['/image-data-v5/portrait-01.txt', '/image-data-v5/portrait-02.txt', '/image-data-v5/portrait-03.txt'],
-        alt: 'Portrait of Dr. Farah'
-      }
-    ],
-    '/services': [
-      {
-        selector: '.services-hero__media img',
-        parts: ['/image-data-v5/iv-01.txt', '/image-data-v5/iv-02.txt'],
-        alt: 'Illustrative physician-supervised IV treatment in a clinic setting'
-      }
-    ],
-    '/about': [
-      {
-        selector: '.about-lead__media img',
-        parts: ['/image-data-v5/portrait-01.txt', '/image-data-v5/portrait-02.txt', '/image-data-v5/portrait-03.txt'],
-        alt: 'Portrait of Dr. Farah'
-      },
-      {
-        selector: '.doctor__media img',
-        parts: ['/image-data-v5/about-01.txt', '/image-data-v5/about-02.txt', '/image-data-v5/about-03.txt'],
-        alt: 'Dr. Farah in her clinic'
-      }
-    ],
-    '/iv-therapy': [
-      {
-        selector: '.specialty-hero__media img',
-        parts: ['/image-data-v5/iv-01.txt', '/image-data-v5/iv-02.txt'],
-        alt: 'Dr. Farah providing physician-supervised IV therapy in a clinic setting'
-      }
-    ]
-  };
-
-  function fetchChunk(url) {
-    return fetch(url + '?v=' + REVISION, { cache: 'no-store' }).then(function (response) {
-      if (!response.ok) throw new Error('Image chunk failed: ' + url + ' (' + response.status + ')');
-      return response.text();
-    });
-  }
-
-  function replaceAfterDecode(spec) {
-    var target = document.querySelector(spec.selector);
-    if (!target) return;
-
-    var originalSrc = target.getAttribute('src');
-    var originalAlt = target.getAttribute('alt') || '';
-
-    Promise.all(spec.parts.map(fetchChunk))
-      .then(function (parts) {
-        var base64 = parts.join('').replace(/\s+/g, '');
-        var dataUrl = 'data:image/webp;base64,' + base64;
-        var probe = new Image();
-
-        probe.onload = function () {
-          target.setAttribute('src', dataUrl);
-          target.setAttribute('alt', spec.alt || '');
-          target.setAttribute('decoding', 'async');
-          target.style.setProperty('display', 'block', 'important');
-          target.style.setProperty('visibility', 'visible', 'important');
-          target.style.setProperty('opacity', '1', 'important');
-          target.setAttribute('data-image-revision', REVISION);
-        };
-
-        probe.onerror = function () {
-          // Preserve the original HTML image on any reconstruction/decoding error.
-          target.setAttribute('src', originalSrc);
-          target.setAttribute('alt', originalAlt);
-          target.style.setProperty('display', 'block', 'important');
-          target.style.setProperty('visibility', 'visible', 'important');
-          target.style.setProperty('opacity', '1', 'important');
-          console.error('Dr. Farah image decode failed for ' + spec.selector);
-        };
-
-        probe.src = dataUrl;
-      })
-      .catch(function (error) {
-        target.setAttribute('src', originalSrc);
-        target.setAttribute('alt', originalAlt);
-        target.style.setProperty('display', 'block', 'important');
-        target.style.setProperty('visibility', 'visible', 'important');
-        target.style.setProperty('opacity', '1', 'important');
-        console.error(error);
-      });
-  }
-
-  (reliableImages[pagePath] || []).forEach(replaceAfterDecode);
-
-  // Replace only non-critical legacy placeholders. Critical homepage, Services,
-  // and About imagery is intentionally excluded from this map.
-  var realPhotoMap = {
-    'assets/mobile-visit.jpg': {
-      src: 'assets/clinic-exterior.webp',
-      alt: 'Exterior of Dr. Farah VIP Urgent Care at 9229 Wilshire Boulevard in Beverly Hills'
-    }
-  };
-
-  document.querySelectorAll('img[src]').forEach(function (img) {
-    var replacement = realPhotoMap[img.getAttribute('src')];
-    if (!replacement) return;
-    img.setAttribute('src', replacement.src);
-    img.setAttribute('alt', replacement.alt);
-  });
 
   // Compact jump navigation for the Services overview.
   var servicesHero = document.querySelector('.services-hero');
