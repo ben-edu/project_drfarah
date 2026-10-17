@@ -178,11 +178,11 @@ runtime dependency on GoDaddy/WordPress.
 
 ## Legacy WordPress / SEO cutover
 
-The existing `drfarahvipurgentcare.com` is currently a WordPress site and has
-indexed pages and blog content. The domain staying the same preserves domain
-authority, but paths that disappear can still lose search equity.
+The previous `drfarahvipurgentcare.com` site was WordPress and had indexed
+pages and blog content. The domain staying the same preserves domain authority,
+but paths that disappeared can still lose search equity.
 
-Before DNS cutover:
+Historical pre-cutover checklist:
 
 1. take a full backup/export of the old WordPress site and database;
 2. export or crawl the complete old URL list / XML sitemap;
@@ -205,6 +205,14 @@ redirects while the complete old sitemap/URL inventory is finished after
 launch. GoDaddy hosting remains the recovery source and must not be deleted
 during stabilization. This accepted SEO/redirect risk is recorded in
 `frontend/.htaccess.production`.
+
+Post-cutover content decision (2026-10-17): the owner retired all WordPress-only
+articles. The GitHub repository is the source for public content. Keep the eight
+verified structural 301 redirects, but do not import the old articles or redirect
+them to loosely related pages. Their missing URLs return 404 on the new site.
+Deleting the old WordPress post records is a separate pending operation requiring
+access to the retained installation; preserve the rollback backup. See
+[Legacy URL inventory](LEGACY_URL_INVENTORY.md) for known paths and verification.
 
 ## Pre-DNS validation with --resolve
 
