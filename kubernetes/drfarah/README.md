@@ -50,11 +50,13 @@ The production deployment requires:
 - `drfarah-db-secret`
 - `drfarah-api-secret`
 
-When both DB/API secrets are absent, Jenkins runs
-`scripts/bootstrap-production-secrets.sh` once: it generates an independent
-production DB password and copies only the approved Brevo SMTP and Harbor
-credentials from staging without printing values. Existing DB/API secrets are
-preserved and validated. A partial state fails closed.
+When both DB/API secrets are absent, Jenkins invokes
+`scripts/bootstrap-production-secrets.sh`. This now requires an independently
+provisioned production Brevo API key in `DRFARAH_PROD_BREVO_API_KEY` before
+creating any Secret. It generates an independent production DB password and
+copies the retained SMTP rollback and Harbor credentials from staging without
+printing values. Existing DB/API secrets are preserved. A partial state fails
+closed. See `docs/EMAIL_DELIVERY_RUNBOOK.md` for the existing-Secret check.
 
 Jenkins also creates/updates `drfarah-backup-ssh` from its existing
 `hestia-benweb-ssh` credential plus a freshly scanned Hestia host key. Replace
@@ -64,8 +66,9 @@ Real secret values must never be committed.
 
 ## Transactional email
 
-Brevo is the approved outbound transactional relay. Non-secret host/from/to
-values are in `configmap.yaml`; credentials stay in `drfarah-api-secret`.
+Brevo's HTTPS API is the active outbound transactional transport. The API key
+is in `drfarah-api-secret`; the SMTP credentials are retained for explicit
+rollback only. Non-secret settings are in `configmap.yaml`.
 Multiple clinic recipients are comma-separated and receive separate messages.
 Email content contains no patient or appointment details and directs staff to
 the authenticated admin portal.

@@ -185,7 +185,8 @@ Staging API: `https://api-staging.drfarahvipurgentcare.com`
 Production API: `https://api.drfarahvipurgentcare.com`
 
 Staging and production use separate namespaces, PostgreSQL instances and
-secrets. Brevo is the outbound transactional SMTP relay. Non-secret
-host/from/to values are in each environment's ConfigMap; credentials remain in
+secrets. Brevo's HTTPS API is the active outbound transactional transport.
+Non-secret sender/recipient and SMTP rollback settings are in each ConfigMap;
+credentials remain in
 the corresponding Kubernetes Secret. `SMTP_TO` accepts a comma-separated list,
 and clinic recipients receive separate privacy-preserving notifications.
