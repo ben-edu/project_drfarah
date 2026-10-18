@@ -1075,7 +1075,7 @@ PY
               require_secret_key drfarah-db-secret "$key"
             done
 
-            for key in DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD SMTP_USER SMTP_PASSWORD; do
+            for key in DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD BREVO_API_KEY SMTP_USER SMTP_PASSWORD; do
               require_secret_key drfarah-api-secret "$key"
             done
 
@@ -1339,6 +1339,11 @@ HESTIA_PREFLIGHT
             -f kubernetes/drfarah-staging/postgres-statefulset.yaml \
             -f kubernetes/drfarah-staging/api-service.yaml \
             -f kubernetes/drfarah-staging/api-ingress.yaml
+
+          sh scripts/check-email-config.sh \
+            "$STAGING_NAMESPACE" \
+            drfarah-staging-api-config \
+            drfarah-staging-api-secret
 
           echo ""
           echo "=== Rendering Deployment with immutable image ==="
@@ -1675,16 +1680,19 @@ print(json.dumps({
 }))
 ' > "$APPT_PAYLOAD"
 
+          set +x
           appt_status="$(
             curl -sS \
               -o "$APPT_RESPONSE" \
               -w '%{http_code}' \
               -X POST \
               -H 'Content-Type: application/json' \
+              -H "X-CI-Token: $CLEANUP_TOKEN" \
               --data-binary "@$APPT_PAYLOAD" \
               "${STAGING_API_URL}/api/v1/appointments" \
               || true
           )"
+          set -x
 
           rm -f "$APPT_PAYLOAD"
           if [ "$appt_status" = "201" ]; then
@@ -2073,6 +2081,11 @@ print(json.dumps({
             -f kubernetes/drfarah/postgres-statefulset.yaml \
             -f kubernetes/drfarah/api-service.yaml \
             -f kubernetes/drfarah/api-ingress.yaml
+
+          sh scripts/check-email-config.sh \
+            "$PRODUCTION_NAMESPACE" \
+            drfarah-api-config \
+            drfarah-api-secret
 
           echo ""
           echo "=== Applying immutable production workloads ==="

@@ -178,6 +178,23 @@ class TestClinicNotificationTemplate:
 # ---------------------------------------------------------------------------
 
 class TestSendAppointmentEmails:
+    def test_provider_rejection_is_logged_without_recipient_details(
+        self, monkeypatch, caplog
+    ):
+        from app.emails import appointment as mod
+        appt = _make_appt(email="private-patient@example.com")
+        monkeypatch.setattr(
+            mod.settings, "SMTP_TO", "private-clinic@example.com"
+        )
+
+        with patch.object(mod, "_send_email_message", return_value=False):
+            mod.send_appointment_emails(appt, "Urgent care")
+
+        assert "Patient confirmation not accepted" in caplog.text
+        assert "Clinic notification not accepted" in caplog.text
+        assert "private-patient@example.com" not in caplog.text
+        assert "private-clinic@example.com" not in caplog.text
+
     def test_calls_send_for_patient_and_each_clinic_recipient(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt(email="patient@test.com")
