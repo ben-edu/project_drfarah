@@ -1,6 +1,7 @@
 """Tests for POST /api/v1/appointments — appointment creation."""
 
 import datetime
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -71,6 +72,68 @@ VALID_APPOINTMENT = {
 
 
 class TestAppointmentCreate:
+    def test_public_request_cannot_skip_email_with_ci_source(
+        self, seeded_db, test_app_setup
+    ):
+        from app.routers import appointments as router
+
+        y, m, d = _next_working_day(seeded_db)
+        payload = {
+            **VALID_APPOINTMENT,
+            "service_code": "urgent-care",
+            "starts_at": _slot_at(y, m, d, 10, 0),
+            "source": "ci",
+        }
+        with patch.object(router, "send_appointment_emails") as send:
+            with _client(test_app_setup) as client:
+                response = client.post("/api/v1/appointments", json=payload)
+        assert response.status_code == 403
+        send.assert_not_called()
+
+    def test_authorized_staging_smoke_appointment_skips_email(
+        self, seeded_db, test_app_setup, monkeypatch
+    ):
+        from app.routers import appointments as router
+
+        monkeypatch.setattr(router.settings, "ENVIRONMENT", "staging")
+        monkeypatch.setattr(router.settings, "CLEANUP_TOKEN", "test-ci-secret")
+        y, m, d = _next_working_day(seeded_db)
+        payload = {
+            **VALID_APPOINTMENT,
+            "service_code": "urgent-care",
+            "starts_at": _slot_at(y, m, d, 10, 0),
+            "source": "ci",
+        }
+        with patch.object(router, "send_appointment_emails") as send:
+            with _client(test_app_setup) as client:
+                response = client.post(
+                    "/api/v1/appointments", json=payload,
+                    headers={"X-CI-Token": "test-ci-secret"},
+                )
+        assert response.status_code == 201, response.text
+        send.assert_not_called()
+
+    def test_invalid_ci_token_is_rejected(
+        self, seeded_db, test_app_setup, monkeypatch
+    ):
+        from app.routers import appointments as router
+
+        monkeypatch.setattr(router.settings, "ENVIRONMENT", "staging")
+        monkeypatch.setattr(router.settings, "CLEANUP_TOKEN", "test-ci-secret")
+        y, m, d = _next_working_day(seeded_db)
+        payload = {
+            **VALID_APPOINTMENT,
+            "service_code": "urgent-care",
+            "starts_at": _slot_at(y, m, d, 10, 0),
+            "source": "ci",
+        }
+        with _client(test_app_setup) as client:
+            response = client.post(
+                "/api/v1/appointments", json=payload,
+                headers={"X-CI-Token": "wrong-token"},
+            )
+        assert response.status_code == 403
+
     def test_creates_appointment_returns_201(self, seeded_db, test_app_setup):
         app = test_app_setup
         y, m, d = _next_working_day(seeded_db)

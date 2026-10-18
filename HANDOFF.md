@@ -37,6 +37,17 @@ records remains inaccessible without old-host administration and is separate
 from live site behavior. Google Search Console, Business Profile and Ads work
 is assigned to Dr. Farah.
 
+On 2026-10-18 the owner reported a booking email failure despite a successful
+`dev/5` build. Source review found that the production secret bootstrap omitted
+`BREVO_API_KEY`, although the production ConfigMap selects `brevo_api`, and
+that the deployment gate did not check the key. This is a plausible cause,
+not confirmation of the live Secret state. The booking endpoint persists the
+appointment and returns 201 even if email is rejected; staging CI uses a
+credentialed email-free smoke booking, so its success is not delivery evidence.
+See `docs/EMAIL_DELIVERY_RUNBOOK.md` for the confidential server check and
+receipt verification. No real booking or mailbox receipt was verified in this
+investigation.
+
 The 2026-10-17 change replaced truncated WebP assets with the exact decodable
 photos already used by the site, served them directly in the HTML, and removed
 the JavaScript/Base64 image workaround. A higher
