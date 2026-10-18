@@ -186,7 +186,10 @@ def send_appointment_emails(appt, service_name: str) -> None:
     # Patient confirmation
     try:
         subj, text, html = build_patient_confirmation(appt, service_name)
-        _send_email_message(appt.email, subj, text, html)
+        if not _send_email_message(appt.email, subj, text, html):
+            logger.warning(
+                "Patient confirmation not accepted for appointment %s", appt.id
+            )
     except Exception:
         logger.warning("Failed to send patient confirmation for appointment %s", appt.id)
 
@@ -197,10 +200,15 @@ def send_appointment_emails(appt, service_name: str) -> None:
     if not recipients:
         logger.warning("No clinic notification recipients configured.")
 
-    for recipient in recipients:
+    for recipient_number, recipient in enumerate(recipients, start=1):
         try:
-            _send_email_message(recipient, subj, text, html)
+            if not _send_email_message(recipient, subj, text, html):
+                logger.warning(
+                    "Clinic notification not accepted for appointment %s "
+                    "(recipient %s)", appt.id, recipient_number
+                )
         except Exception:
             logger.warning(
-                "Failed to send clinic notification for appointment %s", appt.id
+                "Failed to send clinic notification for appointment %s "
+                "(recipient %s)", appt.id, recipient_number
             )
