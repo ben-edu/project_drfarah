@@ -1,5 +1,26 @@
 # HANDOFF — production live (historical 2026-09-27 snapshot)
 
+## Current release evidence — 2026-10-18
+
+The 2026-10-17 site cleanup was integrated at `dev`
+`c227620e1e407cd2fdf590ef113211fce872d2a7` (Jenkins `dev/3` success)
+and released at `main` `00dbb78553b20af89f983129d3907c5327776d76`
+(Jenkins `main/14` success). Live production checks confirmed the repaired
+homepage, portrait and IV WebP bytes decode and match the repository; Home,
+Services, About and IV Therapy returned 200; all 46 inventoried old articles
+and both blog archives returned 404; all eight structural aliases returned
+direct HTTPS 301s; production robots allowed crawling, and the sitemap had
+14 current pages with no old blog entries.
+
+The old `ci/fast-static-docs-delivery-20261016` branch remains at the failing
+`1dfbaaa` commit, but that commit is an ancestor of both `dev` and `main`.
+The Groovy syntax was corrected in `8afdc73` and merged via PR #62. The
+historical branch failure is not an outstanding production Jenkins error.
+
+The dated snapshot and ordered delivery list below are historical; use the
+current branch state and Jenkins evidence instead. Clinic approvals and
+old-host/Google responsibilities remain as described in the addendum below.
+
 ## Current addendum — 2026-10-17
 
 The dated production/staging SHA table and immediate delivery order below are
@@ -16,10 +37,9 @@ records remains inaccessible without old-host administration and is separate
 from live site behavior. Google Search Console, Business Profile and Ads work
 is assigned to Dr. Farah.
 
-This change replaces truncated WebP assets with the exact decodable approved
-photos already used by the site, serves them directly in the HTML, and removes
-the JavaScript/Base64 image workaround. It must pass staging and production CI
-and a live visual/HTTP check before being described as deployed. A higher
+The 2026-10-17 change replaced truncated WebP assets with the exact decodable
+photos already used by the site, served them directly in the HTML, and removed
+the JavaScript/Base64 image workaround. A higher
 resolution clinic-approved IV photograph is still needed to sharpen the large
 Services/IV hero; upscaling the small source would not restore detail.
 
