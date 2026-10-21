@@ -10,7 +10,8 @@
 **Roadmap:** `ROADMAP.md`  
 **Operating model:** `docs/PROJECT_OPERATING_MODEL.md`  
 **Business/growth source:** `docs/BUSINESS_GROWTH_SOURCE.md`  
-**Latest measurement evidence:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`
+**Measurement baseline:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`  
+**Conversion specification:** `docs/CONVERSION_MEASUREMENT_SPEC.md`
 
 ---
 
@@ -116,6 +117,26 @@ Remaining evidence to close P0.2:
 - verification of whether a production GA4 property already exists;
 - approved privacy/consent approach for the chosen measurement architecture.
 
+### Canonical conversion measurement — draft completed
+
+`FACT:` `docs/CONVERSION_MEASUREMENT_SPEC.md` now defines the first canonical
+measurement contract.
+
+Important definitions:
+
+- `booking_request_created` fires only after the booking API returns HTTP 201;
+- it represents a pending appointment request, **not** a confirmed appointment;
+- `click_to_call` is a lead signal, not a qualified call;
+- diagnostic funnel events must not all become primary Google Ads conversions;
+- long-term optimization should move toward `visit_completed` or another
+  higher-quality business outcome when reliable reconciliation is available;
+- patient form values and clinical details are excluded from marketing payloads;
+- staging must not contaminate production analytics.
+
+The specification is `DRAFT_FOR_VALIDATION` until live Google Ads conversion
+settings, GA4 property, call-tracking capability and privacy/consent design are
+verified.
+
 ### Google Ads
 
 Owner-provided baseline to verify live:
@@ -161,13 +182,13 @@ has direct admin access to Google Ads and Google Business Profile.
 | Priority | Work | State | Dependency / acceptance |
 |---:|---|---|---|
 | 0 | Resolve and verify booking/Brevo production delivery | IN_PROGRESS | controlled production booking + expected receipt evidence |
-| 1 | Audit production measurement/tag stack | VALIDATING | source audit complete; runtime/browser validation + privacy/consent decision remain |
-| 2 | Define canonical conversion measurement specification | READY | use measurement baseline; align website/Ads/booking outcomes |
+| 1 | Audit production measurement/tag stack | VALIDATING | source audit complete; runtime/browser validation + provider/account checks remain |
+| 2 | Define canonical conversion measurement specification | VALIDATING | draft complete; validate against live Ads/GA4/call/privacy setup |
 | 3 | Verify/connect Google Ads, GBP, GA4, Search Console data access | READY | read-first; no broad writes |
 | 4 | Run Google Ads pre-launch configuration audit | READY | live account evidence |
 | 5 | Capture full GBP baseline | READY | preserve before-state before edits |
 | 6 | Capture Search Console/indexing/local SEO baseline | READY after access | production property required |
-| 7 | Implement and validate measurement stack | WAITING | conversion spec + privacy/consent + account IDs required |
+| 7 | Implement and validate measurement stack | WAITING | account IDs + privacy/consent architecture + P0 validation required |
 | 8 | Fix verified Google/website foundation issues | NOT_STARTED | audit evidence required |
 | 9 | Run demand/keyword/local competitor/service-priority research | NOT_STARTED | can overlap P8 |
 | 10 | Implement evidence-backed landing-page improvements | NOT_STARTED | formal BG-10 handoff |
@@ -192,35 +213,22 @@ Remaining checks:
 
 Deliverable: P0.2 accepted baseline or explicit remaining external blocker.
 
-### Next Action B — P0.3 canonical conversion specification
+### Next Action B — validate P0.3 conversion specification
 
 Workstream: BG-00 / BG-10 / BG-20 / BG-80
 
-Define each initial event/outcome by:
+Use `docs/CONVERSION_MEASUREMENT_SPEC.md` as the draft contract.
 
-- exact event name;
-- trigger;
-- diagnostic vs business-outcome role;
-- GA4 role;
-- Google Ads primary/secondary/not-imported role;
-- allowed parameters;
-- privacy restrictions;
-- validation method.
+Validate it against:
 
-Initial event candidates from the current booking code:
+1. live Google Ads conversion actions/goals;
+2. actual GA4 property/data stream if one exists;
+3. call-tracking capability;
+4. approved privacy/cookie/consent approach;
+5. booking outcome fields available for confirmed/completed reconciliation.
 
-- `landing_view`
-- `primary_cta_click`
-- `click_to_call`
-- `booking_start`
-- `service_selected`
-- `availability_viewed`
-- `slot_selected`
-- `details_started`
-- `booking_reviewed`
-- `booking_created`
-
-Do not make all diagnostic events primary Ads conversions.
+Do not implement tags until this validation identifies the exact production IDs
+and approved consent behavior.
 
 ### Next Action C — Google Ads account baseline
 
@@ -320,7 +328,8 @@ booking/call analytics implementation; production assembly does not inject them.
 **Evidence still needed to close:** browser/network runtime validation,
 production GA4/account identifiers, approved consent/privacy approach, then
 end-to-end event validation after implementation.  
-**Current source:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`.
+**Current sources:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`,
+`docs/CONVERSION_MEASUREMENT_SPEC.md`.
 
 ### B-003 — Google account baseline incomplete
 
