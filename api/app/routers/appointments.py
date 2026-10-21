@@ -8,6 +8,7 @@ POST /api/v1/internal/cleanup-ci — clean up CI smoke-test records (token-prote
 
 import datetime
 import logging
+from secrets import compare_digest
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -107,6 +108,7 @@ def get_availability(
 def create_appointment(
     payload: AppointmentCreate,
     db: Session = Depends(get_db),
+    ci_token: str | None = Header(None, alias="X-CI-Token"),
 ):
     """Create a scheduled appointment.
 
@@ -114,6 +116,17 @@ def create_appointment(
     buffers. The starts_at is the appointment start time (client-provided).
     Concurrent requests for the same slot receive HTTP 409.
     """
+    # The public source field cannot authorize suppressing notification emails
+    # or marking an appointment for CI cleanup. Only the staging smoke test
+    # may use this reserved value, with the server-side cleanup credential.
+    if payload.source == "ci" and not (
+        settings.ENVIRONMENT == "staging"
+        and settings.CLEANUP_TOKEN
+        and ci_token
+        and compare_digest(ci_token, settings.CLEANUP_TOKEN)
+    ):
+        raise HTTPException(status_code=403, detail="Reserved appointment source")
+
     # Validate service.
     service = (
         db.query(Service)

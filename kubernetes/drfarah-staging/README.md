@@ -47,9 +47,9 @@ Namespace and all resources are deployed and running:
 ## Secrets (created via kubectl, never committed)
 
 - `drfarah-staging-db-secret` — `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
-- `drfarah-staging-api-secret` — `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SMTP_*`
+- `drfarah-staging-api-secret` — `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `BREVO_API_KEY`, rollback `SMTP_*`, `CLEANUP_TOKEN`
 - `harbor-regcred` — Docker registry pull secret (copied from `toilettage`)
-- Brevo SMTP credentials are stored only in the API Secret
+- Brevo API key and rollback SMTP credentials are stored only in the API Secret
 
 ## Image tagging
 

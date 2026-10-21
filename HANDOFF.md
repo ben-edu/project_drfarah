@@ -17,6 +17,12 @@ The old `ci/fast-static-docs-delivery-20261016` branch remains at the failing
 The Groovy syntax was corrected in `8afdc73` and merged via PR #62. The
 historical branch failure is not an outstanding production Jenkins error.
 
+On 2026-10-18, merging `main` as the head of PR #71 into default branch
+`dev` caused GitHub's merged-branch cleanup to delete `main`. The branch was
+restored at its last production commit `b3f902d0db492fd5e4f919dcc88288e50b01af12`.
+For future synchronization, create a separate branch for a PR into `dev`;
+never put the production branch itself in a PR's head position.
+
 The dated snapshot and ordered delivery list below are historical; use the
 current branch state and Jenkins evidence instead. Clinic approvals and
 old-host/Google responsibilities remain as described in the addendum below.
@@ -36,6 +42,17 @@ WordPress login for this behavior. Physical removal of retained GoDaddy post
 records remains inaccessible without old-host administration and is separate
 from live site behavior. Google Search Console, Business Profile and Ads work
 is assigned to Dr. Farah.
+
+On 2026-10-18 the owner reported a booking email failure despite a successful
+`dev/5` build. Source review found that the production secret bootstrap omitted
+`BREVO_API_KEY`, although the production ConfigMap selects `brevo_api`, and
+that the deployment gate did not check the key. This is a plausible cause,
+not confirmation of the live Secret state. The booking endpoint persists the
+appointment and returns 201 even if email is rejected; staging CI uses a
+credentialed email-free smoke booking, so its success is not delivery evidence.
+See `docs/EMAIL_DELIVERY_RUNBOOK.md` for the confidential server check and
+receipt verification. No real booking or mailbox receipt was verified in this
+investigation.
 
 The 2026-10-17 change replaced truncated WebP assets with the exact decodable
 photos already used by the site, served them directly in the HTML, and removed

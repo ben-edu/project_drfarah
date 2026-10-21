@@ -178,6 +178,23 @@ class TestClinicNotificationTemplate:
 # ---------------------------------------------------------------------------
 
 class TestSendAppointmentEmails:
+    def test_provider_rejection_is_logged_without_recipient_details(
+        self, monkeypatch, caplog
+    ):
+        from app.emails import appointment as mod
+        appt = _make_appt(email="private-patient@example.com")
+        monkeypatch.setattr(
+            mod.settings, "SMTP_TO", "private-clinic@example.com"
+        )
+
+        with patch.object(mod, "_send_email_message", return_value=False):
+            mod.send_appointment_emails(appt, "Urgent care")
+
+        assert "Patient confirmation not accepted" in caplog.text
+        assert "Clinic notification not accepted" in caplog.text
+        assert "private-patient@example.com" not in caplog.text
+        assert "private-clinic@example.com" not in caplog.text
+
     def test_calls_send_for_patient_and_each_clinic_recipient(self, monkeypatch):
         from app.emails import appointment as mod
         appt = _make_appt(email="patient@test.com")
@@ -439,11 +456,12 @@ class TestEmailTriggeredOnAppointmentCreate:
                 assert mock_send.call_count == 1  # still 1, not 2
 
     def test_no_email_for_ci_source(self, seeded_db, test_app_setup):
-        """source="ci" appointments must NOT trigger email."""
+        """Authorized staging CI appointments must NOT trigger email."""
         from tests.test_appointments import (
             _next_working_day, _slot_at, VALID_APPOINTMENT,
         )
         from fastapi.testclient import TestClient
+        from app.routers import appointments
 
         app = test_app_setup
         y, m, d = _next_working_day(seeded_db)
@@ -454,9 +472,16 @@ class TestEmailTriggeredOnAppointmentCreate:
             "source": "ci",
         }
 
-        with patch("app.routers.appointments.send_appointment_emails") as mock_send:
+        with (
+            patch.object(appointments.settings, "ENVIRONMENT", "staging"),
+            patch.object(appointments.settings, "CLEANUP_TOKEN", "test-cleanup-token"),
+            patch("app.routers.appointments.send_appointment_emails") as mock_send,
+        ):
             with TestClient(app) as client:
-                resp = client.post("/api/v1/appointments", json=payload)
+                resp = client.post(
+                    "/api/v1/appointments", json=payload,
+                    headers={"X-CI-Token": "test-cleanup-token"},
+                )
                 assert resp.status_code == 201, resp.text
                 mock_send.assert_not_called()
 
