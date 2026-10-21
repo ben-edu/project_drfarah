@@ -9,7 +9,8 @@
 **Default/integration branch:** `dev`  
 **Roadmap:** `ROADMAP.md`  
 **Operating model:** `docs/PROJECT_OPERATING_MODEL.md`  
-**Business/growth source:** `docs/BUSINESS_GROWTH_SOURCE.md`
+**Business/growth source:** `docs/BUSINESS_GROWTH_SOURCE.md`  
+**Latest measurement evidence:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`
 
 ---
 
@@ -72,21 +73,48 @@ capture**.
 Do not claim resolved until controlled production booking and expected receipt
 evidence exist.
 
-### Website measurement
+### Website measurement — source audit completed, runtime validation pending
 
-`DATA_GAP:` complete current Google measurement stack has not yet been audited.
+`FACT:` repository/source inspection on 2026-10-21 found no implemented Google
+measurement stack in `dev` or the inspected production-branch frontend source.
 
-Owner reports the site does not currently have a verified Google Ads tag.
+No repository evidence was found for:
 
-Need to verify production state for:
-
-- Google tag;
-- GA4;
+- Google tag / `gtag.js`;
 - Google Tag Manager;
-- duplicate tags;
-- booking events;
-- click-to-call tracking;
-- UTM/source/partner propagation.
+- GA4 page/event instrumentation;
+- Google Ads website conversion tags;
+- `dataLayer` event pushes;
+- click-to-call analytics;
+- booking-funnel analytics events.
+
+`FACT:` `scripts/prepare-production-frontend.sh` does not inject analytics or
+advertising tags during production assembly.
+
+`FACT:` the booking flow currently preserves only a coarse first-party source
+marker using `source`, `partner` or `utm_source`, collapsed into
+`appointments.source` (`String(32)`).
+
+`FACT:` the current privacy page states that the site uses only essential
+cookies and does not set advertising or third-party tracking cookies. It is
+also explicitly marked as draft pending clinic/legal review.
+
+`RISK:` adding analytics/Ads tags without updating the privacy/consent design
+would create a mismatch between actual site behavior and published privacy copy.
+
+`RISK:` staging and production use the same frontend source. Analytics must be
+environment-isolated before deployment so staging does not pollute production
+data.
+
+Detailed evidence and recommended architecture are recorded in
+`docs/MEASUREMENT_BASELINE_2026-10-21.md`.
+
+Remaining evidence to close P0.2:
+
+- browser/network-level validation of the deployed production site;
+- verification of any provider-side tag configuration not represented in Git;
+- verification of whether a production GA4 property already exists;
+- approved privacy/consent approach for the chosen measurement architecture.
 
 ### Google Ads
 
@@ -133,13 +161,13 @@ has direct admin access to Google Ads and Google Business Profile.
 | Priority | Work | State | Dependency / acceptance |
 |---:|---|---|---|
 | 0 | Resolve and verify booking/Brevo production delivery | IN_PROGRESS | controlled production booking + expected receipt evidence |
-| 1 | Audit production measurement/tag stack | READY | inspect live site/config, no campaign required |
-| 2 | Define canonical conversion measurement specification | READY | align website/Ads/booking outcomes |
+| 1 | Audit production measurement/tag stack | VALIDATING | source audit complete; runtime/browser validation + privacy/consent decision remain |
+| 2 | Define canonical conversion measurement specification | READY | use measurement baseline; align website/Ads/booking outcomes |
 | 3 | Verify/connect Google Ads, GBP, GA4, Search Console data access | READY | read-first; no broad writes |
 | 4 | Run Google Ads pre-launch configuration audit | READY | live account evidence |
 | 5 | Capture full GBP baseline | READY | preserve before-state before edits |
 | 6 | Capture Search Console/indexing/local SEO baseline | READY after access | production property required |
-| 7 | Implement and validate measurement stack | WAITING | P1/P2 findings required |
+| 7 | Implement and validate measurement stack | WAITING | conversion spec + privacy/consent + account IDs required |
 | 8 | Fix verified Google/website foundation issues | NOT_STARTED | audit evidence required |
 | 9 | Run demand/keyword/local competitor/service-priority research | NOT_STARTED | can overlap P8 |
 | 10 | Implement evidence-backed landing-page improvements | NOT_STARTED | formal BG-10 handoff |
@@ -149,24 +177,52 @@ has direct admin access to Google Ads and Google Business Profile.
 
 ## 5. Exact next actions
 
-### Next Action A — production measurement inventory
+### Next Action A — close P0.2 runtime validation
 
 Workstream: BG-10 / BG-20 / BG-80
 
-Capture:
+Repository/source inventory is complete and documented.
 
-1. Google tag presence/IDs;
-2. GA4 presence/property;
-3. GTM container if present;
-4. duplicate/legacy tags;
-5. booking event instrumentation;
-6. click-to-call event instrumentation;
-7. source/UTM/partner persistence;
-8. staging-vs-production isolation.
+Remaining checks:
 
-Deliverable: dated inventory + findings classified FACT / DATA_GAP / RISK.
+1. validate deployed production HTML/network behavior in a current browser;
+2. verify that no Google/third-party measurement is being injected outside Git;
+3. verify any existing production GA4 property and measurement ID;
+4. document current consent/cookie behavior against actual planned measurement.
 
-### Next Action B — Google Ads account baseline
+Deliverable: P0.2 accepted baseline or explicit remaining external blocker.
+
+### Next Action B — P0.3 canonical conversion specification
+
+Workstream: BG-00 / BG-10 / BG-20 / BG-80
+
+Define each initial event/outcome by:
+
+- exact event name;
+- trigger;
+- diagnostic vs business-outcome role;
+- GA4 role;
+- Google Ads primary/secondary/not-imported role;
+- allowed parameters;
+- privacy restrictions;
+- validation method.
+
+Initial event candidates from the current booking code:
+
+- `landing_view`
+- `primary_cta_click`
+- `click_to_call`
+- `booking_start`
+- `service_selected`
+- `availability_viewed`
+- `slot_selected`
+- `details_started`
+- `booking_reviewed`
+- `booking_created`
+
+Do not make all diagnostic events primary Ads conversions.
+
+### Next Action C — Google Ads account baseline
 
 Workstream: BG-20
 
@@ -184,7 +240,7 @@ Read and record without broad changes:
 10. landing URLs/assets;
 11. policy-sensitive service exposure.
 
-### Next Action C — GBP baseline
+### Next Action D — GBP baseline
 
 Workstream: BG-30
 
@@ -204,7 +260,7 @@ Capture:
 12. available performance data;
 13. warnings/notices.
 
-### Next Action D — Search Console baseline
+### Next Action E — Search Console baseline
 
 Workstream: BG-30 / BG-10
 
@@ -236,15 +292,14 @@ satisfied.
 ## 7. Do not do yet
 
 - Do not launch or materially scale Google Ads.
-- Do not treat existing Google conversion actions as valid business conversions
-  until audited.
+- Do not install production tracking without an approved measurement/privacy approach.
+- Do not treat existing Google conversion actions as valid business conversions until audited.
 - Do not broadly restructure Google Ads before the account baseline is captured.
 - Do not make broad GBP edits before the baseline/duplicate check is captured.
 - Do not enable sensitive healthcare advertising without current policy review.
 - Do not upload patient health data to marketing platforms.
 - Do not create many new landing pages without demand/business evidence.
-- Do not build the Growth Intelligence Platform before the source/conversion
-  contract is sufficiently stable.
+- Do not build the Growth Intelligence Platform before the source/conversion contract is sufficiently stable.
 
 ## 8. Blocker register
 
@@ -256,12 +311,16 @@ satisfied.
 clinic/patient delivery behavior is verified.  
 **Current technical source:** `docs/EMAIL_DELIVERY_RUNBOOK.md` + active PR/workflow evidence.
 
-### B-002 — Marketing measurement inventory unknown
+### B-002 — Marketing measurement implementation/readiness
 
-**State:** READY TO INVESTIGATE  
+**State:** IN_PROGRESS / NARROWED  
 **Type:** hard for paid launch  
-**Evidence needed to close:** production tag/GA4/GTM inventory and end-to-end
-test result.
+**Evidence established:** repository source contains no Google tag, GTM, GA4 or
+booking/call analytics implementation; production assembly does not inject them.  
+**Evidence still needed to close:** browser/network runtime validation,
+production GA4/account identifiers, approved consent/privacy approach, then
+end-to-end event validation after implementation.  
+**Current source:** `docs/MEASUREMENT_BASELINE_2026-10-21.md`.
 
 ### B-003 — Google account baseline incomplete
 
