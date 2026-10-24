@@ -1,495 +1,280 @@
 # Business & Growth Source — Dr. Farah VIP Urgent Care
 
-> **Purpose:** one durable, compact business/growth source for the repository.  
-> **Replaces:** reliance on many separate ChatGPT source files/tabs for day-to-day context.  
-> **Does not replace:** live Google accounts, clinic records, OpenProject execution state, or approved technical documentation.
+> Durable, compact business/growth context for the repository.  
+> This file is not a live-account/status source and is not a substitute for `PROJECT_HANDOFF.md`, `ROADMAP.md`, OpenProject, clinic records, or current Google/website systems.
 
 ## 1. Business identity
 
 **Business:** Dr. Farah VIP Urgent Care  
 **Address:** 9229 Wilshire Blvd., Beverly Hills, CA 90210  
 **Phone:** 310-467-0101  
-**Fax:** 707-261-0739  
 **Primary timezone:** America/Los_Angeles / Pacific Time
 
-Current confirmed regular clinic hours:
+Current owner-confirmed project context:
 
-- Monday–Friday: 8:30 AM–5:30 PM Pacific Time
-- Last patient accepted before 5:00 PM
+- Monday–Friday regular hours: 8:30 AM–5:30 PM Pacific;
+- last patient accepted before 5:00 PM.
 
-Do not publish different hours without explicit current confirmation.
+Verify changing operational facts before publication/account edits.
 
-## 2. Business positioning
+## 2. Business model / positioning
 
-The practice is physician-led and currently spans several distinct business
-engines rather than one homogeneous service catalogue:
+The practice is physician-led and contains multiple growth engines rather than one homogeneous service catalogue:
 
 1. urgent / acute / same-day care;
 2. hotel / traveler / VIP opportunities;
 3. pre-operative clearance;
 4. regenerative / rejuvenation services;
-5. recurring or longitudinal services where retention/lifetime value matters;
-6. selected supporting services.
+5. IV/wellness and selected recurring programs;
+6. weight-management/HRT and other approved services;
+7. referral-driven services such as pre-op and selected professional relationships.
 
-The business currently uses one primary physician/business brand and website.
-Separate service websites are not the default strategy.
+The default brand architecture remains one primary physician/business brand and one website, with separate landing paths/campaigns only where justified by demand, conversion clarity, SEO, advertising or operational needs.
 
 ## 3. Business-outcome principle
 
-Marketing should not optimize only for impressions, clicks, calls, views,
-followers, reviews or platform conversions.
-
-Use the outcome ladder:
+Marketing should progress toward:
 
 `Discovery → Qualified Contact → Booking → Confirmed Appointment → Completed Visit → Collected Revenue → Contribution Margin → Repeat / Referral Value`
 
-A Google Ads conversion, GBP action, form submission or content view is not
-assumed to be a completed patient visit.
+Do not equate clicks, calls, directions, form events, reviews, platform conversions or booking requests with completed patient visits unless the current measurement system proves the linkage.
 
 ## 4. Evidence discipline
 
 Use:
 
-- `FACT` — verified through authoritative current evidence;
+- `FACT` — verified current evidence;
 - `HYPOTHESIS` — plausible but unproven;
 - `DECISION` — explicitly approved;
 - `DATA_GAP` — missing evidence;
 - `RISK` — identified downside;
-- `BLOCKER` — dependency preventing required downstream work.
+- `BLOCKER` — dependency preventing downstream work.
 
-Do not convert older recommendations into current facts.
+Live systems and current clinic facts supersede old reports/project sources.
 
-## 5. Current website / conversion context
+## 5. Website / booking / digital foundation
 
-The production website and integrated booking workflow are repository-managed.
-Booking is a core conversion path.
+The repository-managed website and integrated booking/admin platform are core business infrastructure.
 
-Current known operational issue as of 2026-10-21:
+Current strategic principle:
 
-- booking-related Brevo email delivery is under active technical remediation;
-- the issue is tracked separately from marketing account work;
-- paid campaign launch must remain gated on a healthy, validated booking path.
+- booking-first conversion experience;
+- evidence-backed landing pages, not page-count expansion;
+- source/campaign/partner context should survive to business outcomes;
+- marketing and analytics must not become a second clinical record.
 
-Current measurement gap reported by the owner:
+Current booking/Brevo operational issue and exact release state belong in `PROJECT_HANDOFF.md` / technical runbooks.
 
-- the website does not yet have a verified Google Ads tag implementation;
-- the complete current tag/GA4/GTM inventory still requires production audit.
+## 6. Google Ads — current verified direction
 
-The longer-term attribution target is:
+Google Ads account:
 
-`Source / Campaign / Partner → Booking → Confirmed → Completed → Revenue`
+- Customer ID `652-510-3588`;
+- USD;
+- America/Los_Angeles;
+- auto-tagging enabled;
+- Google tag available: `AW-17076731177`.
 
-without turning the marketing stack into a clinical database.
+The previous assumption that no campaign had ever run is superseded.
 
-## 6. Google Ads — current baseline
+Current live baseline has identified paused Smart campaign `Urgent Care Medical Center` with June 2025–February 2026 activity and approximately:
 
-Current owner-provided account facts to verify live before implementation:
+- 258,541 impressions;
+- 5,590 clicks;
+- $4,494.86 spend;
+- 16 platform-reported conversions.
 
-- Customer ID: `652-510-3588`
-- Account name: Dr Farah VIP Urgent Care
-- Currency: USD
-- Time zone: Pacific Time
-- Manager/MCC: none reported; directly managed
-- Account created: May 2025
-- No confirmed campaigns have run yet
+Exact current numbers and deeper forensic findings belong in the dated Ads baseline and live account.
 
-Therefore current BG-20 work is a **pre-launch configuration and measurement
-readiness audit**, not a historical performance audit.
+Current BG-20 objective is:
 
-### Known conversion configuration requiring live verification
+**historical forensic audit + measurement correction + controlled relaunch readiness**.
 
-Reported phone-call/lead conversion:
+Do not judge performance by Google conversions alone. Reconcile toward completed visits/economics where evidence allows.
 
-- category: Lead
-- primary: yes
-- account-default: yes
-- attribution: data-driven
-- window: 30 days
-- no recent conversions
+## 7. Google Business / Local SEO / Reputation
 
-Reported Contact conversion:
+Current live baseline at last project check:
 
-- secondary: yes
-- counting reported as one
-- no direct monetary value
-- data-driven attribution
-- 30-day window
-- no recent conversions
+- profile title: Dr Farah VIP Urgent Care;
+- primary category: Urgent care center;
+- rating: 5.0;
+- reviews: 109.
 
-Exact source, trigger, counting, value and account-goal behavior must be verified
-in the live account.
+The service catalogue is extensive. Do not remove services merely because there are many. Evaluate each service/service group by:
 
-### Geography
+- actual clinic availability;
+- patient/search demand;
+- economics/capacity;
+- clarity and duplication;
+- conversion usefulness;
+- wording/pricing accuracy;
+- policy/eligibility;
+- role in the overall profile strategy.
 
-Current reported advanced location behavior: `Presence or Interest`.
+Recent reputation themes include attentive/thorough physician care, professionalism, compassion, clear communication, efficient visits, follow-up and friendly staff.
 
-Exact targets, exclusions, radius settings and intended service geography remain
-to be audited.
+Review workflow principles:
 
-### Candidate campaign architecture
-
-The following are hypotheses only:
-
-- Brand
-- Urgent / Same-Day
-- Pre-Op
-- Traveler / Hotel / Mobile
-
-Final structure must depend on query volume, economics, landing pages,
-measurement readiness, operations and policy constraints.
-
-### Google Ads guardrails
-
-- Do not materially scale before measurement is ready.
-- Do not treat platform conversions as completed visits.
-- Separate brand and non-brand analytically where useful.
-- Quantify search-term waste rather than assuming it.
-- Do not upload patient health information to advertising audiences.
-- Re-check current Google healthcare policy before sensitive-service promotion.
-- PRP/regenerative and other medically sensitive categories require explicit
-  current policy review before paid promotion.
-
-## 7. Google Business Profile / Local SEO — current baseline
-
-Latest owner-provided screenshots showed:
-
-- Google rating: 5.0
-- Google reviews: 108
-
-Re-verify live before using as current reporting values.
-
-Current review themes include:
-
-- attentive physician care;
-- thorough evaluation;
-- professionalism;
-- compassion;
-- clear communication;
-- efficient visits;
-- follow-up;
-- friendly staff;
-- feeling listened to and cared for.
-
-Current selected testimonial candidates include:
-
-- Marie C.
-- Lissette A.
-- Olga Kirpicheva (Liv)
-- Frank Salmoon
-- Pooja Nair
-- wipa
-
-Any website reuse must preserve original meaning and follow privacy/authenticity
-requirements.
-
-### GBP operating rules
-
-Before broad edits, capture the baseline:
-
-- exact public name;
-- verification/ownership;
-- practitioner vs clinic structure;
-- duplicate risk;
-- address/map pin;
-- phone;
-- website and appointment links;
-- primary/additional categories;
-- services;
-- hours and special hours;
-- service area;
-- description;
-- photos/video;
-- reviews/replies;
-- profile warnings;
-- available performance metrics.
-
-Do not use keyword-stuffed business names, duplicate profiles, fake reviews or
-ranking guarantees.
-
-### Review workflow guardrails
-
-- no review gating;
-- no incentives;
-- no discounts/free services for reviews;
-- no five-star requests;
+- genuine neutral requests;
 - no fake reviews;
-- neutral requests for genuine feedback;
-- privacy-safe responses;
-- clinical/billing/privacy disputes move to appropriate private channels.
+- no gating;
+- no incentives tied to positive reviews;
+- privacy-safe public responses;
+- serious clinical/billing/privacy/legal disputes move to an appropriate private channel.
 
-## 8. Search Console / organic local search
+## 8. Search / analytics
 
-Google Search Console is authoritative for the organic Google Search data it
-reports for the production property.
+Search Console and GA4 are required operational sources for the project and must be connected/verified as part of the active roadmap.
 
-Baseline should include:
+Search Console baseline should support:
 
-- property/verification;
-- sitemap;
-- indexing;
-- clicks;
-- impressions;
-- CTR;
-- average position as a diagnostic only;
-- top queries;
-- top pages;
-- devices;
-- brand vs non-brand where useful.
+- indexing/sitemap health;
+- clicks/impressions/CTR;
+- top pages/queries;
+- branded vs non-branded demand;
+- urgent/pre-op/traveler/service themes;
+- technical SEO handoffs.
 
-Useful business query themes include:
+GA4 should support:
 
-- Brand / Dr. Farah
-- Urgent Care
-- Same-Day Doctor
-- Beverly Hills physician/medical access
-- Pre-Op / medical clearance
-- Traveler / hotel / mobile
-- Insurance
-- validated service-specific demand
+- acquisition source/medium;
+- landing-page performance;
+- funnel diagnostics;
+- booking/call signals;
+- attribution quality;
+- production/staging isolation.
 
-Do not treat one manual Search/Maps observation or average position as universal
-ranking.
+## 9. Measurement / attribution direction
 
-## 9. Traveler / Hotel / VIP growth
+Canonical compact conversion model:
 
-`FACT:` Dr. Farah has confirmed that many current patients are travelers who
-need medical services.
+- diagnostic web/funnel events;
+- `booking_request_created` as a lead/secondary signal;
+- `visit_completed` as intended primary business outcome once reliable linkage/import is validated.
 
-`DECISION:` traveler/hotel/VIP is an important growth workstream.
+Target linkage:
 
-`DATA_GAP:` actual traveler volume, hotel-sourced share, service mix, mobile
-request rate, economics, partner distribution and scalable operating model are
-not yet established.
+`Source / Campaign / Partner → Booking → Appointment Outcome → Completed Visit → Revenue/Contribution where approved`
 
-Critical measurement distinction:
+Use opaque/internal linkage where practical; do not transmit unnecessary clinical narrative to advertising/analytics platforms.
 
-- `Traveler = Yes/No/Unknown` describes the segment.
-- `Acquisition Source` describes how the patient arrived.
+## 10. Service / pricing context
 
-A hotel stay is not automatically a hotel referral.
+Pricing is operationally changeable; verify before publication/advertising.
 
-Recommended sequence:
+Current project examples include:
 
-1. traveler baseline;
-2. current hotel/concierge source map;
-3. operational service/response model;
-4. partner interviews;
-5. prioritized target list;
-6. partner kit/attribution;
-7. controlled pilot;
-8. measure completed visits, revenue, repeat referrals and operational burden.
+- Pre-Op Clearance — Under 40: $275;
+- Pre-Op Clearance — Age 40+: $375 including H&P + EKG;
+- Pre-Op Laboratory Package: approximately $110–$150 add-on;
+- EKG: $95;
+- Urgent Care Evaluation: starting around $240;
+- Telemedicine: starting around $195.
 
-Do not promise mobile/house-call/24-hour capability before operational approval.
+Do not infer acceptable CAC from price alone. Use collected revenue, variable cost, physician/staff time, capacity and repeat/referral value.
 
-## 10. Pre-Op referral engine
+## 11. Hotel / Traveler / VIP growth
 
-Current source-of-truth pricing examples:
+`FACT:` Dr. Farah has confirmed that many current patients are travelers needing medical services.
 
-- Pre-Op Clearance — Under 40: $275
-- Pre-Op Clearance — Age 40+: $375, including H&P + EKG
-- Pre-Op Laboratory Package: $110–$150 add-on
-- EKG: $95
-- EKG + MD Evaluation: $305 total
-- Basic Laboratory Testing: $150
-- MD Lab Consultation: +$210
+Important distinction:
 
-Current positioning hypothesis:
+- traveler status = segment;
+- acquisition source = how the patient arrived;
+- partner/source detail = who/what referred them.
 
-`Fast, Physician-Led Pre-Operative Clearance in Beverly Hills`
+A hotel guest is not automatically a hotel referral.
 
-Current target turnaround language:
+Required growth sequence is preserved in `ROADMAP.md` / BG-40:
 
-`24–48 hours, when clinically appropriate and required information/testing is available.`
+baseline → existing sources → service/response model → interviews → target list → partner kit/attribution → controlled pilot → business-outcome review.
 
-Do not convert this into a guarantee.
+Do not promise mobile radius/response time/24-hour availability before operational approval.
 
-Strategic hypothesis:
+## 12. Pre-Op referral engine
 
-A productive surgeon, surgery office or surgery-center relationship may produce
-repeat pre-op demand at lower effective acquisition cost than acquiring each
-patient independently.
+Core hypothesis:
 
-This must be validated with completed clearances, revenue, repeat referral,
-turnaround, acquisition cost and operational burden.
+A productive surgeon/surgery-office/surgery-center relationship may create repeated pre-op volume at a lower effective acquisition cost than acquiring every patient independently.
 
-No referral compensation/per-patient arrangement without appropriate legal/
-compliance review.
+Validate using:
 
-## 11. Content / physician media system
+- completed clearances;
+- collected revenue/contribution;
+- turnaround;
+- referral source completeness;
+- repeat referrals;
+- acquisition/relationship cost;
+- operational burden/capacity.
 
-The content strategy is a reusable physician-led media system, not random posts.
+No referral compensation/per-patient arrangement without the required compliance review trigger.
 
-One professional production batch should be capable of producing:
+## 13. Physician-led content system
 
-- long-form physician content;
-- Shorts/Reels/TikTok derivatives where used;
-- website media;
-- approved paid creative;
-- physician FAQs;
-- traveler content;
-- pre-op content;
-- still photography.
+Content should become a reusable physician-led media system, not random posts.
 
-Every performance-oriented asset should have:
+Inputs should come from real evidence:
 
-- audience;
-- business question;
-- message;
-- CTA;
-- destination;
-- tracking;
-- approval status.
+- paid-search queries;
+- Search Console;
+- GBP/reviews;
+- traveler/partner questions;
+- pre-op questions;
+- website friction;
+- service-priority matrix.
 
-Measure qualified traffic, booking assistance and business usefulness rather
-than views/followers alone.
+Outputs may support long-form video, short-form video, website, paid creative, FAQs, partner materials and still photography.
 
-## 12. Service economics / priority
+Measure business usefulness and reusable asset value, not views alone.
 
-Do not allocate sustained acquisition effort equally to every clinic service.
+## 14. Service priority / economics
 
-Evaluate service lines by:
+BG70-01 should rank service growth priorities by:
 
 - demand;
-- collected revenue;
+- collected revenue/contribution;
 - variable cost;
 - physician/staff time;
-- contribution potential;
 - capacity;
-- repeat value;
+- repeat/retention;
 - referral leverage;
+- differentiation;
 - acquisition cost;
 - policy/compliance constraints.
 
-Service-priority conclusions are not facts until the supporting economics exist.
+This matrix should influence Ads, SEO, landing pages, partnerships and content.
 
-## 13. Growth Intelligence / attribution
+## 15. Growth Intelligence
 
-Strategic objective:
+Growth Intelligence is a strategic capability, but implementation follows the master roadmap and stable measurement contract.
 
-connect acquisition source, marketing cost, booking outcome, partner/referral,
-service category, completed visit and business value.
+Known OpenProject direction includes:
 
-Priority business questions include:
+- full conversion funnel;
+- dashboard/KPI reporting;
+- call/lead tracking;
+- attribution model;
+- cohort/retention analytics;
+- experiment framework;
+- automated weekly report;
+- ChatGPT/OpenProject workflow integration;
+- Growth Intelligence MVP requirements.
 
-- which sources/campaigns produce completed visits;
-- CAC per completed visit;
-- which paid search activity produces business outcomes vs waste;
-- which traveler/hotel/referral sources produce repeat business;
-- where the booking funnel loses qualified demand;
-- which experiments deserve scale/modify/stop decisions.
+The system is a marketing/business-intelligence layer, not an EHR.
 
-Initial system principle:
+## 16. Marketing/privacy principle
 
-`AI recommends → Human approves → System executes`
+Use useful lawful and platform-compliant measurement/marketing capabilities without arbitrary self-imposed restrictions.
 
-The initial Growth Intelligence implementation should not autonomously change ad
-budgets or make clinical/business decisions.
+Do not send/store unnecessary medical-record detail in advertising/analytics systems. Align public privacy/cookie disclosure with actual implemented behavior and applicable requirements.
 
-Data minimization applies. Prefer anonymous/pseudonymous marketing sessions and
-opaque booking/outcome references. Do not build a second patient record.
+## 17. Execution rule
 
-## 14. Operations / compliance boundaries
+For current sequencing/status, always use:
 
-Route or explicitly review issues involving:
+1. `PROJECT_HANDOFF.md`;
+2. `ROADMAP.md`;
+3. live systems / OpenProject as appropriate.
 
-- medical claims;
-- insurance/network claims;
-- emergency/24-hour wording;
-- mobile/VIP availability;
-- patient-review privacy;
-- referral compensation;
-- capacity;
-- paid healthcare policy;
-- patient-data use in analytics/advertising;
-- treatment-result claims/testimonials.
-
-The project documentation defines operating boundaries, not legal advice.
-
-## 15. Current known business prices relevant to acquisition
-
-Verify before public use:
-
-- Urgent Care Evaluation: starting at $240
-- Telemedicine: starting at $195
-- Pre-Op Under 40: $275
-- Pre-Op Age 40+: $375 including H&P + EKG
-- Pre-Op Laboratory Package: $110–$150 add-on
-
-Insurance/network status remains subject to current verification before public
-advertising or publication.
-
-## 16. AI Search Grader
-
-A prior AI Search Grader report is directional only.
-
-Approximate reported scores included:
-
-- OpenAI-style overall: 34
-- Perplexity-style overall: 54
-- Gemini-style overall: 45
-- brand recognition: approximately 12–18 / 100
-- market score: approximately 3 / 10
-
-Positive themes included physician-led care, compassion, speed, professionalism
-and personalized/VIP experience.
-
-Do not use the report as authoritative evidence of:
-
-- GBP performance;
-- Google ranking;
-- market share;
-- true brand awareness;
-- Google Ads performance;
-- current review baseline.
-
-## 17. Responsibility split
-
-### Dr. Farah
-
-Owns/approves:
-
-- current clinical/business facts;
-- service/pricing confirmation;
-- medical claims;
-- operational availability;
-- material budget decisions;
-- sensitive public/review responses where required.
-
-### Behnam
-
-Owns/coordinates:
-
-- repository/project control;
-- website implementation;
-- landing pages;
-- booking-flow technical work;
-- technical SEO;
-- conversion tracking;
-- attribution implementation;
-- connected marketing account operation as authorized;
-- OpenProject coordination;
-- cross-workstream technical handoffs.
-
-### ChatGPT / connected tools
-
-Support:
-
-- analysis;
-- research;
-- account auditing;
-- recommendations;
-- controlled supported actions after authorization;
-- documentation;
-- roadmap/handoff maintenance.
-
-## 18. Current source-minimization rule
-
-This file is the default durable business/growth context. Do not recreate the
-old pattern of many large overlapping source files unless a workstream develops
-a genuinely separate long-lived specification.
-
-Stable technical detail belongs in `PROJECT.md` or technical runbooks.  
-Current state belongs in `HANDOFF.md`.  
-Sequence/gates belong in `ROADMAP.md`.  
-Approved decisions belong in `docs/DECISIONS.md`.  
-Live work-package state belongs in OpenProject.
+Do not expand this file into a second roadmap or live status tracker.
