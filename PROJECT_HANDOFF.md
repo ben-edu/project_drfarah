@@ -6,7 +6,7 @@
 **Last updated:** 2026-10-24  
 **Repository:** `ben-edu/project_drfarah`  
 **Integration/default branch:** `dev`  
-**Current control branch / PR:** `docs/unified-project-control-20261021` / PR #78  
+**Control-plane merge:** PR #78 merged to `dev` on 2026-10-24 — `c10b7bec5f9acad0531b88bac9056d4950d918a6`  
 **Canonical roadmap:** `ROADMAP.md`  
 **Single active ChatGPT project workspace:** existing `BG-20` tab, repurposed as the unified project workspace
 
@@ -19,22 +19,22 @@
 - GitHub is the durable project memory for roadmap, handoff, decisions, stable facts, code, runbooks and evidence.
 - OpenProject remains authoritative for live work-package status, assignee, dates, dependencies, milestones and completion.
 - Live systems remain authoritative for their own current state.
-- The former specialized ChatGPT tabs are being consolidated into the existing BG-20 tab.
+- The former specialized ChatGPT tab work is consolidated into the existing BG-20 tab and the master roadmap; old tabs are no longer needed for durable context once the Project Source replacement/resume test is complete.
 - Separate workstream identities BG-00 through BG-90 remain valid for OpenProject mapping and handoffs.
 
 ### Current control-plane task
 
-`P0.1` is **IN_PROGRESS**.
+`P0.1` is **DONE**. PR #78 is merged to `dev` and the master roadmap/handoff/control documents are now on the default branch.
 
-PR #78 contains the unified control model. The master roadmap has now been expanded to preserve the former-tab work packages and website/development obligations.
+`P0.2` is **IN_PROGRESS**: replace the ChatGPT Project Source `.md` files with minimal routers that point only to `dev`.
 
-Do not delete the other ChatGPT tabs until:
+Before deleting the other ChatGPT tabs, perform one quick resume test from the existing BG-20 tab:
 
-1. PR #78 is merged to `dev`;
-2. minimal Project Source router files are uploaded/replaced;
-3. a quick resume test confirms that the single BG-20 tab can find `PROJECT_HANDOFF.md` and `ROADMAP.md` on `dev`.
+1. read `PROJECT_HANDOFF.md` from `dev`;
+2. read the current queue/relevant phase of `ROADMAP.md` from `dev`;
+3. confirm the next task and blockers can be determined without old-tab context.
 
-After that, old tabs may be retired without losing intended work.
+After that test succeeds, the old tabs may be retired without losing intended work.
 
 ---
 
@@ -196,17 +196,18 @@ This is a current priority, not a future optional task.
 **Class:** HARD for BG30-04 / SOFT for Ads/GBP work  
 **Unblock evidence:** correct `drfarahvipurgentcare.com` property verified/connected; sitemap/indexing data readable.
 
-### B-005 — Control plane not yet merged to `dev`
+### B-005 — Project Source replacement / resume test pending
 
 **State:** IN_PROGRESS  
-**Class:** HARD for retiring old tabs / SOFT for current work  
-**Unblock evidence:** PR #78 merged, core files present on `dev`, Project Source routers updated to point to `dev`.
+**Class:** HARD only for retiring old ChatGPT tabs / SOFT for all repository and live-system work  
+**Established:** PR #78 is merged and core control files are present on `dev`.  
+**Unblock evidence:** minimal Project Source routers uploaded and a resume test confirms the BG-20 workspace can determine current state/next action from `dev` without old tabs.
 
 ---
 
 ## 5. Work completed in the current control/marketing effort
 
-- unified project-control branch and PR #78 created;
+- unified project-control PR #78 created and squash-merged to `dev` on 2026-10-24 (`c10b7bec5f9acad0531b88bac9056d4950d918a6`);
 - `ROADMAP.md` converted into one master roadmap and expanded to preserve former-tab work;
 - full known OpenProject maps for BG-00, BG-20, BG-30, BG-40, BG-50, BG-60 and BG-80 preserved in the roadmap;
 - known BG70/BG90 identifiers preserved without fabricating unknown IDs;
@@ -226,14 +227,13 @@ This is a current priority, not a future optional task.
 
 Follow this order unless a hard blocker forces a bypass.
 
-### Next A — finish control plane
+### Next A — finish Project Source migration and prove resume continuity
 
-1. align README, decisions, operating model and business source with the expanded master roadmap;
-2. ensure no document still treats separate tabs as required;
-3. ensure no document still claims the Ads account has no history;
-4. merge PR #78 to `dev` after documentation consistency check;
-5. replace Project Sources with minimal GitHub-router files;
-6. perform a resume test from `dev`.
+1. replace the uploaded Project Sources with the final minimal routers that point only to `dev`;
+2. from the BG-20 workspace, read `PROJECT_HANDOFF.md` + the relevant `ROADMAP.md` phase from `dev`;
+3. confirm the workspace can identify B-001 through B-005 and the next eligible task without old-tab context;
+4. mark B-005 resolved;
+5. old specialized ChatGPT tabs may then be retired at the owner's discretion.
 
 ### Next B — resolve GA4
 
