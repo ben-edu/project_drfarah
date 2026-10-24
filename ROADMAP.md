@@ -28,7 +28,7 @@ It consolidates:
 - operational, privacy and compliance readiness;
 - the work that was previously distributed across separate ChatGPT tabs aligned to OpenProject workstreams.
 
-The separate project chat tabs may be retired after this control plane is merged to `dev` and the replacement Project Sources point back to GitHub. Their work is **not cancelled**; it is represented below by workstream code, roadmap phase, dependencies and acceptance evidence.
+The unified control plane is now merged to `dev`. The separate project chat tabs may be retired after the minimal Project Sources are replaced to point to `dev` and a resume test confirms that this control plane is sufficient. Their work is **not cancelled**; it is represented below by workstream code, roadmap phase, dependencies and acceptance evidence.
 
 No second roadmap should be created for website development, marketing, Growth Intelligence or another workstream. Detailed technical plans/runbooks may remain in their specialized files, but sequencing belongs here.
 
@@ -149,7 +149,7 @@ The workstream identities remain useful for OpenProject mapping and handoffs eve
 
 | Gate | Meaning | Minimum evidence |
 |---|---|---|
-| `G0-CONTROL-PLANE-LIVE` | GitHub can carry project continuity without old tabs | roadmap + handoff + decisions + minimal Project Sources merged to `dev` |
+| `G0-CONTROL-PLANE-LIVE` | GitHub can carry project continuity without old tabs | roadmap + handoff + decisions on `dev` + minimal Project Sources pointing to `dev` + successful resume test |
 | `G1-BOOKING-HEALTHY` | booking path is operationally safe | production booking persists + expected notification behavior verified |
 | `G2-MEASUREMENT-READY` | acquisition can be measured without duplicate/bad data | GA4/tag architecture + attribution + key conversions tested |
 | `G3-GOOGLE-BASELINES-CAPTURED` | Ads/GBP/SC/GA4 current state known | dated baselines from live systems |
@@ -171,8 +171,9 @@ The workstream identities remain useful for OpenProject mapping and handoffs eve
 
 ### P0.1 — Merge the unified control plane to `dev`
 
-**State:** `IN_PROGRESS`  
-**Primary workstreams:** BG-00 / project control
+**State:** `DONE`  
+**Primary workstreams:** BG-00 / project control  
+**Acceptance evidence:** PR #78 merged to `dev` on 2026-10-24; squash merge `c10b7bec5f9acad0531b88bac9056d4950d918a6`.
 
 Required:
 
@@ -186,6 +187,8 @@ Required:
 
 ### P0.2 — Replace Project Sources with minimal GitHub routers
 
+**State:** `IN_PROGRESS`
+
 The uploaded ChatGPT Project `.md` sources should contain only:
 
 - GitHub repository identity;
@@ -198,6 +201,8 @@ The uploaded ChatGPT Project `.md` sources should contain only:
 They must not become a parallel business database.
 
 ### P0.3 — Retire specialized ChatGPT tabs
+
+**State:** `WAITING_EXTERNAL` until P0.2 and the resume test are complete.
 
 After P0.1/P0.2 are verified:
 
@@ -937,7 +942,7 @@ BG-90 is a cross-cutting dependency, not a final cleanup phase. Its tasks should
 
 Known required work packages from the former sources include:
 
-- `BG90-03` Define Hotel / Mobile Care Operational Readiness & SLA / marketing-operations readiness dependency;
+- `BG90-03` Define Hotel / Mobile Care Operational Readiness & SLA / establish HIPAA-compliant marketing operations where applicable;
 - `BG90-04` Establish Physician / Clinic Capacity Baseline;
 - `BG90-05` Referral Partnership Compliance Review Trigger;
 - `BG90-06` Establish Marketing Data Privacy Boundary.
@@ -1130,7 +1135,7 @@ This queue is a snapshot. `PROJECT_HANDOFF.md` is the live resume point and must
 
 | Priority | Item | Current state | Dependency / next evidence |
 |---:|---|---|---|
-| 0 | Finish/merge unified control plane and source-router model | IN_PROGRESS | update PR #78; merge to `dev`; then Project Sources can point only to `dev` |
+| 0 | Replace Project Sources with minimal `dev` routers and run resume test | IN_PROGRESS | P0.1 complete; upload replacement files, then verify BG-20 can resume from GitHub alone |
 | 1 | Resolve/verify production booking/Brevo delivery | IN_PROGRESS | controlled production booking + expected notification evidence |
 | 2 | Resolve Dr. Farah GA4 access/property | READY | correct property/data stream + connection + runtime test |
 | 3 | Resolve Dr. Farah Search Console property/access | READY | production property + verification + connection |
