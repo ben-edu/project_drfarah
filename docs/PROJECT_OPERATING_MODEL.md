@@ -1,36 +1,28 @@
 # Project Operating Model — Dr. Farah VIP Urgent Care
 
-## 1. Why this document exists
+## 1. Purpose
 
-This repository now serves as the durable operational memory for the Dr. Farah
-project across website, booking, marketing, reputation, growth and analytics.
+This repository is the durable operational memory for the Dr. Farah project across website, booking, Google marketing, local SEO, reputation, growth experiments, analytics and operational readiness.
 
-The previous operating model used many specialized ChatGPT tabs. That created
-useful focused work, but it also fragmented context, duplicated decisions and
-made continuity dependent on chat context windows.
+The project uses **one active ChatGPT project workspace: the existing BG-20 tab**. Former specialized tabs may be retired because their workstreams and work packages are preserved in `ROADMAP.md` and OpenProject.
 
-The new model consolidates active reasoning into one ChatGPT workspace while
-preserving workstream identity through GitHub documentation and OpenProject work
-packages.
+Chat context is disposable. GitHub continuity is not.
 
 ## 2. System roles
 
-### GitHub — durable project memory and technical source
+### GitHub — durable project memory
 
-GitHub is the primary durable reference for:
+GitHub is authoritative for:
 
-- project charter and stable facts;
-- cross-workstream roadmap;
-- current handoff/resume point;
+- single master roadmap;
+- current handoff/resume state;
 - approved decisions;
+- stable project/business facts;
 - technical implementation;
-- deployment evidence;
-- durable runbooks;
-- session history;
-- code and configuration.
+- runbooks/specifications;
+- durable evidence and session history.
 
-No material project fact, decision, blocker or next-step dependency should exist
-only in chat.
+No material project fact, decision, blocker or restart condition should exist only in chat.
 
 ### OpenProject — live execution control
 
@@ -42,84 +34,82 @@ OpenProject remains authoritative for:
 - dependencies;
 - milestones;
 - completion;
-- evidence links;
-- formal execution tracking.
+- formal execution evidence/links.
 
-GitHub may summarize or reference OpenProject but must not invent live statuses.
+GitHub may map/summarize OpenProject work, but must not invent a live status.
 
-### ChatGPT — reasoning and action interface
+### Single ChatGPT workspace — reasoning/action interface
 
-The single active project chat is used for:
+The existing BG-20 tab is now the unified workspace for all BG-00 through BG-90 workstreams.
 
-- analysis;
-- research;
-- planning;
-- synthesis;
-- drafting;
+Use it for:
+
+- analysis/research;
 - account audits;
 - technical review;
+- planning and decision support;
 - execution through connected tools;
-- converting decisions into GitHub/OpenProject-ready outputs.
+- cross-workstream handoffs;
+- updating GitHub/OpenProject-ready outputs.
 
-Chat is not the durable source of truth.
+Do not require separate tabs for each workstream.
 
-### Live external systems — configuration/performance authority
+### Live systems — state authority
 
 Examples:
 
-- Google Ads for current ad-account state;
-- Google Business Profile for current profile state;
-- Google Search Console for Google organic search reporting;
-- GA4 for configured analytics reporting;
-- booking/admin platform for appointment state;
-- Jenkins for accepted deployment pipeline evidence;
-- live production endpoints for current public behavior.
+- Google Ads;
+- Google Business Profile;
+- Google Search Console;
+- GA4;
+- booking/admin platform;
+- Jenkins;
+- production/staging endpoints.
 
-## 3. Minimum durable files
+When live state can change, verify it instead of relying on an older document.
 
-The project intentionally keeps a small set of core files.
+## 3. Core control files
 
 ### `README.md`
 Entry point and reading order.
 
-### `PROJECT.md`
-Stable project charter, product/business context and technical architecture.
-Update only when durable facts, scope or architecture change.
+### `PROJECT_HANDOFF.md`
+**Live current-state and exact resume file.** Update after every material session.
 
 ### `ROADMAP.md`
-Cross-workstream sequencing, dependencies, gates, parallelization and phase
-logic. Update when execution strategy changes.
-
-### `HANDOFF.md`
-Current state and exact resume point. This is the first operational file to
-update after a material session.
+**Only master sequencing document.** Contains phases, dependencies, gates, parallelization and workstream inventory.
 
 ### `docs/DECISIONS.md`
-Approved decisions only. Do not store hypotheses as decisions.
+Approved decisions only.
+
+### `docs/BUSINESS_GROWTH_SOURCE.md`
+Compact durable business/growth context; not a live-account substitute.
+
+### `PROJECT.md`
+Stable website/product/technical charter; not a competing roadmap.
+
+### `HANDOFF.md`
+Detailed/historical website/deployment evidence; not the current cross-workstream resume file.
 
 ### `SESSION_LOG.md`
-Short append-only historical record of meaningful sessions/releases/decisions.
-It is not the current-state document.
+Historical session/release log.
 
-Other documentation may exist for technical runbooks or architecture, but the
-six files above are the control plane.
+Technical runbooks/specifications may exist under `docs/`, but do not replace `ROADMAP.md` for sequence or `PROJECT_HANDOFF.md` for current state.
 
 ## 4. Evidence labels
 
-Use the following labels in analysis and durable documentation when a statement
-could materially affect a decision:
+Use:
 
-- `FACT` — directly verified.
-- `HYPOTHESIS` — plausible but unproven.
-- `DECISION` — explicitly approved.
-- `DATA_GAP` — evidence is missing or unavailable.
-- `RISK` — downside requiring active control.
-- `BLOCKER` — dependency that prevents a required downstream action.
+- `FACT` — directly verified;
+- `HYPOTHESIS` — plausible but unproven;
+- `DECISION` — explicitly approved;
+- `DATA_GAP` — evidence missing;
+- `RISK` — downside requiring control;
+- `BLOCKER` — dependency preventing required downstream action.
 
 ## 5. Workstream consolidation
 
-The separate ChatGPT tabs previously aligned to OpenProject workstreams are now
-consolidated into one active chat. Their logical identities remain:
+Logical/OpenProject workstreams remain:
 
 - BG-00 Governance, Decisions & Measurement
 - BG-10 Website & Conversion
@@ -132,199 +122,124 @@ consolidated into one active chat. Their logical identities remain:
 - BG-80 Analytics & Growth Intelligence
 - BG-90 Operations / Compliance Readiness
 
-The active chat should name the relevant workstream/work package when performing
-substantive work, but a separate chat tab is no longer required.
+The single chat should name the relevant workstream/work package when performing substantive work.
 
 ## 6. Session start protocol
 
-At the start of a new substantial session:
+For a substantive session:
 
-1. Read `HANDOFF.md`.
-2. Read the current-priority section of `ROADMAP.md`.
-3. Read `docs/DECISIONS.md` if the task may change strategy, scope or approval.
-4. Read the relevant implementation/runbook file only when needed.
-5. Check live systems or OpenProject when the task depends on current state.
+1. read `README.md` if orientation is needed;
+2. read `PROJECT_HANDOFF.md`;
+3. read the current-priority/relevant phase in `ROADMAP.md`;
+4. read `docs/DECISIONS.md` if strategy/approval is involved;
+5. read only the relevant specification/runbook/baseline/code;
+6. verify live system state when it may have changed;
+7. query OpenProject when live execution metadata matters.
 
-Do not reconstruct current state from old chat history when GitHub contains a
-newer handoff.
+Do not reconstruct current state from old chat history when GitHub has newer evidence.
 
-## 7. Session close protocol
+## 7. Task-selection and blocker protocol
 
-A material session is not complete until its durable state is recorded.
+Use the roadmap state model.
 
-At minimum:
+When blocked:
 
-1. Update `HANDOFF.md` with:
-   - what changed;
-   - evidence;
-   - unresolved blockers;
-   - exact next step;
-   - restart condition for paused/blocked work.
-2. Update `ROADMAP.md` only if ordering, phase state or gates changed.
-3. Update `docs/DECISIONS.md` only for approved decisions.
-4. Update `PROJECT.md` only for stable facts/scope/architecture.
-5. Append a concise entry to `SESSION_LOG.md`.
-6. Preserve or link evidence in OpenProject when relevant.
+1. record the item in `PROJECT_HANDOFF.md`;
+2. classify HARD or SOFT;
+3. record exact unblock evidence;
+4. record prohibited downstream work;
+5. identify safe parallel work;
+6. continue with the highest-priority eligible READY item;
+7. re-check blocked higher-priority items at the next session.
 
-## 8. Handoff state template
+Never silently abandon blocked work.
 
-Use this structure inside `HANDOFF.md`:
+## 8. Material-session close protocol
 
-```markdown
-## Current focus
+Before ending material work:
 
-**Workstream/WP:** ...
-**State:** IN_PROGRESS / BLOCKED / ...
-**Started/updated:** YYYY-MM-DD
+1. update `PROJECT_HANDOFF.md` with what changed, evidence, blockers and exact next action;
+2. update `ROADMAP.md` only if sequencing/gates/scope changed;
+3. update `docs/DECISIONS.md` only for an approved decision;
+4. update stable business/project docs only when durable facts changed;
+5. append concise history to `SESSION_LOG.md` where appropriate;
+6. update OpenProject separately when live work-package state/evidence changes.
 
-### Verified facts
-- ...
+## 9. Website/marketing handoff protocol
 
-### Work completed
-- ...
+When acquisition/local/content analysis identifies website work, record:
 
-### Evidence
-- commit / PR / account snapshot / OpenProject link / live check
+- source workstream;
+- target BG-10 requirement;
+- evidence;
+- affected path/page;
+- exact change;
+- business/search reason;
+- tracking requirement;
+- KPI;
+- claim/approval requirement;
+- acceptance evidence.
 
-### Blockers / risks
-- BLOCKER: ...
-  - hard/soft: ...
-  - unblock evidence: ...
+When website implementation creates marketing measurement capability, record the reverse handoff and validation result.
 
-### Exact next action
-1. ...
-2. ...
+## 10. External-account write protocol
 
-### Safe parallel work
-- ...
+Default mode:
 
-### Do not do yet
-- ...
-```
+`read → preserve before-state → analyze → decide/approve → bounded change → validate → measure → record evidence`
 
-## 9. Paused and blocked work
+Do not make broad Google Ads/GBP/production changes merely because a tool supports write access.
 
-When work is paused or blocked, never remove it from the roadmap.
+High-confidence factual corrections may be executed when authorized, but still preserve evidence and validation.
 
-Record:
+## 11. Marketing data/privacy principle
 
-- owner/workstream;
-- current state;
-- reason;
-- hard vs soft dependency;
-- exact evidence/action needed to restart;
-- what downstream work is prohibited;
-- what independent work may continue.
+Use the strongest useful lawful and platform-compliant measurement/marketing capability; do not add arbitrary restrictions that reduce business learning without a legal/policy reason.
 
-A later session must check blocked work before creating lower-priority new work.
+At the same time:
 
-## 10. Decision protocol
+- this project is not an EHR;
+- do not send/store unnecessary diagnoses, free-text symptoms, medications, clinical notes, lab results, medical documents or insurance/member identifiers in marketing/analytics systems;
+- use opaque/internal linkage where practical;
+- keep marketing identifiers and business outcomes separate from clinical-record content;
+- align public privacy/cookie disclosures with actual implemented behavior and applicable requirements.
 
-A recommendation is not a decision.
+## 12. Branch/release discipline
 
-For significant changes, document:
-
-1. evidence;
-2. uncertainty;
-3. expected business/technical effect;
-4. alternative(s) considered;
-5. approval required;
-6. approved decision;
-7. implementation owner/work package;
-8. validation plan.
-
-For external write actions such as Google Ads, GBP, production configuration or
-customer-facing publication, preserve the before-state and get explicit approval
-when required by the operating boundary.
-
-## 11. Website/marketing handoff protocol
-
-When marketing analysis identifies a website need, create a structured handoff:
-
-```markdown
-### HANDOFF — Marketing → Website
-
-**Source workstream:** BG-20 / BG-30 / BG-40 / BG-50 / BG-60
-**Target workstream:** BG-10
-**Evidence:** ...
-**Affected page/path:** ...
-**Required change:** ...
-**Business reason:** ...
-**Tracking requirement:** ...
-**Primary KPI:** ...
-**Dr. Farah approval needed:** ...
-**Acceptance evidence:** ...
-```
-
-When the website creates a measurement capability required by marketing, record
-the reverse handoff and validation result.
-
-## 12. Marketing/account write-control protocol
-
-Default mode for connected accounts:
-
-`read → analyze → recommend → approve → change → validate → measure`
-
-Do not make broad Google Ads, GBP or production changes solely because a tool
-supports write access.
-
-For every material account write:
-
-- capture current state;
-- identify exact object/setting;
-- explain reason;
-- obtain approval when required;
-- perform one bounded change;
-- record date/time;
-- define validation/measurement window;
-- record outcome.
-
-## 13. Privacy and clinical boundary
-
-This repository and marketing stack are not an EHR or clinical decision system.
-
-Do not store unnecessary:
-
-- patient names;
-- emails/phones in analytics documentation;
-- diagnoses;
-- symptoms/free-text reasons;
-- medications;
-- clinical notes;
-- lab results;
-- insurance/member identifiers;
-- medical documents.
-
-Use opaque identifiers and business-level outcomes where linkage is necessary.
-
-## 14. Release and branch discipline
-
-The current repository policy remains:
-
-- feature/fix/documentation branches for proposed work;
-- `dev` is the integration/staging branch;
-- `main` is production;
-- Jenkins is the deployment authority;
-- no direct routine commits to `main`;
+- feature/fix/docs branches for proposed work;
+- `dev` = integration/staging;
+- `main` = production;
+- Jenkins = deployment authority;
+- no routine direct commits to `main`;
 - no secrets in Git.
 
-Documentation that changes execution strategy should normally arrive through a
-reviewable PR into `dev`.
+Once the unified control PR is merged, Project Sources should point to `dev` and should not need a special control-branch fallback.
 
-## 15. Definition of a healthy project control plane
+## 13. Project Source policy
 
-The control plane is healthy when a new operator can determine, without reading
-old chat threads:
+ChatGPT Project Source `.md` files are bootstrap/router files only.
 
-- current production state;
-- current business/growth priorities;
-- what is in progress;
-- what is blocked and why;
-- what can proceed in parallel;
-- exact next actions;
-- required approvals;
-- relevant OpenProject work package;
-- where acceptance evidence belongs.
+They should tell AI:
 
-If that cannot be answered, update the GitHub control files before adding more
-work.
+- repository identity;
+- reading order;
+- authority hierarchy;
+- single-tab operating model;
+- source/workstream routing;
+- durable-update rule.
+
+They should not duplicate live strategy, current KPI values, service lists or task status.
+
+## 14. Definition of a healthy control plane
+
+A new context/operator can answer without old chats:
+
+- what is the current focus?
+- what is blocked and why?
+- what can proceed safely?
+- what is the next exact action?
+- which roadmap phase/workstream owns it?
+- what evidence proves completion?
+- which live system/OpenProject source must be checked?
+
+If those answers cannot be found from `PROJECT_HANDOFF.md` + `ROADMAP.md` + targeted evidence, the control plane needs repair before more complexity is added.
