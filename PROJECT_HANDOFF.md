@@ -6,7 +6,7 @@
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Canonical roadmap:** `ROADMAP.md`  
-**Single active ChatGPT project workspace:** this conversation, historically named `BG-20`  
+**Single active ChatGPT project workspace:** this conversation, historically named `BG-20`
 
 ---
 
@@ -88,8 +88,8 @@ The current website privacy/tracking copy must be updated after the actual measu
 Use a compact model:
 
 - diagnostic events for funnel/technical analysis;
-- `booking_request_created` as a lead/secondary signal;
-- `visit_completed` as the intended primary business-outcome conversion once source/appointment linkage and Ads import are validated.
+- `booking_request_created` as a lead/secondary signal where privacy/policy permits;
+- `visit_completed` as the intended primary business-outcome conversion once source/appointment linkage and approved import are validated.
 
 Do not optimize long-term toward superficial platform actions when completed-visit data is available.
 
@@ -132,11 +132,25 @@ The service catalogue is extensive. Do not delete services merely because the li
 
 Detailed baseline: `docs/GBP_BASELINE_2026-10-24.md`.
 
-### GA4 / Search Console
+### GA4
 
-The correct Dr. Farah production GA4 and Search Console sources are not yet connected/verified in the current project data workflow.
+**OWNER-CONFIRMED FACT — 2026-10-24:** after re-authorizing the GA4 connector using the Google account intended for Dr. Farah's assets, no Dr. Farah GA4 property appeared. The only prior visible property was unrelated (`safeguardsupport.com`).
 
-These are the next access gaps to resolve.
+Google Ads still contains a hidden legacy GA4-origin conversion action named `drfarahvipurgentcare.com (web) purchase`, but there is no reusable/accessible clinic property identified from that evidence.
+
+Current decision:
+
+- create a new clinic-controlled production GA4 property and web stream;
+- do not deploy the GA4/Google tag yet;
+- leave Enhanced Measurement off initially;
+- first document the healthcare/HIPAA/privacy boundary for which pages/events, if any, may be sent to Google Analytics;
+- then connect the new property to Windsor.ai and proceed with controlled validation.
+
+Detailed architecture: `docs/GA4_ARCHITECTURE_2026-10-24.md`.
+
+### Search Console
+
+The correct production Search Console property is still not connected/verified in the current project workflow.
 
 ---
 
@@ -152,13 +166,15 @@ These are the next access gaps to resolve.
 
 **State:** IN_PROGRESS  
 **Class:** HARD for paid relaunch  
-**Still needed:** runtime tracker validation, GA4 property/data stream, source/UTM/GCLID persistence, conversion implementation, `visit_completed` linkage/import, privacy/cookie alignment and end-to-end validation.
+**Still needed:** new clinic GA4 property/data stream, healthcare/privacy tagging boundary, runtime tracker validation, source/UTM/GCLID persistence, conversion implementation, `visit_completed` linkage/import, privacy/cookie alignment and end-to-end validation.
 
-### B-003 — GA4 production access/property unresolved
+### B-003 — GA4 property creation / privacy architecture
 
-**State:** READY  
+**State:** IN_PROGRESS / WAITING_OWNER for account creation step  
 **Class:** HARD for complete measurement baseline; SOFT for Ads/GBP forensic work  
-**Unblock evidence:** correct Dr. Farah property/data stream identified/authorized/connected and test data visible.
+**Verified:** no reusable Dr. Farah property appeared after GA4 re-authorization.  
+**Next owner action:** create clinic-controlled GA4 production property + web stream; do not install tag yet; preferably keep Enhanced Measurement off initially.  
+**Unblock evidence:** new property/stream visible in Windsor.ai, IDs recorded, clinic ownership confirmed, and healthcare/privacy tagging boundary documented.
 
 ### B-004 — Search Console production access/property unresolved
 
@@ -174,17 +190,19 @@ These are the next access gaps to resolve.
 
 ---
 
-## 5. Exact next actions after Project Source replacement
+## 5. Exact next actions
 
-1. Resolve/verify the correct Dr. Farah GA4 property/data stream and connect it to the project workflow.
-2. Resolve/verify the production Search Console property and connect it.
-3. Complete runtime tag inventory and finalize Google tag/GA4 architecture.
-4. Implement source/UTM/GCLID persistence and the compact conversion model.
-5. Implement and validate `visit_completed` attribution/import.
-6. Update privacy/cookie/tracking disclosures to match the implemented architecture.
-7. Complete the Google Ads historical forensic audit.
-8. Complete GBP/Search/local baseline and high-confidence corrections.
-9. Proceed through the master roadmap in priority/gate order.
+1. Owner creates the new clinic-controlled GA4 production property and Web stream using the approved naming/timezone/currency specification in `docs/GA4_ARCHITECTURE_2026-10-24.md`; no site tag deployment yet.
+2. Reconnect/select the new GA4 property in Windsor.ai and record property/stream/measurement IDs.
+3. Resolve/verify the production Search Console property and connect it.
+4. Classify the website pages/events for Google Analytics eligibility under the healthcare/privacy boundary.
+5. Complete runtime tag inventory and finalize the non-duplicative Google tag/Ads destination architecture.
+6. Implement source/UTM/GCLID persistence and the compact conversion model in first-party systems.
+7. Implement and validate `visit_completed` attribution/import through the approved compliant path.
+8. Update privacy/cookie/tracking disclosures to match the implemented architecture.
+9. Complete the Google Ads historical forensic audit.
+10. Complete GBP/Search/local baseline and high-confidence corrections.
+11. Proceed through the master roadmap in priority/gate order.
 
 Safe parallel work remains available in Ads forensic analysis, GBP/reputation analysis, competitor/query research, source taxonomy, economics, Traveler/Pre-Op baseline work and content research.
 
@@ -193,12 +211,14 @@ Safe parallel work remains available in Ads forensic analysis, GBP/reputation an
 ## 6. Do not do yet
 
 - do not launch or materially scale Google Ads while `G2-MEASUREMENT-READY` is red;
+- do not install GA4 site-wide by default on a healthcare website before page/event privacy classification;
+- do not tag booking/admin/authenticated pages without specific approval;
 - do not optimize Ads toward low-quality Google-hosted actions as if they equal completed patients;
 - do not bulk-delete GBP services merely because the catalogue is large;
 - do not create a second roadmap;
 - do not recreate deleted specialized ChatGPT tabs as project memory;
 - do not invent unknown OpenProject identifiers;
-- do not send unnecessary clinical-record detail to analytics/ad platforms;
+- do not send unnecessary clinical-record detail, PII or PHI to analytics/ad platforms;
 - do not leave a material project result only in chat.
 
 ---

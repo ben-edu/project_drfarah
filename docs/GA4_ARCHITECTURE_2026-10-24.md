@@ -2,18 +2,20 @@
 
 **Project:** Dr. Farah VIP Urgent Care  
 **Roadmap item:** P2.2 Resolve GA4 access / property architecture  
-**Status:** IN_PROGRESS — existing-property discovery before any new property is created
+**Status:** IN_PROGRESS — no reusable Dr. Farah property was found; create a new clinic-controlled production property/data stream, but do not deploy the tag until the healthcare/privacy boundary is approved.
 
 ## 1. Verified current state
 
-### FACT — Windsor.ai GA4 access
+### FACT — no accessible Dr. Farah GA4 property was found
 
-The Windsor.ai connection currently exposes only one GA4 property/account selection:
+Windsor.ai initially exposed only:
 
 - property/account ID: `483894121`
 - name: `safeguardsupport.com`
 
-No Dr. Farah GA4 property is currently visible in the connected Windsor.ai workflow.
+The GA4 connector was then re-authorized using the Google account intended for the clinic assets. Owner confirmation on 2026-10-24: **no Dr. Farah property appeared in the property list**.
+
+For current execution, treat this as no reusable clinic GA4 property being available to the project. Do not spend more time trying to recover the legacy property unless new evidence identifies a specific account/property owner.
 
 ### FACT — Google Ads contains a legacy GA4-origin conversion action
 
@@ -26,186 +28,182 @@ The live Dr. Farah Google Ads account `652-510-3588` contains a hidden conversio
 - primary for goal: `False`
 - no recorded last conversion date
 
-This is evidence that a GA4-related website conversion was previously imported/configured in Google Ads. It does **not** by itself prove that the original GA4 property still exists, is correctly configured, is owned by the clinic, or is currently collecting data.
+This proves that a GA4-origin website conversion was previously configured/imported in Ads. It does **not** prove that the original GA4 property still exists, is clinic-controlled, or is suitable for reuse.
 
 ### FACT — repository measurement state
 
-The current repository/source audit found no implemented Google tag, GTM container, GA4 event layer, or booking/call analytics in the inspected frontend source. The production assembly script does not currently inject analytics code.
+The current repository/source audit found no implemented Google tag, GTM container, GA4 event layer, or booking/call analytics in the inspected frontend source. The production assembly does not inject analytics code.
 
-Google Ads exposes site tag ID `AW-17076731177`, and Ads auto-tagging is enabled.
+Google Ads exposes Google tag ID:
 
-## 2. Immediate decision
+`AW-17076731177`
 
-**Do not create a new GA4 property yet.**
+Google Ads auto-tagging is enabled.
 
-First attempt to discover and authorize any existing Dr. Farah GA4 property using the Google account that now has access to the clinic's Google assets. Creating a second property before discovery could fragment historical data, ownership, Ads links, and future reporting.
+## 2. Current decision
 
-If no valid existing clinic-owned property can be found after authorization/account review, create a new clean production property under clinic-controlled ownership.
+Create a **new clinic-controlled GA4 production property and web data stream** for `drfarahvipurgentcare.com`.
 
-## 3. Existing-property acceptance criteria
+Do **not** install the GA4/Google tag on the website yet.
 
-An existing property is reusable only if all material conditions are satisfied:
+Property/data-stream creation is an account-architecture step only. Tag deployment remains gated by healthcare/privacy review and implementation design.
 
-1. it is for `drfarahvipurgentcare.com` / Dr. Farah VIP Urgent Care;
-2. Dr. Farah / the clinic retains durable administrative control;
-3. Behnam can receive the access level needed for implementation and analysis;
-4. reporting timezone is or can be aligned to `America/Los_Angeles`;
-5. currency is or can be aligned to USD;
-6. the production web stream is identifiable and not materially contaminated by unrelated sites;
-7. current or historical tag configuration can be understood;
-8. Google Ads linkage/destinations can be reviewed and corrected;
-9. no duplicate production measurement architecture would be created by reuse.
+## 3. Property creation specification
 
-If these conditions fail materially, a new clinic-controlled production property may be cleaner than preserving a bad legacy implementation.
+Create under a Google Analytics account controlled by Dr. Farah / the clinic.
 
-## 4. Target architecture
+Recommended values:
 
-### 4.1 Ownership
+- property name: `Dr Farah VIP Urgent Care - Production`
+- reporting timezone: `America/Los_Angeles` / Los Angeles Pacific time
+- currency: `USD`
+- web stream URL: `https://drfarahvipurgentcare.com`
+- stream name: `Production Website`
 
-GA4 should be a clinic-controlled business asset, not dependent on Behnam's unrelated personal/business analytics properties.
+Record after creation:
 
-Preferred durable ownership model:
+- Analytics account name/ID;
+- GA4 property name/ID;
+- web stream name/ID;
+- `G-...` measurement ID;
+- administrators/editors with durable clinic control.
 
-- clinic/Dr. Farah retains administrator-level control;
-- Behnam receives the role needed to implement, audit, and manage measurement;
-- access changes are documented as project/account administration, not embedded in code.
+Do not place the measurement ID in production code until the privacy/measurement gate below is resolved.
 
-### 4.2 Production web stream
+## 4. Ownership model
 
-Target production site:
+GA4 must be a clinic-controlled business asset, not dependent on Behnam's unrelated analytics properties.
 
-`https://drfarahvipurgentcare.com`
+Preferred durable access:
 
-Target reporting timezone:
+- Dr. Farah / clinic retains administrator-level control;
+- Behnam receives the level needed for implementation, audit and measurement operations;
+- Windsor.ai/project analysis access is connected after property creation;
+- access changes are documented as account administration rather than embedded in code.
 
-`America/Los_Angeles`
+## 5. Healthcare/privacy gate — supersedes the earlier site-wide-tag assumption
 
-Target currency:
+Earlier architecture assumed one site-wide Google tag footprint. Current official Google Analytics healthcare guidance requires a more conservative design for a US medical clinic.
 
-`USD`
+Google states that Analytics customers must not send PII, and HIPAA-regulated entities must not expose Google to PHI. Google also states that authenticated pages are likely HIPAA-covered and that unauthenticated pages related to the provision of healthcare services may also be HIPAA-covered; customers should not place Google Analytics tags on HIPAA-covered pages.
 
-The exact GA4 property ID, stream ID, and `G-...` measurement ID must be recorded only after the correct property/stream is verified.
+Therefore:
 
-### 4.3 Staging isolation
+1. **do not deploy GA4 site-wide by default;**
+2. **do not tag booking/admin/authenticated pages unless specifically cleared;**
+3. identify which public pages, if any, can lawfully/policy-compliantly use Google Analytics;
+4. do not send names, email addresses, phone numbers, free-text symptoms, diagnosis, treatment, medication, test results or other patient/clinical details;
+5. do not send sensitive health intent through page URLs, page titles, event names/parameters, custom dimensions, UTM parameters or form-interaction capture;
+6. disable automatic measurement features that could capture unsafe context until each is reviewed;
+7. align the privacy/cookie disclosure with the final implemented architecture.
+
+This is both a compliance/policy boundary and a data-quality requirement.
+
+## 6. Enhanced Measurement default
+
+For the newly created stream, prefer **Enhanced Measurement OFF initially** until the implementation review is complete.
+
+Reason: GA4 Enhanced Measurement can automatically collect page views and interaction types such as form interactions and site search. Those automatic events are useful on normal sites but are not an acceptable default on a healthcare website until we have confirmed what data each page/interaction can expose.
+
+Individual measurement options can be enabled later where specifically justified and tested.
+
+## 7. Production vs staging
 
 Production measurement must not be polluted by staging traffic.
 
-Preferred initial approach for this static-site deployment:
+Target rule:
 
-- production receives the production Google tag;
-- staging does not send events to the production GA4 property or Google Ads;
-- event code may no-op or use explicit debug/test behavior outside the production hostname;
-- a separate staging/test stream/property is optional later if repeated analytics QA justifies it.
+- production and staging must never share uncontrolled production analytics traffic;
+- production tag inclusion must be explicit and hostname-aware;
+- staging should no-op or use a dedicated test/debug arrangement;
+- no production Ads/GA4 event should fire merely because the same static source is deployed to staging.
 
-This is simpler and safer than sending staging traffic into production and filtering it after collection.
+## 8. Tag architecture after privacy approval
 
-### 4.4 One site-wide Google tag footprint
+For pages/events cleared for Google measurement, prefer the smallest repository-controlled implementation.
 
-Use one site-wide Google tag implementation and connect the required Google destinations rather than installing independent duplicate tags for GA4 and Google Ads.
+Initial engineering preference remains:
 
-Initial target destinations:
+- direct Google tag / small analytics wrapper rather than GTM by default;
+- no duplicate GA4 and Ads tag implementations;
+- deterministic production/staging controls in code/deployment;
+- GTM only if a concrete operational requirement later justifies it.
 
-- verified Dr. Farah GA4 web stream;
-- Google Ads account/tag destination associated with `AW-17076731177`.
+The exact destination relationship between the new GA4 stream and Google Ads tag `AW-17076731177` must be reviewed before deployment.
 
-The exact destination/tag relationship must be reviewed after GA4 access is obtained, because Google Ads may already contain legacy tag/destination configuration.
+## 9. Measurement model
 
-### 4.5 Direct Google tag vs Google Tag Manager
+Keep the model compact and business-outcome oriented.
 
-**Initial recommendation:** direct Google tag + a small repository-controlled analytics wrapper, not GTM by default.
+### Diagnostic events
 
-Reasons:
+Only on pages/interactions approved for Google measurement, examples may include:
 
-- current frontend is a controlled static site with normal Git/Jenkins deployment;
-- required first-phase events are limited and known;
-- production/staging behavior can be enforced in code/build controls;
-- fewer moving parts reduces duplicate-tag and governance risk;
-- custom business-outcome attribution (`visit_completed`) will depend primarily on first-party booking/admin linkage, not on a large browser-tag taxonomy.
+- safe page/landing view;
+- safe primary CTA interaction;
+- click-to-call where policy/privacy design permits;
+- technical/funnel diagnostics that contain no patient/health detail.
 
-Reconsider GTM later if there is a concrete need for frequent non-code tag changes, multiple third-party marketing tags, specialized experimentation, or delegated marketing operations that justify a container layer.
-
-## 5. Measurement model
-
-Keep browser/event measurement compact.
-
-### Diagnostic / behavioral
-
-Examples:
-
-- page/landing view;
-- primary CTA interaction;
-- booking start;
-- availability shown;
-- click-to-call;
-- technical booking failure where useful.
-
-These events support funnel diagnosis and UX analysis. They should not automatically become Google Ads primary conversions.
+These are not automatically Ads primary conversions.
 
 ### Lead / secondary outcome
 
 `booking_request_created`
 
-Trigger only after the booking API successfully creates the pending appointment. It is stronger than a button click but is not a completed visit.
+Business meaning: a pending booking request was successfully created.
+
+Do not send patient/clinical fields to GA4/Ads. If this event cannot be implemented without exposing PHI or linking a healthcare interaction impermissibly, keep the authoritative signal in first-party systems instead of forcing it into GA4.
 
 ### Primary business outcome
 
 `visit_completed`
 
-This is the intended optimization outcome once reliable attribution exists.
+This remains the intended business optimization outcome, but its delivery to Google must use a compliant, minimal, deduplicated attribution design and may be better handled through a controlled first-party/offline conversion path rather than browser analytics.
 
-Target linkage:
+Target business linkage:
 
-`first-party acquisition/click context → booking attribution record → appointment → status=completed → deduplicated business-outcome conversion`
+`first-party acquisition/click context → booking attribution record → appointment → completed status → approved deduplicated outcome signal`
 
-The completed-visit conversion should be generated from the authoritative booking/admin outcome rather than from a browser thank-you page.
+## 10. Attribution requirements
 
-## 6. Attribution requirements
-
-Before paid relaunch, preserve enough first-party acquisition context to reconcile a booking and completed visit to marketing source where technically/policy appropriate, including:
+Preserve useful acquisition context in first-party systems where lawful/appropriate, including:
 
 - first landing page;
 - source / medium / campaign;
-- relevant UTM values;
-- explicit partner/referral identifier;
-- Google click identifiers such as GCLID and applicable equivalents when available and permitted;
+- relevant UTM values that do not contain PII or sensitive health information;
+- partner/referral identifier;
+- Google click identifiers such as GCLID where applicable and permitted;
 - anonymous/internal marketing-session or attribution reference;
-- booking/appointment linkage through an opaque internal reference.
+- booking/appointment linkage through opaque internal references.
 
 Do not overload the legacy short `appointments.source` field with the entire attribution model.
 
-## 7. Data-use boundary
+## 11. Immediate next action
 
-Use useful lawful/platform-compliant measurement and optimization capabilities without unnecessary self-restriction.
+Owner action:
 
-Do not include unnecessary medical-record detail in GA4/Ads event payloads. In particular, do not send free-text symptoms, diagnoses, medications, treatment notes, test results, patient identifiers, or similarly unnecessary clinical content as analytics dimensions/events.
+1. open Google Analytics under the clinic-controlled Google account;
+2. create the production GA4 property using the specification in section 3;
+3. create the production Web data stream;
+4. leave tag installation for later;
+5. preferably leave Enhanced Measurement off initially;
+6. reconnect/authorize the GA4 property in Windsor.ai;
+7. provide/verify the resulting property/stream/measurement IDs through the connected system.
 
-Service/intent information that could reveal sensitive health interests should be reviewed before being sent to Google advertising/analytics systems; internal first-party analytics may retain more business context where justified and governed.
+After the property is visible to Windsor.ai, the project can capture the baseline and proceed to page/tag privacy classification and implementation design.
 
-The public privacy/cookie/tracking copy must be updated after the implemented stack is known so the disclosure matches actual behavior.
+## 12. P2.2 completion evidence
 
-## 8. Immediate discovery action
+P2.2 can be marked DONE when:
 
-Re-authorize/add Google Analytics 4 in Windsor.ai using the Google account that has access to Dr. Farah's Google assets, then inspect the property list.
-
-Decision tree:
-
-1. **Dr. Farah GA4 property appears** → connect it, inspect property/stream/ownership/history, and decide reuse vs cleanup.
-2. **Property exists in Google Analytics but not under Behnam's account** → Dr. Farah grants suitable GA4 property access or authorizes the property through the clinic-controlled account.
-3. **No Dr. Farah GA4 property exists** → create one clean clinic-controlled production property and web stream, then connect it.
-
-Do not install a `G-...` ID on the site until the correct property/stream is verified.
-
-## 9. P2.2 completion evidence
-
-P2.2 can be marked DONE only when:
-
-- correct clinic GA4 property is identified/created;
+- new clinic-controlled GA4 property exists;
 - durable ownership/access is confirmed;
-- production web stream is identified;
+- production web stream exists;
 - property ID / stream ID / measurement ID are recorded;
-- production vs staging architecture is decided;
 - Windsor/project analysis access is connected;
-- Google Ads destination/link relationship is understood;
-- a test pageview/event can be validated after implementation.
+- production/staging architecture is documented;
+- healthcare/privacy tag boundary is documented;
+- the relationship with Google Ads is understood;
+- a controlled safe test event/pageview is validated **only after** the implementation/privacy gate permits deployment.
 
-Implementation of the site tag/events continues under P2.6–P2.11.
+Tag/event implementation continues under P2.6–P2.11.
