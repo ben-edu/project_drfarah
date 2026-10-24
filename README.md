@@ -1,40 +1,33 @@
 # Dr. Farah VIP Urgent Care — Project Repository
 
-This repository is the durable project memory and technical source for the Dr.
-Farah VIP Urgent Care website, booking system, Google marketing, local SEO,
-reputation, growth experiments and future analytics/growth-intelligence work.
+This repository is the durable source for the Dr. Farah VIP Urgent Care website, booking platform, Google marketing, local SEO/reputation, growth workstreams, measurement and future Growth Intelligence work.
 
-The project now uses **one active ChatGPT workspace** instead of separate chat
-tabs for every OpenProject workstream. GitHub preserves the durable context so
-work can continue safely when chat context windows end.
+The project uses **one active ChatGPT project workspace: the existing BG-20 tab**. The former specialized tabs are represented as logical/OpenProject workstreams inside the single master roadmap.
 
 ## Start here
 
-For a new session or operator, read in this order:
+Read in this order for a new substantial session:
 
-1. [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) — current state, blockers and exact next action.
-2. [`ROADMAP.md`](ROADMAP.md) — cross-workstream phases, dependencies, gates and safe parallelization.
+1. [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) — current state, blockers and exact next actions.
+2. [`ROADMAP.md`](ROADMAP.md) — the **only master roadmap**: phases, gates, dependencies, workstream inventory and safe parallelization.
 3. [`docs/DECISIONS.md`](docs/DECISIONS.md) — approved decisions only.
-4. [`docs/BUSINESS_GROWTH_SOURCE.md`](docs/BUSINESS_GROWTH_SOURCE.md) — consolidated business/growth context.
-5. [`docs/PROJECT_OPERATING_MODEL.md`](docs/PROJECT_OPERATING_MODEL.md) — how GitHub, OpenProject, ChatGPT and live systems interact.
-6. [`PROJECT.md`](PROJECT.md) — deeper stable product/technical charter.
+4. [`docs/BUSINESS_GROWTH_SOURCE.md`](docs/BUSINESS_GROWTH_SOURCE.md) — compact durable business/growth context.
+5. [`docs/PROJECT_OPERATING_MODEL.md`](docs/PROJECT_OPERATING_MODEL.md) — how GitHub, OpenProject, the single ChatGPT workspace and live systems interact.
+6. [`PROJECT.md`](PROJECT.md) — stable website/product/technical charter.
+7. Only the relevant baseline/spec/runbook/code for the task at hand.
 
-`HANDOFF.md` remains the detailed historical website/deployment handoff. Use
-`PROJECT_HANDOFF.md` for the current unified cross-workstream resume point.
+`HANDOFF.md` is detailed/historical website/deployment evidence. It is **not** the current unified resume file.
 
 ## Authority model
 
-- **GitHub:** durable roadmap, current handoff, decisions, code, runbooks and technical evidence.
-- **OpenProject:** live work-package status, assignment, dates, dependencies, milestones and completion.
-- **ChatGPT:** reasoning, research and execution interface; not durable source of truth.
+- **GitHub:** durable roadmap, current handoff, decisions, stable facts, code, runbooks and evidence.
+- **OpenProject:** live work-package status, assignee, dates, dependencies, milestones and completion.
+- **Single ChatGPT workspace (BG-20):** reasoning, research and execution interface; not durable truth.
 - **Live systems:** authority for their own current state (Google Ads, GBP, Search Console, GA4, booking/admin, Jenkins, production endpoints).
 
-No material decision, blocker or project fact should exist only in chat.
+No material project result should exist only in chat.
 
 ## Consolidated workstreams
-
-The former specialized chat tabs remain as logical OpenProject workstreams but
-are handled from one active project chat:
 
 - BG-00 — Governance, Decisions & Measurement
 - BG-10 — Website & Conversion
@@ -47,69 +40,66 @@ are handled from one active project chat:
 - BG-80 — Analytics & Growth Intelligence
 - BG-90 — Operations / Compliance Readiness
 
-## Current top-level priority
+Separate ChatGPT tabs are not required. OpenProject workstream identities remain valid.
 
-Do not launch meaningful paid Google Ads traffic until the booking path and
-measurement foundation are validated.
+## Current project principle
 
-Current high-level sequence:
+Do not launch meaningful paid traffic into an unhealthy booking path or unvalidated measurement system.
 
-`Booking health → Measurement inventory → Conversion specification → Google account baselines → Measurement validation → Foundation corrections → Demand/landing pages → First controlled paid experiment`
-
-Read `PROJECT_HANDOFF.md` for the live queue and blockers.
+Use the current queue in `PROJECT_HANDOFF.md`; do not infer current priority from this README.
 
 ## Environment domains
 
 | Purpose | Host |
 |---|---|
-| Frontend prod | `drfarahvipurgentcare.com` |
-| Frontend canonical alias | `www.drfarahvipurgentcare.com` → redirect to apex |
+| Frontend production | `drfarahvipurgentcare.com` |
+| Frontend canonical alias | `www.drfarahvipurgentcare.com` → apex |
 | Frontend staging | `staging.drfarahvipurgentcare.com` |
-| API prod | `api.drfarahvipurgentcare.com` |
+| API production | `api.drfarahvipurgentcare.com` |
 | API staging | `api-staging.drfarahvipurgentcare.com` |
-| Admin prod | `admin.drfarahvipurgentcare.com` |
+| Admin production | `admin.drfarahvipurgentcare.com` |
 | Admin staging | `admin-staging.drfarahvipurgentcare.com` |
 
-## Repository layout
+## Core control-plane layout
 
 ```text
 .
 ├── README.md
 ├── PROJECT_HANDOFF.md             # Live unified resume point
-├── ROADMAP.md                     # Unified phased roadmap and gates
-├── PROJECT.md                     # Stable product/technical charter
+├── ROADMAP.md                     # Only master project roadmap
+├── PROJECT.md                     # Stable website/product/technical charter
 ├── HANDOFF.md                     # Historical/detailed website deployment handoff
-├── SESSION_LOG.md                 # Historical session log
-├── Jenkinsfile
+├── SESSION_LOG.md
 ├── docs/
-│   ├── BUSINESS_GROWTH_SOURCE.md  # Consolidated business/growth source
-│   ├── PROJECT_OPERATING_MODEL.md # Control-plane rules
-│   ├── DECISIONS.md               # Approved decisions
-│   ├── READINESS_AUDIT.md
-│   ├── EMAIL_DELIVERY_RUNBOOK.md
-│   └── ... technical runbooks
+│   ├── DECISIONS.md
+│   ├── BUSINESS_GROWTH_SOURCE.md
+│   ├── PROJECT_OPERATING_MODEL.md
+│   ├── CONVERSION_MEASUREMENT_SPEC.md
+│   ├── MEASUREMENT_BASELINE_*.md
+│   ├── GOOGLE_ADS_BASELINE_*.md
+│   ├── GBP_BASELINE_*.md
+│   └── ... detailed runbooks/baselines/specifications
 ├── frontend/
 ├── admin/
 ├── api/
 └── kubernetes/drfarah/
 ```
 
+Detailed runbooks/specifications may describe implementation, but they do not become competing roadmaps.
+
 ## Branch and deployment rules
 
 - proposed work uses a dedicated feature/fix/docs branch;
-- `dev` is the integration/staging branch;
+- `dev` is integration/staging;
 - `main` is production;
-- do not commit directly to `main` as a routine workflow;
-- deployment is performed only by Jenkins;
-- no secrets in Git — commit only safe examples/references.
+- Jenkins is deployment authority;
+- no routine direct commits to `main`;
+- no secrets in Git.
 
-## Session close rule
+## Resume rule
 
-After a material session:
+A new session should not need old ChatGPT history. It should:
 
-1. update `PROJECT_HANDOFF.md`;
-2. update `ROADMAP.md` only if sequence/gates changed;
-3. update `docs/DECISIONS.md` only for approved decisions;
-4. update `PROJECT.md` only for durable scope/fact/architecture changes;
-5. preserve relevant execution evidence in OpenProject;
-6. never leave an important result only in chat.
+`read PROJECT_HANDOFF → read relevant ROADMAP phase → verify live state → execute → validate → update PROJECT_HANDOFF`
+
+If a blocker appears, record hard/soft status, unblock evidence, prohibited downstream work, safe parallel work and exact restart point.
