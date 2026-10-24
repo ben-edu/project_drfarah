@@ -1,262 +1,345 @@
 # PROJECT HANDOFF — Dr. Farah VIP Urgent Care
 
-> **Live cross-workstream resume document.**  
-> Read this first when resuming the project. Historical deployment detail remains in `HANDOFF.md`.
+> **Live unified resume document.**  
+> A new ChatGPT context/operator should be able to continue the project from this file + `ROADMAP.md` without reading old chats.
 
 **Last updated:** 2026-10-24  
 **Repository:** `ben-edu/project_drfarah`  
-**Integration branch:** `dev`  
-**Active documentation branch / PR:** `docs/unified-project-control-20261021` / PR #78  
-**Roadmap:** `ROADMAP.md`
+**Integration/default branch:** `dev`  
+**Current control branch / PR:** `docs/unified-project-control-20261021` / PR #78  
+**Canonical roadmap:** `ROADMAP.md`  
+**Single active ChatGPT project workspace:** existing `BG-20` tab, repurposed as the unified project workspace
 
-## 1. Authority model
+---
 
-- **GitHub:** durable project memory, roadmap, handoff, decisions, code and evidence.
-- **OpenProject:** authoritative for live work-package status, owner, dates, dependencies, milestones and completion.
-- **Live systems:** authoritative for their own current state.
-- **ChatGPT:** analysis/execution interface; never the sole durable record.
+## 1. Control-plane state
 
-Separate ChatGPT workstream tabs are being retired in favor of one unified project chat. The BG-00 through BG-90 workstream identities remain valid for OpenProject mapping and ownership.
+### Current decision
 
-## 2. Immediate project focus
+- GitHub is the durable project memory for roadmap, handoff, decisions, stable facts, code, runbooks and evidence.
+- OpenProject remains authoritative for live work-package status, assignee, dates, dependencies, milestones and completion.
+- Live systems remain authoritative for their own current state.
+- The former specialized ChatGPT tabs are being consolidated into the existing BG-20 tab.
+- Separate workstream identities BG-00 through BG-90 remain valid for OpenProject mapping and handoffs.
 
-Current focus is conversion infrastructure + Google marketing forensic audit + relaunch readiness.
+### Current control-plane task
 
-Current sequence:
+`P0.1` is **IN_PROGRESS**.
 
-`Booking health → live Google/website baselines → measurement architecture → visit_completed attribution → high-confidence corrections → demand/landing-page work → controlled paid relaunch → ongoing optimization`
+PR #78 contains the unified control model. The master roadmap has now been expanded to preserve the former-tab work packages and website/development obligations.
 
-The roadmap is gate-based, not rigidly linear. Safe read-only work may continue while an unrelated hard blocker is open.
+Do not delete the other ChatGPT tabs until:
 
-## 3. Current access state
+1. PR #78 is merged to `dev`;
+2. minimal Project Source router files are uploaded/replaced;
+3. a quick resume test confirms that the single BG-20 tab can find `PROJECT_HANDOFF.md` and `ROADMAP.md` on `dev`.
 
-### GitHub
+After that, old tabs may be retired without losing intended work.
 
-`FACT:` The connected GitHub account has sufficient repository permissions to read/write files, create branches/PRs/issues and maintain the project documentation workflow for `ben-edu/project_drfarah`.
+---
 
-### Google Ads
+## 2. Current strategic focus
 
-`FACT:` Windsor.ai now exposes Dr. Farah's Google Ads account directly:
+Immediate project objective:
+
+> stabilize booking + establish reliable marketing measurement + complete Google account baselines + correct high-confidence issues before paid relaunch.
+
+The current high-level order is:
+
+`Control plane → Booking health → GA4/Search Console access → Measurement/visit_completed → Google forensic baselines → High-confidence corrections → Economics/service priorities → Landing paths → Controlled Ads relaunch → Local/reputation cycle → Traveler/Pre-Op/Content → Growth Intelligence/scale`
+
+This order is gate-based, not rigidly linear. Safe independent work may proceed around soft blockers.
+
+---
+
+## 3. Verified current facts
+
+### Business
+
+- Dr. Farah VIP Urgent Care
+- 9229 Wilshire Blvd., Beverly Hills, CA 90210
+- Phone: 310-467-0101
+- Primary timezone: America/Los_Angeles / Pacific Time
+- owner-confirmed regular hours currently recorded in project context: Monday–Friday 8:30 AM–5:30 PM; last patient before 5:00 PM.
+
+### Repository / deployment
+
+- repository: `ben-edu/project_drfarah`
+- `dev` = integration/staging branch
+- `main` = production branch
+- Jenkins remains deployment authority
+- current production/staging/deployment history remains in `HANDOFF.md`
+- do not restart already accepted domain migration/deployment work because historical checklists remain in older docs.
+
+### Booking / Brevo
+
+`B-001` remains open.
+
+The booking flow persists the appointment even if outbound email fails. Brevo-related delivery remediation is being handled in a separate technical workflow.
+
+Paid traffic remains blocked until a controlled production booking verifies the expected notification behavior.
+
+### Website measurement
+
+Repository/source audit found no implemented Google tag/GTM/GA4 event layer or booking/call analytics in inspected site source, and production assembly did not inject one.
+
+Google Ads live account exposes Google tag:
+
+`AW-17076731177`
+
+Google Ads auto-tagging is enabled.
+
+The project must still verify production runtime before claiming no third-party tag is present outside Git.
+
+The current website privacy copy states essential-cookie/no-third-party-tracking behavior; this must be updated after the final measurement/consent architecture is implemented so public copy matches reality.
+
+### Canonical conversion direction
+
+Use a compact model:
+
+- diagnostic funnel events for debugging/UX;
+- `booking_request_created` as a lead/secondary signal after successful booking API creation;
+- `visit_completed` as the intended primary business outcome once reliable appointment/source linkage and Ads import are validated.
+
+Do not mislabel a pending booking request as a completed patient visit.
+
+### Google Ads access and historical reality
+
+Windsor.ai connection is operational for Dr. Farah Google Ads account:
 
 - Customer ID: `652-510-3588`
 - currency: USD
-- timezone: `America/Los_Angeles`
-- account status: ENABLED
-- manager/MCC: false
+- timezone: America/Los_Angeles
+- status: enabled
+- no manager/MCC account on the customer
 - auto-tagging: enabled
+- conversion tracking managed by self
 
-Read access is working. Windsor also exposes supported write actions, but material external changes require explicit approval before execution.
+The prior assumption that no campaign ever ran is **superseded**.
 
-### Google Business Profile
+Verified historical campaign:
 
-`FACT:` Windsor.ai now exposes the clinic profile directly:
+- `Urgent Care Medical Center`
+- type: Smart
+- current status: paused
+- activity: June 2025 through February 2026
+- impressions: 258,541
+- clicks: 5,590
+- spend: $4,494.8619
+- platform-reported conversions: 16
+- platform conversion cost: roughly $281 per reported conversion, but business outcome quality is not yet reconciled.
 
-- location resource: `locations/6719840585856592244`
-- name: Dr Farah VIP Urgent Care
+Known current conversion actions include Google-hosted/call/map actions and a hidden GA4 purchase action. Current primary goals are not yet aligned to `visit_completed`.
 
-Read access is working; supported profile write actions are also available subject to explicit approval.
+Detailed baseline: `docs/GOOGLE_ADS_BASELINE_2026-10-24.md`.
 
-### GA4
+### Google Business Profile access and baseline
 
-`DATA GAP:` The only GA4 property currently visible through this Windsor context is for `safeguardsupport.com`, not Dr. Farah. The production Dr. Farah GA4 property is not yet connected/identified here.
+Windsor.ai connection is operational for the live profile:
 
-### Google Search Console
-
-`DATA GAP:` The visible properties are `behnam.fr`, `soria-academie.fr` and `soria-ai.fr`. The production `drfarahvipurgentcare.com` property is not yet connected/identified here.
-
-### OpenProject
-
-No direct OpenProject connector surfaced in the current plugin environment. This does **not** change its authority. GitHub remains the durable evidence/handoff layer and OpenProject status must be synchronized separately when work-package state matters.
-
-## 4. Booking / Brevo
-
-`BLOCKER B-001:` Booking/Brevo delivery remediation is active in a separate technical workflow.
-
-- hard dependency for meaningful paid-media launch;
-- soft dependency for Google Ads/GBP audits, measurement design, local SEO, historical analysis and demand research.
-
-Close only after controlled production booking persistence and expected delivery behavior are verified.
-
-## 5. Website measurement baseline
-
-Source audit evidence is in `docs/MEASUREMENT_BASELINE_2026-10-21.md`.
-
-`FACT:` Repository/source inspection found no implemented Google tag, GTM, GA4 event stack, Google Ads website conversion tag, booking analytics events or click-to-call analytics in the current frontend source.
-
-`FACT:` production assembly does not inject these tags.
-
-`FACT:` current booking code preserves only a coarse `source` value derived from `partner`, `source`, or `utm_source` and stores it in `appointments.source` (`String(32)`).
-
-`FACT:` the current privacy page says the site uses essential cookies only and no advertising/third-party tracking. That statement must be revised when the actual marketing/analytics stack changes.
-
-`DECISION DIRECTION:` use lawful, policy-compliant measurement as fully as useful for marketing; do not impose arbitrary restrictions. Do not transmit unnecessary clinical/medical details to advertising systems.
-
-## 6. Conversion measurement direction
-
-`docs/CONVERSION_MEASUREMENT_SPEC.md` contains the initial specification, but the operating model is now intentionally simplified around business outcomes.
-
-Primary hierarchy:
-
-`traffic → booking_request_created → confirmed appointment → visit_completed → revenue/contribution`
-
-`FACT:` The appointment model already supports `pending`, `confirmed`, `cancelled`, `completed` and `no_show` states.
-
-`DECISION DIRECTION:`
-
-- `booking_request_created` remains a useful secondary/lead signal;
-- `visit_completed` should become the principal acquisition-quality signal once click/source attribution and return-to-Google mechanics are validated;
-- diagnostic web events may still be collected for troubleshooting/UX, but should not all be primary Google Ads conversions.
-
-## 7. Google Ads live baseline — major correction
-
-Full evidence: `docs/GOOGLE_ADS_BASELINE_2026-10-24.md`.
-
-### Account measurement configuration
-
-`FACT:` Auto-tagging is enabled.
-
-`FACT:` Google Ads has an account-side Google tag destination:
-
-- `AW-17076731177`
-
-The tag exists in Google Ads configuration but is not implemented in the audited website source.
-
-### Historical campaign evidence
-
-`CORRECTION:` Earlier project information said no campaigns had run. Live Google Ads data disproves that.
-
-One historical campaign is visible:
-
-- campaign: **Urgent Care Medical Center**
-- type: SMART
-- current status: PAUSED
-- serving period in queried history: June 2025 through February 2026
-- impressions: **258,541**
-- clicks: **5,590**
-- spend: **$4,494.8619**
-- Google Ads conversions: **16**
-- conversion value: **$0**
-
-Derived diagnostic values:
-
-- CTR ≈ 2.16%
-- average CPC ≈ $0.80
-- platform conversion rate ≈ 0.29%
-- cost per platform-reported conversion ≈ $280.93
-
-These are not completed-visit CAC metrics.
-
-### Existing Google Ads conversion actions
-
-Live data shows seven actions in the audited view, including:
-
-- Clicks to call — primary
-- Smart campaign map directions — primary
-- Calls from Smart Campaign Ads — primary; last conversion 2026-01-23
-- Smart campaign ad clicks to call — primary
-- Smart campaign map clicks to call — primary
-- Local actions - Directions — primary
-- `drfarahvipurgentcare.com (web) purchase` — hidden, secondary, GA4-origin
-
-`RISK:` The current primary-goal mix is dominated by local/call/direction interactions rather than verified completed visits. Do not relaunch conversion-based bidding until the goal architecture is cleaned and validated.
-
-BG-20 is therefore **historical forensic audit + measurement repair + controlled relaunch readiness**, not a pure pre-launch audit.
-
-## 8. Google Business Profile live baseline
-
-Full evidence: `docs/GBP_BASELINE_2026-10-24.md`.
-
-### Current identity
-
-- name: Dr Farah VIP Urgent Care
-- status: OPEN
+- title: Dr Farah VIP Urgent Care
+- status: open
 - primary category: Urgent care center
-- additional categories: Medical clinic, Walk-in clinic, IV therapy service, Weight loss service, Physical examination center
-- phone: (310) 467-0101
 - website: https://drfarahvipurgentcare.com/
+- phone: (310) 467-0101
 - address: 9229 Wilshire Blvd, Beverly Hills, CA 90210
 - Voice of Merchant: true
-- duplicate-location resource returned: none
+- all-time rating at last check: 5.0
+- all-time review count at last check: 109
 
-### Hours discrepancy
-
-Live GBP regular hours:
-
-- Monday–Thursday: 8:30 AM–5:30 PM
-- Friday: **8:30 AM–4:30 PM**
-
-Project-confirmed clinic hours are Monday–Friday 8:30 AM–5:30 PM, with last patient before 5:00 PM.
-
-`HIGH-PRIORITY CORRECTION CANDIDATE:` Friday closing time is inconsistent. Preserve baseline first; then correct after final operating confirmation.
-
-### Reputation
-
-`FACT:` current rating = **5.0**.
-
-`FACT:` current review count = **109**. This supersedes the previous 108-review screenshot baseline.
-
-### Recent 90-day GBP performance
+Recent 90-day profile performance at last query:
 
 - impressions: 3,860
-- desktop Maps: 387
-- desktop Search: 631
-- mobile Maps: 1,608
-- mobile Search: 1,234
 - website clicks: 130
 - call clicks: 120
 - direction requests: 205
 
-These are profile interactions, not completed visits.
+Current live regular hours show Friday closing at 16:30 while owner-confirmed project hours were 17:30. Verify current clinic truth immediately before changing the profile.
 
-### Service-catalog risk
+The service catalogue is extensive. **Do not bulk-delete services merely because the list is long.** Evaluate actual availability, demand, economics, clarity, duplication, claims/pricing accuracy, conversion usefulness and Google policy before changing service entries.
 
-The profile contains a very large free-form service catalog with many prices, treatment descriptions, medical claims, emergency-like wording and sensitive service categories.
+Detailed baseline: `docs/GBP_BASELINE_2026-10-24.md`.
 
-`RISK:` Do not edit piecemeal. Audit the catalog systematically against current service availability, approved pricing, website positioning, Google policies and business priority.
+### GA4 / Search Console
 
-## 9. Current priority queue
+Dr. Farah production GA4 and Search Console sources are not yet connected/verified in the current project data workflow.
 
-| Priority | Work | State | Acceptance / dependency |
-|---:|---|---|---|
-| 0 | Resolve booking/Brevo production delivery | IN_PROGRESS | controlled production booking + expected delivery evidence |
-| 1 | Google Ads historical forensic/configuration audit | IN_PROGRESS | campaign, goals, geo, search/query, rules, changes, landing paths documented |
-| 2 | GBP baseline and high-confidence corrections | IN_PROGRESS | full before-state captured; hours/service/category/description findings classified |
-| 3 | Production measurement/tag implementation design | IN_PROGRESS | exact Google/GA4 IDs + consent/privacy architecture + attribution contract |
-| 4 | `visit_completed` attribution implementation | READY | preserve click/source identifiers and map completed appointment outcome back to acquisition |
-| 5 | Connect/verify Dr. Farah GA4 | WAITING_EXTERNAL | correct production property/data stream visible |
-| 6 | Connect/verify Dr. Farah Search Console | WAITING_EXTERNAL | correct production property visible |
-| 7 | Implement/validate Google tag + analytics/conversions | WAITING | architecture/IDs/privacy changes ready; deploy through Jenkins |
-| 8 | Correct verified Ads/GBP/site foundation issues | READY as findings mature | before-state + exact approved change + validation |
-| 9 | Demand/keyword/local competitor/service-priority research | READY | can proceed in parallel |
-| 10 | Evidence-backed landing-page improvements | NOT_STARTED | formal BG-10 handoff |
-| 11 | First controlled paid relaunch | BLOCKED | booking + measurement + goal cleanup + landing readiness |
-| 12 | Ongoing review/reputation system | READY after GBP baseline acceptance | neutral compliant workflow + measurement |
-| 13+ | Traveler, Pre-Op, Content, Growth Intelligence | NOT_STARTED | see roadmap gates |
+This is a current priority, not a future optional task.
 
-## 10. Immediate next actions
+---
 
-Proceed without waiting for GA4/Search Console on work that does not depend on them:
+## 4. Current blockers
 
-1. finish Google Ads forensic audit: geo, targeting, campaign settings, historical search/query evidence, automated rules and change history;
-2. finish GBP baseline: search keywords, reviews/replies, categories/services, description, links and current performance trends;
-3. design the shortest robust attribution path to `visit_completed`;
-4. define exact production Google tag / GA4 architecture and environment isolation;
-5. revise privacy/cookie language in the same implementation cycle as the new tracking behavior;
-6. correct only high-confidence factual GBP problems after explicit approval;
-7. connect Dr. Farah GA4 and Search Console when available;
-8. do not relaunch meaningful paid traffic until the booking and measurement gates are green.
+### B-001 — Booking/Brevo delivery
 
-## 11. Change-control rules
+**State:** IN_PROGRESS  
+**Class:** HARD for paid launch / SOFT for read-only research  
+**Unblock evidence:** controlled production booking persists and expected notification/receipt behavior is verified.  
+**Safe parallel:** Ads/GBP/SC/GA4 work, measurement design, research, economics baselines.
 
-For material external changes:
+### B-002 — Measurement implementation not yet live
 
-1. preserve before-state/evidence;
-2. classify FACT / HYPOTHESIS / DATA GAP / DECISION;
-3. state exact proposed change and business reason;
-4. obtain explicit approval where required;
-5. execute one bounded change set;
-6. validate result;
-7. update GitHub evidence/handoff;
-8. synchronize relevant OpenProject status/evidence separately.
+**State:** IN_PROGRESS  
+**Class:** HARD for paid relaunch  
+**Established:** source audit + Ads tag availability.  
+**Still needed:** runtime validation, GA4 property/data stream, source/GCLID persistence, conversion architecture, `visit_completed` linkage/import, privacy/cookie alignment, end-to-end validation.
 
-Never leave a material result only in chat.
+### B-003 — GA4 production access/property unresolved
+
+**State:** READY  
+**Class:** HARD for full measurement baseline / SOFT for Ads/GBP forensic work  
+**Unblock evidence:** correct Dr. Farah property/data stream identified/connected and test data observed.
+
+### B-004 — Search Console production access/property unresolved
+
+**State:** READY  
+**Class:** HARD for BG30-04 / SOFT for Ads/GBP work  
+**Unblock evidence:** correct `drfarahvipurgentcare.com` property verified/connected; sitemap/indexing data readable.
+
+### B-005 — Control plane not yet merged to `dev`
+
+**State:** IN_PROGRESS  
+**Class:** HARD for retiring old tabs / SOFT for current work  
+**Unblock evidence:** PR #78 merged, core files present on `dev`, Project Source routers updated to point to `dev`.
+
+---
+
+## 5. Work completed in the current control/marketing effort
+
+- unified project-control branch and PR #78 created;
+- `ROADMAP.md` converted into one master roadmap and expanded to preserve former-tab work;
+- full known OpenProject maps for BG-00, BG-20, BG-30, BG-40, BG-50, BG-60 and BG-80 preserved in the roadmap;
+- known BG70/BG90 identifiers preserved without fabricating unknown IDs;
+- website/booking/deployment obligations integrated into the master roadmap rather than treated as a second roadmap;
+- `docs/PROJECT_OPERATING_MODEL.md` created;
+- `docs/BUSINESS_GROWTH_SOURCE.md` created;
+- `docs/MEASUREMENT_BASELINE_2026-10-21.md` created;
+- `docs/CONVERSION_MEASUREMENT_SPEC.md` created;
+- live Google Ads baseline captured;
+- live GBP baseline captured;
+- prior “no Ads history” assumption disproven and replaced with live evidence;
+- Google Ads/GBP Windsor connections verified.
+
+---
+
+## 6. Exact next actions
+
+Follow this order unless a hard blocker forces a bypass.
+
+### Next A — finish control plane
+
+1. align README, decisions, operating model and business source with the expanded master roadmap;
+2. ensure no document still treats separate tabs as required;
+3. ensure no document still claims the Ads account has no history;
+4. merge PR #78 to `dev` after documentation consistency check;
+5. replace Project Sources with minimal GitHub-router files;
+6. perform a resume test from `dev`.
+
+### Next B — resolve GA4
+
+1. identify existing Dr. Farah GA4 property/data stream or create/authorize the correct one through the approved account workflow;
+2. connect it to the project/Windsor workflow where supported;
+3. preserve staging/production separation;
+4. record property/data-stream details safely;
+5. validate event receipt after implementation.
+
+### Next C — resolve Search Console
+
+1. identify/verify production property;
+2. authorize project access;
+3. confirm sitemap/indexing visibility;
+4. capture BG30-04 baseline.
+
+### Next D — finish measurement architecture and implementation
+
+1. runtime tag check;
+2. Google tag / GA4 implementation;
+3. source/UTM/GCLID persistence;
+4. `booking_request_created` event;
+5. `visit_completed` linkage/import design + implementation;
+6. call/lead tracking as useful;
+7. privacy/cookie copy update after actual implementation is known;
+8. end-to-end controlled validation.
+
+### Next E — continue Google forensic audits in parallel
+
+Ads:
+
+- historical monthly/campaign audit;
+- conversion-action quality;
+- search terms/intent where available;
+- geo/device/day-hour;
+- rules/assets/landing destinations;
+- reconcile platform conversions to actual business outcomes if records allow.
+
+GBP:
+
+- complete profile/service/category/review/search-keyword baseline;
+- verify Friday hours before correction;
+- assess service catalogue strategically, not by arbitrary count;
+- prepare high-confidence corrections only after before-state is preserved.
+
+---
+
+## 7. Do not do yet
+
+- do not launch or materially scale paid Google Ads while G1/G2 are red;
+- do not optimize Ads toward low-quality Google-hosted actions as if they equal completed patients;
+- do not bulk-delete GBP services because the catalogue is large;
+- do not create a second roadmap for website, marketing or Growth Intelligence;
+- do not invent unknown OpenProject identifiers;
+- do not publish mobile/24-hour/emergency/insurance/referral claims without current operational/compliance support;
+- do not send unnecessary clinical record detail to analytics/ad platforms;
+- do not leave a material new fact only in chat.
+
+---
+
+## 8. Safe parallel work
+
+If Brevo/GA4/Search Console causes waiting, continue the highest-value independent item among:
+
+- Google Ads forensic audit;
+- GBP/review/local visibility analysis;
+- competitor/query research;
+- source taxonomy;
+- service/revenue baseline request;
+- BG70 service priority framework;
+- traveler baseline reconstruction;
+- pre-op baseline/economics reconstruction;
+- content research based on verified patient/search questions.
+
+Re-check blocked higher-priority items at the next session before starting new lower-priority work.
+
+---
+
+## 9. OpenProject continuity
+
+OpenProject remains the execution/status authority.
+
+The master roadmap preserves the workstreams, but it does **not** overwrite live OpenProject status.
+
+When a roadmap action reaches a material execution state change, update the corresponding OpenProject work package separately when access/evidence is available.
+
+Do not infer `DONE` in OpenProject from a GitHub recommendation alone.
+
+---
+
+## 10. Resume instructions for any future context
+
+Read:
+
+1. `README.md`;
+2. this file;
+3. `ROADMAP.md` current priority queue + relevant phase;
+4. `docs/DECISIONS.md` if the task involves approval/strategy;
+5. relevant dated baseline/spec/runbook;
+6. live system if current state could have changed.
+
+Then:
+
+1. re-check B-001 through B-005;
+2. select the highest-priority READY task without an unsatisfied HARD dependency;
+3. execute and validate;
+4. update this handoff before ending the material session.
+
+Do not require old ChatGPT tabs or prior chat context to continue the project.
