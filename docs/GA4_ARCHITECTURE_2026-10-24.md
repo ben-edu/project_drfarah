@@ -2,13 +2,13 @@
 
 **Project:** Dr. Farah VIP Urgent Care  
 **Roadmap item:** P2.2 Resolve GA4 access / property architecture  
-**Status:** IN_PROGRESS — clinic property/access is now resolved and connected; tag/event deployment remains gated by healthcare/privacy classification and controlled implementation.
+**Status:** METADATA RESOLVED / TAG DEPLOYMENT GATED — clinic property/access and production stream identifiers are now known; Google tag/event deployment remains gated by healthcare/privacy classification and controlled implementation.
 
 ## 1. Verified current state
 
-### FACT — clinic GA4 property now exists and is connected
+### FACT — clinic GA4 property is connected
 
-Windsor.ai now exposes the correct Dr. Farah GA4 property:
+Windsor.ai exposes the correct Dr. Farah GA4 property:
 
 - property ID: `489069776`
 - name: `drfarahvipurgentcare.com`
@@ -16,7 +16,14 @@ Windsor.ai now exposes the correct Dr. Farah GA4 property:
 
 A live data query succeeds but returns **zero events/rows** for the recent period. This is expected because the website does not yet have an approved production GA4 tag/event implementation.
 
-The exact production Web stream ID and `G-...` measurement ID are not yet visible in the Windsor report data and must be recorded from GA4/admin metadata before tag deployment. Do not guess these IDs.
+### FACT — production Web stream metadata is now recorded
+
+Owner-provided GA4 Admin metadata on 2026-10-26:
+
+- Web Stream ID: `11211773871`
+- Measurement ID: `G-D58FTMF05S`
+
+These identifiers belong to the clinic production GA4 property above. They are configuration metadata, not secrets.
 
 ### FACT — unrelated GA4 property remains separate
 
@@ -54,32 +61,37 @@ Durable model:
 - the correct property is connected to Windsor.ai for project analysis;
 - unrelated Behnam properties remain separate.
 
-The access/property-discovery portion of P2.2 is therefore resolved.
+The access/property-discovery and stream-ID portions of P2.2 are resolved.
 
 ## 3. Healthcare/privacy gate
 
 Do **not** deploy GA4 site-wide by default.
 
-For a US medical clinic, Google Analytics must not receive PII/PHI or sensitive healthcare context that is unnecessary for analytics. Before deployment:
+Current Google Analytics guidance for HIPAA-regulated entities says they must not use Google Analytics in a way that gives Google access to PHI; authenticated pages are likely HIPAA-covered, and unauthenticated pages related to the provision of healthcare services may also require exclusion. Google does not offer a HIPAA Business Associate Agreement for Google Analytics. See Google Analytics Help: `https://support.google.com/analytics/answer/13297105`.
 
-1. classify which public pages/events, if any, are appropriate for Google measurement;
-2. do not tag booking/admin/authenticated workflows by default;
+Google Analytics policies also prohibit sending PII and specifically warn that page URLs/titles, campaign parameters and event dimensions can accidentally carry identifying information. See `https://support.google.com/analytics/answer/6366371`.
+
+Before any production tag deployment:
+
+1. determine whether the clinic is a HIPAA-regulated entity for this implementation and obtain the appropriate legal/privacy classification of eligible pages;
+2. do not tag booking, patient-registration, admin, authenticated or other patient-workflow pages by default;
 3. do not send names, email, phone, reason for visit, symptoms, diagnosis, medications, treatment, test results or other clinical detail;
-4. avoid sending health intent through event names/parameters, custom dimensions or campaign parameters;
+4. avoid sending health intent through page URL/title, event names/parameters, custom dimensions or campaign parameters;
 5. keep Enhanced Measurement off initially unless individual features are reviewed and approved;
-6. align the privacy/cookie/tracking disclosure with the actual implementation.
+6. use **basic consent mode** if Google measurement is later enabled, so Google tags do not load or transmit data before the user grants measurement consent;
+7. align the privacy/cookie/tracking disclosure with the actual implementation.
 
 The project should maximize useful lawful/platform-compliant measurement, but not by forcing patient/health data into Google systems.
 
 ## 4. First-party attribution is the durable foundation
 
-The core business attribution path should not depend on GA4 being able to observe every healthcare page.
+The core business attribution path does not depend on GA4 observing healthcare pages.
 
 Target:
 
 `marketing source/click ID → first-party attribution → appointment → status=completed → visit_completed → approved Ads/reporting import`
 
-The structured first-party attribution implementation should preserve only non-clinical acquisition metadata such as:
+The structured first-party attribution implementation preserves only non-clinical acquisition metadata such as:
 
 - canonical source;
 - UTM source/medium/campaign/content/term;
@@ -89,7 +101,7 @@ The structured first-party attribution implementation should preserve only non-c
 - opaque marketing-session ID;
 - first-touch and useful last-touch context.
 
-It should not store page/service/medical-intent context inside the marketing attribution record merely because that information is available elsewhere.
+It does not store page/service/medical-intent context inside the marketing attribution record merely because that information is available elsewhere.
 
 ## 5. Production vs staging
 
@@ -104,14 +116,16 @@ Rules:
 
 ## 6. Google tag architecture after privacy approval
 
-For pages/events cleared for Google measurement, prefer the smallest repository-controlled implementation:
+For pages/events explicitly cleared for Google measurement, prefer the smallest repository-controlled implementation:
 
 - direct Google tag / small analytics wrapper initially;
+- Measurement ID `G-D58FTMF05S` only in production and only on approved pages;
+- basic consent mode: do not load the Google tag until measurement consent is granted;
 - no duplicate GA4 + Ads tag footprints;
-- explicit environment controls;
+- explicit environment and page allowlist controls;
 - GTM only if a concrete operational need later justifies it.
 
-The relationship between GA4 property `489069776`, its future recorded `G-...` measurement ID, and Google Ads destination `AW-17076731177` must be validated before deployment.
+The relationship between GA4 property `489069776`, Web Stream ID `11211773871`, Measurement ID `G-D58FTMF05S`, and Google Ads destination `AW-17076731177` must be validated before production activation.
 
 ## 7. Measurement model
 
@@ -121,11 +135,13 @@ Use only safe events that answer a real analysis question and do not expose pati
 
 ### Secondary lead signal
 
-`booking_request_created` remains a first-party business event. It may be shared with Google only if the approved implementation can do so without inappropriate patient/health disclosure.
+`booking_request_created` remains a first-party business event. It should not be shared with Google unless an approved implementation can do so without inappropriate patient/health disclosure.
 
 ### Primary business outcome
 
-`visit_completed` remains the intended optimization outcome, generated from the authoritative appointment status rather than a browser thank-you page.
+`visit_completed` is the intended optimization outcome, derived from the authoritative appointment status rather than a browser thank-you page.
+
+The initial privacy-safe read model uses the stable scheduled visit timestamp as `occurred_at`, keeps a deduplication key based on appointment ID, and joins only non-clinical acquisition identifiers from `appointment_attributions`. No PII/PHI is included in the marketing outcome row.
 
 ## 8. Current P2.2 completion status
 
@@ -134,24 +150,26 @@ Completed:
 - clinic-controlled GA4 property exists;
 - authorized access is confirmed;
 - property ID `489069776` recorded;
+- Web Stream ID `11211773871` recorded;
+- Measurement ID `G-D58FTMF05S` recorded;
 - Windsor/project access works;
 - recent GA4 data query is reachable;
 - production/staging principle documented;
-- healthcare/privacy gate documented.
+- healthcare/privacy gate documented;
+- first-party attribution foundation merged to `dev` after successful Jenkins validation.
 
 Still needed before P2.2 can be marked DONE:
 
-- record exact Web stream ID and `G-...` measurement ID;
 - confirm timezone/currency/Enhanced Measurement settings in the live property;
-- validate the approved page/event boundary;
+- obtain the appropriate legal/privacy classification for any pages proposed for Google measurement;
 - understand/confirm GA4 ↔ Google Ads destination/link relationship;
-- validate one safe test event/pageview after deployment is approved.
+- validate one safe test event/pageview only after deployment is approved.
 
 ## 9. Immediate next actions
 
-1. build and validate first-party structured attribution independent of GA4;
-2. obtain/record GA4 stream/measurement metadata;
-3. classify safe Google-measurement pages/events;
-4. implement privacy/consent behavior and the approved Google tag footprint;
+1. validate the merged first-party attribution foundation on staging;
+2. build and validate the privacy-safe `visit_completed` read model from `Appointment.status == completed`;
+3. keep Google tag deployment blocked until page/event eligibility is approved;
+4. once approved, implement a production-only page allowlist + basic consent loader for `G-D58FTMF05S`;
 5. validate no duplicate events and no unintended sensitive data;
-6. continue toward `visit_completed` import/readiness.
+6. build the controlled Google Ads offline-conversion import path from eligible `visit_completed` rows.
