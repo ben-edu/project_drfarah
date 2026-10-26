@@ -20,11 +20,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app.core.database import Base  # noqa: E402
 from app.models import booking  # noqa: E402,F401  — legacy bookings table
 
-# Import scheduling models so they appear in Base.metadata.
+# Import scheduling and attribution models so they appear in Base.metadata.
 import app.models.service  # noqa: E402,F401
 import app.models.working_hours  # noqa: E402,F401
 import app.models.blocked_period  # noqa: E402,F401
 import app.models.appointment  # noqa: E402,F401
+import app.models.appointment_attribution  # noqa: E402,F401
 
 # Alembic Config object.
 config = context.config
