@@ -12,6 +12,7 @@ from tests.test_migration_bootstrap import (
     _insert_legacy_bookings,
     _run_bootstrap,
     _stamp,
+    pg_db,
 )
 
 pytestmark = pytest.mark.postgresql
