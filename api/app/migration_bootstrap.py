@@ -78,6 +78,10 @@ BOOKINGS_0001_COLUMNS = [
 # we recovered from once (0002 tables present while stamped at 0001). Running
 # `upgrade` in that state crashes with "relation already exists"; instead we
 # fail closed with a clear, actionable message.
+#
+# Map: revision that MUST already be applied  ->  a table that revision creates.
+# If the DB is stamped BELOW `revision` but the sentinel table exists, that is
+# an inconsistent stamp.
 # ---------------------------------------------------------------------------
 REVISION_SENTINEL_TABLES = {
     "0002": "services",
@@ -116,12 +120,15 @@ def _get_current_revision(conn) -> Optional[str]:
     if not _table_exists(conn, "alembic_version"):
         return None
     try:
-        result = conn.execute(text("SELECT version_num FROM alembic_version"))
+        result = conn.execute(
+            text("SELECT version_num FROM alembic_version")
+        )
         rows = result.fetchall()
         if len(rows) == 0:
             return None
         if len(rows) == 1:
             return rows[0][0]
+        # Multiple rows — corrupt.
         logger.error(
             "alembic_version contains %d rows (expected 0 or 1).", len(rows)
         )
@@ -131,7 +138,11 @@ def _get_current_revision(conn) -> Optional[str]:
 
 
 def _revision_index(revision: Optional[str]) -> int:
-    """Return the position of a revision in REVISION_ORDER, or -1 if unknown."""
+    """Return the position of a revision in REVISION_ORDER, or -1 if unknown.
+
+    An unknown revision returns a sentinel of -1 so callers can treat it as
+    'not comparable' rather than silently mis-ordering.
+    """
     if revision is None:
         return -1
     try:
@@ -141,13 +152,21 @@ def _revision_index(revision: Optional[str]) -> int:
 
 
 def _detect_inconsistent_stamp(conn, current_rev: str) -> Optional[str]:
-    """Detect a stamp that is behind tables that already exist."""
+    """Detect a stamp that is behind tables that already exist.
+
+    For each revision whose sentinel table exists in the DB, if the current
+    stamp is BELOW that revision, the database is inconsistent: a later
+    migration's tables are present but alembic_version was never advanced.
+    Returns a human-readable reason, or None if consistent.
+    """
     current_idx = _revision_index(current_rev)
 
     for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
         if not _table_exists(conn, sentinel_table):
             continue
         rev_idx = _revision_index(revision)
+        # If the sentinel table exists but the stamp is below the revision that
+        # creates it (or the stamp is an unknown revision), that's inconsistent.
         if current_idx < rev_idx:
             return (
                 f"inconsistent Alembic state: table '{sentinel_table}' "
@@ -165,13 +184,19 @@ def _detect_inconsistent_stamp(conn, current_rev: str) -> Optional[str]:
 
 
 def _validate_bookings_schema(conn) -> bool:
-    """Check that the existing bookings table matches migration 0001."""
+    """Check that the existing bookings table matches migration 0001.
+
+    Returns True if compatible, False if any required column is missing
+    or has an incompatible definition.
+    """
     inspector = inspect(conn)
     columns = {c["name"]: c for c in inspector.get_columns("bookings")}
 
     for col_name, type_substrs, nullable in BOOKINGS_0001_COLUMNS:
         if col_name not in columns:
-            logger.error("Required column '%s' is missing from bookings.", col_name)
+            logger.error(
+                "Required column '%s' is missing from bookings.", col_name
+            )
             return False
 
         actual = columns[col_name]
@@ -190,6 +215,7 @@ def _validate_bookings_schema(conn) -> bool:
             )
             return False
 
+    # Verify primary key includes id.
     pk = inspector.get_pk_constraint("bookings")
     pk_cols = pk.get("constrained_columns", [])
     if "id" not in pk_cols:
@@ -200,6 +226,7 @@ def _validate_bookings_schema(conn) -> bool:
 
 
 def _fail(reason: str) -> None:
+    """Raise BootstrapError — caller decides exit behaviour."""
     raise BootstrapError(reason)
 
 
@@ -213,18 +240,29 @@ def main() -> None:
     config = _get_alembic_config()
     engine = _get_engine()
 
+    # ------------------------------------------------------------------
+    # Inspect current database state in a single short-lived connection.
+    # ------------------------------------------------------------------
     with engine.connect() as conn:
         bookings_exists = _table_exists(conn, "bookings")
         version_rows = _count_version_rows(conn)
         current_rev = _get_current_revision(conn)
 
+    # ------------------------------------------------------------------
+    # State 4 detection — malformed revision table.
+    # ------------------------------------------------------------------
     if version_rows > 1:
         _fail(
             f"alembic_version contains {version_rows} rows "
             f"(expected 0 or 1); manual intervention required"
         )
 
+    # ------------------------------------------------------------------
+    # State 3 — Already managed.
+    # ------------------------------------------------------------------
     if current_rev is not None and version_rows == 1:
+        # Guard against an inconsistent stamp (alembic_version behind tables
+        # that already exist) before attempting an upgrade that would crash.
         with engine.connect() as conn:
             inconsistent = _detect_inconsistent_stamp(conn, current_rev)
         if inconsistent is not None:
@@ -239,11 +277,15 @@ def main() -> None:
         logger.info("Upgrade complete.")
         return
 
+    # ------------------------------------------------------------------
+    # State 2 — Legacy database (bookings exists, unversioned).
+    # ------------------------------------------------------------------
     if bookings_exists:
         logger.info(
             "Legacy database: bookings table exists, Alembic not initialized."
         )
 
+        # Validate the schema matches migration 0001.
         with engine.connect() as conn:
             valid = _validate_bookings_schema(conn)
 
@@ -252,6 +294,9 @@ def main() -> None:
 
         logger.info("bookings schema validated — matches migration 0001.")
 
+        # A legacy DB must not already contain later-revision tables. If it
+        # does, this is the inconsistent-stamp state (without a stamp yet):
+        # fail closed rather than stamping 0001 and then crashing on upgrade.
         with engine.connect() as conn:
             for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
                 if _table_exists(conn, sentinel_table):
@@ -264,20 +309,30 @@ def main() -> None:
                         f"re-running the bootstrap."
                     )
 
+        # Stamp revision 0001 so Alembic knows this migration ran.
         logger.info("Stamping revision 0001 (bookings table already exists).")
         command.stamp(config, "0001")
 
+        # Apply remaining migrations (0002+).
         logger.info("Running upgrade to head.")
         command.upgrade(config, "head")
         logger.info("Bootstrap complete — legacy database now managed by Alembic.")
         return
 
+    # ------------------------------------------------------------------
+    # State 4 — bookings absent but version table has rows (no valid rev).
+    # ------------------------------------------------------------------
     if version_rows > 0 and current_rev is None:
         _fail(
             "alembic_version table exists with rows but no valid revision "
             "could be read; manual intervention required"
         )
 
+    # ------------------------------------------------------------------
+    # A previous failed attempt may have created an empty alembic_version
+    # table. This is still treated as State 1 (fresh) — but only if no
+    # later-revision tables are lying around.
+    # ------------------------------------------------------------------
     if not bookings_exists and version_rows == 0:
         with engine.connect() as conn:
             for revision, sentinel_table in REVISION_SENTINEL_TABLES.items():
@@ -294,6 +349,9 @@ def main() -> None:
         logger.info("Bootstrap complete — fresh database created.")
         return
 
+    # ------------------------------------------------------------------
+    # State 4 — Catch-all for any unexpected combination.
+    # ------------------------------------------------------------------
     _fail("unexpected database state — cannot determine safe migration path")
 
 
