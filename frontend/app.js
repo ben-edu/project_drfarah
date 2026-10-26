@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var REVISION = '20261017-1';
+  var REVISION = '20261026-1';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
   // Keep the approved refinement layer, but load a new revision so staging
@@ -59,9 +59,6 @@
       ivTreatmentCard.scrollIntoView({ block: 'start' });
     });
   }
-
-  // Insurance plans remain as accessible text cards from the HTML. Approved
-  // local artwork can replace them later without depending on legacy WordPress.
 
   // Make pre-op phone scheduling explicit until dedicated online slots exist.
   if (pagePath === '/pre-op-clearance') {
@@ -134,8 +131,187 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
+  // ------------------------------------------------------------------
+  // First-party acquisition attribution.
+  // This deliberately stores no page path, service, reason-for-visit, PII or
+  // clinical data. It preserves only marketing source/campaign identifiers
+  // needed to reconcile acquisition -> appointment -> completed visit.
+  // ------------------------------------------------------------------
+  var ATTR_SESSION_KEY = 'drfarah_attribution_session_v1';
+  var ATTR_PERSIST_KEY = 'drfarah_attribution_persist_v1';
+  var COOKIE_CHOICE_KEY = 'drfarah_cookie_choice';
+  var ATTR_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+  function storageGet(storage, key) {
+    try { return storage.getItem(key); } catch (e) { return null; }
+  }
+  function storageSet(storage, key, value) {
+    try { storage.setItem(key, value); } catch (e) {}
+  }
+  function storageRemove(storage, key) {
+    try { storage.removeItem(key); } catch (e) {}
+  }
+  function parseJson(value) {
+    if (!value) return null;
+    try { return JSON.parse(value); } catch (e) { return null; }
+  }
+  function clean(value, maxLength) {
+    if (!value) return null;
+    var text = String(value).replace(/[\u0000-\u001f\u007f]/g, '').trim();
+    return text ? text.slice(0, maxLength) : null;
+  }
+  function newSessionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 'mkt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+  }
+  function isGoogleHost(host) {
+    return /(^|\.)google\./i.test(host || '') || /(^|\.)googleusercontent\.com$/i.test(host || '');
+  }
+  function canonicalSource(rawSource, utmSource, utmMedium, partner, clickIdPresent) {
+    var s = (rawSource || '').toLowerCase();
+    var us = (utmSource || '').toLowerCase();
+    var um = (utmMedium || '').toLowerCase();
+
+    if (clickIdPresent) return 'google_ads';
+    if (s === 'google_ads' || s === 'google-ads' || s === 'adwords') return 'google_ads';
+    if (s === 'google_business' || s === 'google-business' || s === 'gbp' || s === 'google_maps') return 'google_business';
+    if (s === 'google_organic' || s === 'google-organic') return 'google_organic';
+    if (s === 'hotel' || s === 'concierge' || s === 'hotel_concierge') return 'hotel_concierge';
+    if (s === 'physician_referral' || s === 'surgeon_referral') return 'physician_referral';
+    if (s === 'social') return 'social';
+    if (partner) return 'partner_referral';
+
+    if (us === 'google') {
+      if (/cpc|ppc|paid|paidsearch/.test(um)) return 'google_ads';
+      if (/business|maps|gbp/.test(um)) return 'google_business';
+      return 'google_organic';
+    }
+    if (/facebook|instagram|linkedin|tiktok|youtube|twitter|^x$/.test(us)) return 'social';
+    if (rawSource || utmSource) return 'other';
+
+    if (document.referrer) {
+      try {
+        var refHost = new URL(document.referrer).hostname;
+        if (refHost === window.location.hostname) return 'direct';
+        if (isGoogleHost(refHost)) return 'google_organic';
+        return 'other';
+      } catch (e) {}
+    }
+    return 'direct';
+  }
+
+  function captureCurrentTouch() {
+    var p = new URLSearchParams(window.location.search);
+    var rawSource = clean(p.get('source'), 128);
+    var partner = clean(p.get('partner'), 128);
+    var traveler = (clean(p.get('traveler'), 16) || '').toLowerCase();
+    if (['yes', 'no', 'unknown'].indexOf(traveler) === -1) traveler = 'unknown';
+
+    var touch = {
+      source_detail: rawSource,
+      utm_source: clean(p.get('utm_source'), 128),
+      utm_medium: clean(p.get('utm_medium'), 128),
+      utm_campaign: clean(p.get('utm_campaign'), 256),
+      utm_content: clean(p.get('utm_content'), 256),
+      utm_term: clean(p.get('utm_term'), 256),
+      gclid: clean(p.get('gclid'), 256),
+      gbraid: clean(p.get('gbraid'), 256),
+      wbraid: clean(p.get('wbraid'), 256),
+      captured_at: new Date().toISOString()
+    };
+
+    var clickIdPresent = Boolean(touch.gclid || touch.gbraid || touch.wbraid);
+    touch.source = canonicalSource(
+      rawSource, touch.utm_source, touch.utm_medium, partner, clickIdPresent
+    );
+
+    Object.keys(touch).forEach(function (key) {
+      if (touch[key] === null || touch[key] === '') delete touch[key];
+    });
+
+    var hasExplicitSignal = Boolean(
+      rawSource || partner || p.get('traveler') || touch.utm_source || touch.utm_medium ||
+      touch.utm_campaign || touch.utm_content || touch.utm_term || clickIdPresent
+    );
+
+    return {
+      touch: touch,
+      partner_code: partner,
+      traveler_segment: traveler,
+      explicit: hasExplicitSignal
+    };
+  }
+
+  function validPersistent(state) {
+    if (!state || !state.updated_at) return false;
+    var updated = Date.parse(state.updated_at);
+    return Number.isFinite(updated) && (Date.now() - updated) <= ATTR_TTL_MS;
+  }
+
+  var sessionState = parseJson(storageGet(window.sessionStorage, ATTR_SESSION_KEY));
+  var cookieChoice = storageGet(window.localStorage, COOKIE_CHOICE_KEY);
+  var persistentState = cookieChoice === 'accepted'
+    ? parseJson(storageGet(window.localStorage, ATTR_PERSIST_KEY))
+    : null;
+
+  if (persistentState && !validPersistent(persistentState)) {
+    storageRemove(window.localStorage, ATTR_PERSIST_KEY);
+    persistentState = null;
+  }
+
+  var attributionState = sessionState || {
+    marketing_session_id: newSessionId(),
+    first_touch: persistentState && persistentState.first_touch ? persistentState.first_touch : null,
+    last_touch: persistentState && persistentState.last_touch ? persistentState.last_touch : null,
+    partner_code: persistentState ? (persistentState.partner_code || null) : null,
+    traveler_segment: persistentState ? (persistentState.traveler_segment || 'unknown') : 'unknown',
+    attribution_version: 'v1',
+    created_at: new Date().toISOString()
+  };
+
+  var currentCapture = captureCurrentTouch();
+  if (!attributionState.first_touch) attributionState.first_touch = currentCapture.touch;
+  if (!attributionState.last_touch || currentCapture.explicit) {
+    attributionState.last_touch = currentCapture.touch;
+  }
+  if (currentCapture.partner_code) attributionState.partner_code = currentCapture.partner_code;
+  if (currentCapture.traveler_segment !== 'unknown') {
+    attributionState.traveler_segment = currentCapture.traveler_segment;
+  }
+  attributionState.updated_at = new Date().toISOString();
+
+  function persistAttribution() {
+    storageSet(window.sessionStorage, ATTR_SESSION_KEY, JSON.stringify(attributionState));
+    if (storageGet(window.localStorage, COOKIE_CHOICE_KEY) === 'accepted') {
+      storageSet(window.localStorage, ATTR_PERSIST_KEY, JSON.stringify(attributionState));
+    }
+  }
+  persistAttribution();
+
+  window.DrFarahAttribution = {
+    snapshot: function () {
+      return JSON.parse(JSON.stringify({
+        marketing_session_id: attributionState.marketing_session_id,
+        first_touch: attributionState.first_touch,
+        last_touch: attributionState.last_touch,
+        partner_code: attributionState.partner_code || null,
+        traveler_segment: attributionState.traveler_segment || 'unknown',
+        attribution_version: 'v1'
+      }));
+    },
+    setConsent: function (choice) {
+      if (choice === 'accepted') {
+        storageSet(window.localStorage, ATTR_PERSIST_KEY, JSON.stringify(attributionState));
+      } else {
+        storageRemove(window.localStorage, ATTR_PERSIST_KEY);
+      }
+    }
+  };
+
   // Cookie preference banner.
-  var STORAGE_KEY = 'drfarah_cookie_choice';
+  var STORAGE_KEY = COOKIE_CHOICE_KEY;
   var banner = document.getElementById('cookie');
   var acceptBtn = document.getElementById('cookieOk');
   function getChoice() {
@@ -146,6 +322,7 @@
   }
   function closeBanner(choice) {
     saveChoice(choice);
+    if (window.DrFarahAttribution) window.DrFarahAttribution.setConsent(choice);
     if (banner) banner.hidden = true;
   }
   if (banner) {
