@@ -3,12 +3,41 @@
 The client sends service_code and starts_at. The server derives ends_at
 from the service duration. ends_at from the client is ignored.
 
-No clinical free text. No internal notes. No sensitive fields.
+No clinical free text. No internal notes. Attribution fields are restricted
+to non-clinical marketing metadata used for source-to-outcome measurement.
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class AttributionTouch(BaseModel):
+    """One first-party acquisition touch, intentionally excluding PII/PHI."""
+
+    source: str | None = Field(default=None, max_length=64)
+    source_detail: str | None = Field(default=None, max_length=128)
+    utm_source: str | None = Field(default=None, max_length=128)
+    utm_medium: str | None = Field(default=None, max_length=128)
+    utm_campaign: str | None = Field(default=None, max_length=256)
+    utm_content: str | None = Field(default=None, max_length=256)
+    utm_term: str | None = Field(default=None, max_length=256)
+    gclid: str | None = Field(default=None, max_length=256)
+    gbraid: str | None = Field(default=None, max_length=256)
+    wbraid: str | None = Field(default=None, max_length=256)
+    captured_at: datetime | None = None
+
+
+class AppointmentAttributionIn(BaseModel):
+    """Structured first-party attribution attached to one appointment."""
+
+    marketing_session_id: str | None = Field(default=None, max_length=64)
+    first_touch: AttributionTouch | None = None
+    last_touch: AttributionTouch | None = None
+    partner_code: str | None = Field(default=None, max_length=128)
+    traveler_segment: Literal["yes", "no", "unknown"] = "unknown"
+    attribution_version: str = Field(default="v1", max_length=16)
 
 
 class AppointmentCreate(BaseModel):
@@ -63,9 +92,16 @@ class AppointmentCreate(BaseModel):
         max_length=32,
         examples=[None],
         description=(
-            "Non-clinical acquisition/internal marker (for example 'web', 'ci', "
-            "or a compact partner marker). Matches the appointments.source VARCHAR(32) "
-            "database boundary and must never contain medical information."
+            "Backward-compatible compact non-clinical source marker. Structured "
+            "attribution belongs in attribution and must never contain medical information."
+        ),
+    )
+    attribution: AppointmentAttributionIn | None = Field(
+        default=None,
+        description=(
+            "Non-clinical first-party acquisition metadata only. Never include names, "
+            "email, phone, symptoms, diagnosis, medications, reason-for-visit text, "
+            "or other medical-record content."
         ),
     )
 
