@@ -172,3 +172,40 @@ class TestAppointmentAttribution:
         with _client(test_app_setup) as client:
             response = client.post("/api/v1/appointments", json=payload)
         assert response.status_code == 403
+
+    def test_authorized_ci_marker_stays_ci_even_with_nested_attribution(
+        self, seeded_db, test_app_setup, monkeypatch
+    ):
+        """Smoke-test cleanup/email semantics must win over marketing metadata."""
+        from app.models.appointment import Appointment
+        from app.routers import appointments as router
+
+        monkeypatch.setattr(router.settings, "ENVIRONMENT", "staging")
+        monkeypatch.setattr(router.settings, "CLEANUP_TOKEN", "test-ci-secret")
+
+        payload = _payload(seeded_db)
+        payload["source"] = "ci"
+        payload["attribution"] = {
+            "marketing_session_id": "mkt-ci-authorized",
+            "first_touch": {"source": "google_ads", "gclid": "SmokeTestClickId"},
+            "last_touch": {"source": "google_ads", "gclid": "SmokeTestClickId"},
+            "traveler_segment": "unknown",
+        }
+
+        with patch.object(router, "send_appointment_emails") as send:
+            with _client(test_app_setup) as client:
+                response = client.post(
+                    "/api/v1/appointments",
+                    json=payload,
+                    headers={"X-CI-Token": "test-ci-secret"},
+                )
+
+        assert response.status_code == 201, response.text
+        seeded_db.expire_all()
+        appointment = (
+            seeded_db.query(Appointment)
+            .filter(Appointment.id == response.json()["id"])
+            .one()
+        )
+        assert appointment.source == "ci"
+        send.assert_not_called()
