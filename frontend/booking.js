@@ -1,11 +1,13 @@
 /* Booking wizard — talks to the real appointments API.
    Flow: choose service -> load availability -> pick slot -> details -> confirm.
-   Query parameters supported:
-     ?service=<service-code>    preselects a service when it exists in the API
-     ?reason=<reason-category>  prefills the structured reason category
-     ?source=<source>           first-party acquisition marker
-     ?partner=<partner-code>    hotel/referral partner attribution marker
-     ?utm_source=<source>       marketing source attribution marker
+   Query parameters supported by the page/attribution layer include:
+     ?service=<service-code>
+     ?reason=<reason-category>
+     ?source=<source>
+     ?partner=<partner-code>
+     ?traveler=yes|no|unknown
+     ?utm_source / utm_medium / utm_campaign / utm_content / utm_term
+     ?gclid / gbraid / wbraid
 */
 (function () {
   'use strict';
@@ -13,23 +15,18 @@
   var API_BASE = (function () {
     var h = location.hostname;
 
-    // Final domains.
     if (h === 'staging.drfarahvipurgentcare.com') {
       return 'https://api-staging.drfarahvipurgentcare.com/api/v1';
     }
     if (h === 'drfarahvipurgentcare.com' || h === 'www.drfarahvipurgentcare.com') {
       return 'https://api.drfarahvipurgentcare.com/api/v1';
     }
-
-    // Temporary domains kept during the controlled migration window.
     if (h === 'staging.drfarah.proxbenovh.cloud') {
       return 'https://api.staging.drfarah.proxbenovh.cloud/api/v1';
     }
     if (h === 'drfarah.proxbenovh.cloud' || h === 'www.drfarah.proxbenovh.cloud') {
       return 'https://api.drfarah.proxbenovh.cloud/api/v1';
     }
-
-    // Local/unknown hosts intentionally use staging rather than production.
     return 'https://api-staging.drfarahvipurgentcare.com/api/v1';
   })();
 
@@ -41,18 +38,29 @@
     return String(value).toLowerCase().replace(/[^a-z0-9._:-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   }
 
-  /* appointments.source is currently VARCHAR(32) in the deployed schema.
-     Keep browser-generated attribution markers inside that real DB boundary. */
-  function attributionSource() {
-    var partner = safeMarker(params.get('partner'));
-    if (partner) return ('hotel:' + partner).slice(0, 32);
-    var source = safeMarker(params.get('source'));
-    if (source) return source.slice(0, 32);
-    var utm = safeMarker(params.get('utm_source'));
-    if (utm) return ('utm:' + utm).slice(0, 32);
-    return 'web';
+  function attributionSnapshot() {
+    if (!window.DrFarahAttribution || typeof window.DrFarahAttribution.snapshot !== 'function') {
+      return null;
+    }
+    try { return window.DrFarahAttribution.snapshot(); } catch (e) { return null; }
   }
 
+  function attributionSource(snapshot) {
+    if (snapshot) {
+      var touch = snapshot.last_touch || snapshot.first_touch;
+      if (touch && touch.source) return String(touch.source).slice(0, 32);
+    }
+    var source = safeMarker(params.get('source'));
+    if (source) return source.slice(0, 32);
+    var partner = safeMarker(params.get('partner'));
+    if (partner) return 'partner_referral';
+    var utm = safeMarker(params.get('utm_source'));
+    if (utm === 'google') return 'google_organic';
+    if (utm) return 'other';
+    return 'direct';
+  }
+
+  var initialAttribution = attributionSnapshot();
   var requestedService = safeMarker(params.get('service'));
   var requestedReason = params.get('reason') || '';
 
@@ -62,7 +70,7 @@
     serviceName: null,
     slotStart: null,
     slotLabel: null,
-    source: attributionSource()
+    source: attributionSource(initialAttribution)
   };
 
   var form = document.getElementById('bookingForm');
@@ -149,8 +157,6 @@
           }
         });
 
-        /* A stale/unknown service query parameter never silently maps to
-           another service. The user must choose an API-configured service. */
         if (requestedService && !matchedRequestedService) {
           requestedService = '';
         }
@@ -266,6 +272,7 @@
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Confirming…';
 
+    var currentAttribution = attributionSnapshot();
     var payload = {
       service_code: state.serviceCode,
       starts_at: state.slotStart,
@@ -274,7 +281,8 @@
       email: val('email'),
       phone: val('phone'),
       reason_category: val('reason'),
-      source: state.source,
+      source: attributionSource(currentAttribution),
+      attribution: currentAttribution
     };
 
     fetch(API_BASE + '/appointments', {
