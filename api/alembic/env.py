@@ -13,28 +13,23 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# Ensure the api/ package is importable when running from the api/ directory.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Load application models so Base.metadata reflects all tables.
 from app.core.database import Base  # noqa: E402
 from app.models import booking  # noqa: E402,F401  — legacy bookings table
 
-# Import scheduling and attribution models so they appear in Base.metadata.
 import app.models.service  # noqa: E402,F401
 import app.models.working_hours  # noqa: E402,F401
 import app.models.blocked_period  # noqa: E402,F401
 import app.models.appointment  # noqa: E402,F401
 import app.models.appointment_attribution  # noqa: E402,F401
+import app.models.patient_registration  # noqa: E402,F401
 
-# Alembic Config object.
 config = context.config
 
-# Interpret the config file for Python logging.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Override sqlalchemy.url from the application Settings.
 from app.core.config import get_settings  # noqa: E402
 
 _settings = get_settings()
