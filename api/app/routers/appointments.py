@@ -92,7 +92,12 @@ def get_availability(
 
 
 def _structured_source(payload: AppointmentCreate) -> str | None:
-    """Return the strongest compact source while preserving legacy compatibility."""
+    """Return the strongest compact source while preserving CI semantics."""
+    # The legacy reserved CI marker is operational metadata used to suppress
+    # smoke-test email and cleanup the record. Never let nested attribution
+    # replace it after the request has passed the CI authorization guard.
+    if payload.source == "ci":
+        return "ci"
     if payload.attribution:
         for touch in (payload.attribution.last_touch, payload.attribution.first_touch):
             if touch and touch.source:
