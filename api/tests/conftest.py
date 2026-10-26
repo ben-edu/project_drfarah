@@ -1,7 +1,7 @@
 """Shared fixtures for scheduling tests.
 
 Provides an isolated SQLite database per test with the full schema
-(bookings + scheduling tables) created via create_all().
+(bookings + scheduling + attribution tables) created via create_all().
 """
 
 import datetime
@@ -36,6 +36,7 @@ def db_session(tmp_path):
     import app.models.working_hours  # noqa: F401
     import app.models.blocked_period  # noqa: F401
     import app.models.appointment  # noqa: F401
+    import app.models.appointment_attribution  # noqa: F401
     import app.models.patient_registration  # noqa: F401
 
     saved = {}
@@ -55,11 +56,9 @@ def db_session(tmp_path):
     get_settings.cache_clear()
     reset_engine()
 
-    # Create all tables for the test.
     engine = _get_engine()
     Base.metadata.create_all(bind=engine)
 
-    # Provide a session factory.
     from sqlalchemy.orm import sessionmaker
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

@@ -86,10 +86,11 @@ BOOKINGS_0001_COLUMNS = [
 REVISION_SENTINEL_TABLES = {
     "0002": "services",
     "0003": "patient_registrations",
+    "0004": "appointment_attributions",
 }
 
 # Ordered list of known revisions, oldest first. Used to compare positions.
-REVISION_ORDER = ["0001", "0002", "0003"]
+REVISION_ORDER = ["0001", "0002", "0003", "0004"]
 
 
 def _get_alembic_config() -> Config:

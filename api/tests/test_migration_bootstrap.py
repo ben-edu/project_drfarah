@@ -244,7 +244,7 @@ class TestFreshDatabase:
         db_url = os.environ["DATABASE_URL"]
         for table in ("bookings", "services", "working_hours",
                       "blocked_periods", "appointments", "patient_registrations",
-                      "alembic_version"):
+                      "appointment_attributions", "alembic_version"):
             assert _table_exists(db_url, table), f"Table '{table}' is missing"
 
     def test_seed_services_exist(self, pg_db):
@@ -279,14 +279,14 @@ class TestFreshDatabase:
         db_url = os.environ["DATABASE_URL"]
         rev = _get_revision(db_url)
         assert rev is not None, "alembic_version should contain a revision"
-        assert rev == "0003", f"Expected head 0003, got {rev}"
+        assert rev == "0004", f"Expected head 0004, got {rev}"
 
     def test_second_bootstrap_is_idempotent(self, pg_db):
         _run_bootstrap()
         _run_bootstrap()
 
         db_url = os.environ["DATABASE_URL"]
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
 
 
 class TestLegacyDatabase:
@@ -305,10 +305,10 @@ class TestLegacyDatabase:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
         assert _table_exists(db_url, "bookings")
         for table in ("services", "working_hours", "blocked_periods",
-                      "appointments", "patient_registrations"):
+                      "appointments", "patient_registrations", "appointment_attributions"):
             assert _table_exists(db_url, table), f"'{table}' missing"
 
     def test_legacy_rows_preserved(self, pg_db):
@@ -360,7 +360,7 @@ class TestLegacyDatabase:
         _insert_legacy_bookings(db_url, count=1)
         _run_bootstrap()
         _run_bootstrap()
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
 
 
 class TestEmptyAlembicVersion:
@@ -380,7 +380,7 @@ class TestEmptyAlembicVersion:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
         assert _count_rows(db_url, "bookings") == 1
 
 
@@ -449,9 +449,10 @@ class TestAlreadyManaged:
 
         _run_bootstrap()
 
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
         assert _table_exists(db_url, "services")
         assert _table_exists(db_url, "working_hours")
+        assert _table_exists(db_url, "appointment_attributions")
         assert _count_rows(db_url, "bookings") == 1
 
     def test_already_at_head_passes(self, pg_db):
@@ -472,10 +473,10 @@ class TestAlreadyManaged:
         command.stamp(cfg, "0001")
         command.upgrade(cfg, "head")
 
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
 
         _run_bootstrap()
-        assert _get_revision(db_url) == "0003"
+        assert _get_revision(db_url) == "0004"
         assert _count_rows(db_url, "bookings") == 1
 
 
@@ -523,7 +524,6 @@ class TestInconsistentStamp:
 
         db_url = os.environ["DATABASE_URL"]
 
-        # Legacy bookings + stamp 0001 (simulate a managed DB at 0001).
         _create_legacy_bookings_table(db_url)
         _insert_legacy_bookings(db_url, count=2)
 
@@ -539,20 +539,15 @@ class TestInconsistentStamp:
         command.stamp(cfg, "0001")
         assert _get_revision(db_url) == "0001"
 
-        # Now create the orphaned 0002 'services' table manually.
         self._create_0002_tables_manually(db_url)
         assert _table_exists(db_url, "services")
 
-        # Bootstrap must fail closed with a BootstrapError (exit 1 path), NOT a
-        # raw 'relation already exists' ProgrammingError.
         with pytest.raises(BootstrapError) as excinfo:
             _run_bootstrap()
 
         msg = str(excinfo.value).lower()
         assert "inconsistent" in msg
         assert "services" in msg
-
-        # No damage: revision unchanged, bookings intact.
         assert _get_revision(db_url) == "0001"
         assert _count_rows(db_url, "bookings") == 2
 
@@ -561,11 +556,8 @@ class TestInconsistentStamp:
         from app.migration_bootstrap import BootstrapError
 
         db_url = os.environ["DATABASE_URL"]
-
-        # Legacy bookings, NO alembic_version yet.
         _create_legacy_bookings_table(db_url)
         _insert_legacy_bookings(db_url, count=1)
-        # Orphaned 0002 table present.
         self._create_0002_tables_manually(db_url)
 
         assert not _table_exists(db_url, "alembic_version")
@@ -577,9 +569,44 @@ class TestInconsistentStamp:
         msg = str(excinfo.value).lower()
         assert "services" in msg
         assert "inconsistent" in msg
-
-        # Must NOT have stamped anything.
         assert _get_revision(db_url) is None
+        assert _count_rows(db_url, "bookings") == 1
+
+    def test_stamped_0003_with_orphan_0004_table_fails_closed(self, pg_db):
+        """0003 stamp + orphan 0004 table must fail before attempting upgrade."""
+        from app.migration_bootstrap import BootstrapError
+        from alembic import command
+        from alembic.config import Config
+        from app.core.config import get_settings
+        from app.core.database import reset_engine
+
+        db_url = os.environ["DATABASE_URL"]
+        _create_legacy_bookings_table(db_url)
+        _insert_legacy_bookings(db_url, count=1)
+
+        get_settings.cache_clear()
+        reset_engine()
+        cfg = Config("alembic.ini")
+        cfg.set_main_option("sqlalchemy.url", db_url)
+        command.stamp(cfg, "0001")
+        command.upgrade(cfg, "0003")
+        assert _get_revision(db_url) == "0003"
+
+        engine = create_engine(db_url, connect_args={"connect_timeout": 5})
+        with engine.begin() as conn:
+            conn.execute(text(
+                "CREATE TABLE appointment_attributions ("
+                "id SERIAL PRIMARY KEY, appointment_id INTEGER NOT NULL)"
+            ))
+        engine.dispose()
+
+        with pytest.raises(BootstrapError) as excinfo:
+            _run_bootstrap()
+
+        msg = str(excinfo.value).lower()
+        assert "inconsistent" in msg
+        assert "appointment_attributions" in msg
+        assert _get_revision(db_url) == "0003"
         assert _count_rows(db_url, "bookings") == 1
 
     def test_exit_code_is_one_not_two(self, pg_db):
@@ -602,7 +629,6 @@ class TestInconsistentStamp:
 
         self._create_0002_tables_manually(db_url)
 
-        # Drive the top-level _run() to confirm it maps BootstrapError -> exit 1.
         from app import migration_bootstrap
 
         get_settings.cache_clear()

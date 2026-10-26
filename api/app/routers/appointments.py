@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.emails.appointment import send_appointment_emails
 from app.models.appointment import Appointment
+from app.models.appointment_attribution import AppointmentAttribution
 from app.models.service import Service
 from app.schemas.appointment import AppointmentCreate, AppointmentResponse
 from app.schemas.availability import (
@@ -30,12 +31,6 @@ from app.services import scheduling
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["appointments"])
 settings = get_settings()
-
-# ------------------------------------------------------------------
-# POST /api/v1/bookings is preserved as a legacy endpoint in
-# app/routers/booking.py. It stores free-text day/time preferences
-# without real scheduling. New integrations should use this router.
-# ------------------------------------------------------------------
 
 
 @router.get("/services", response_model=ServiceListResponse)
@@ -59,13 +54,7 @@ def get_availability(
     end_date: str = Query(..., min_length=10, max_length=10),
     db: Session = Depends(get_db),
 ):
-    """Return available appointment slots for a service and date range.
-
-    Dates must be ISO 8601 (YYYY-MM-DD). Maximum range is 31 days.
-    Only future slots within working hours are returned. Blocked periods
-    and existing appointments are excluded.
-    """
-    # Validate service.
+    """Return available appointment slots for a service and date range."""
     service = (
         db.query(Service)
         .filter(Service.code == service_code, Service.is_active == True)
@@ -74,7 +63,6 @@ def get_availability(
     if service is None:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    # Validate dates.
     try:
         sd = datetime.date.fromisoformat(start_date)
         ed = datetime.date.fromisoformat(end_date)
@@ -90,7 +78,6 @@ def get_availability(
             detail=f"Date range must not exceed {scheduling.MAX_AVAILABILITY_DAYS} days",
         )
 
-    # Generate slots.
     slots = scheduling.generate_availability(db, service, sd, ed)
 
     return AvailabilityResponse(
@@ -104,22 +91,40 @@ def get_availability(
     )
 
 
+def _structured_source(payload: AppointmentCreate) -> str | None:
+    """Return the strongest compact source while preserving CI semantics."""
+    # The legacy reserved CI marker is operational metadata used to suppress
+    # smoke-test email and cleanup the record. Never let nested attribution
+    # replace it after the request has passed the CI authorization guard.
+    if payload.source == "ci":
+        return "ci"
+    if payload.attribution:
+        for touch in (payload.attribution.last_touch, payload.attribution.first_touch):
+            if touch and touch.source:
+                return touch.source[:32]
+    return payload.source[:32] if payload.source else None
+
+
+def _requested_reserved_ci_source(payload: AppointmentCreate) -> bool:
+    """Do not allow nested attribution to bypass the reserved CI marker guard."""
+    if payload.source == "ci":
+        return True
+    if not payload.attribution:
+        return False
+    return any(
+        touch is not None and touch.source == "ci"
+        for touch in (payload.attribution.first_touch, payload.attribution.last_touch)
+    )
+
+
 @router.post("/appointments", response_model=AppointmentResponse, status_code=201)
 def create_appointment(
     payload: AppointmentCreate,
     db: Session = Depends(get_db),
     ci_token: str | None = Header(None, alias="X-CI-Token"),
 ):
-    """Create a scheduled appointment.
-
-    The server derives ends_at from the selected service duration and
-    buffers. The starts_at is the appointment start time (client-provided).
-    Concurrent requests for the same slot receive HTTP 409.
-    """
-    # The public source field cannot authorize suppressing notification emails
-    # or marking an appointment for CI cleanup. Only the staging smoke test
-    # may use this reserved value, with the server-side cleanup credential.
-    if payload.source == "ci" and not (
+    """Create a scheduled appointment and optional non-clinical attribution."""
+    if _requested_reserved_ci_source(payload) and not (
         settings.ENVIRONMENT == "staging"
         and settings.CLEANUP_TOKEN
         and ci_token
@@ -127,7 +132,6 @@ def create_appointment(
     ):
         raise HTTPException(status_code=403, detail="Reserved appointment source")
 
-    # Validate service.
     service = (
         db.query(Service)
         .filter(Service.code == payload.service_code, Service.is_active == True)
@@ -136,29 +140,24 @@ def create_appointment(
     if service is None:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    # Parse and validate starts_at.
     try:
         starts_at = datetime.datetime.fromisoformat(payload.starts_at)
     except ValueError:
         raise HTTPException(status_code=422, detail="Invalid starts_at format — use ISO 8601")
 
-    # Ensure starts_at is UTC-aware.
     if starts_at.tzinfo is None:
         raise HTTPException(
             status_code=422, detail="starts_at must include a timezone offset"
         )
     starts_at_utc = starts_at.astimezone(datetime.timezone.utc)
 
-    # Reject past slots.
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     if starts_at_utc <= now_utc:
         raise HTTPException(status_code=422, detail="Slot is in the past")
 
-    # Validate slot is within working hours.
     if not scheduling.validate_slot_in_working_hours(db, starts_at_utc, service):
         raise HTTPException(status_code=422, detail="Slot is outside working hours")
 
-    # Check blocked periods.
     duration = datetime.timedelta(minutes=service.duration_minutes)
     buffer_before = datetime.timedelta(minutes=service.buffer_before_minutes)
     buffer_after = datetime.timedelta(minutes=service.buffer_after_minutes)
@@ -178,14 +177,12 @@ def create_appointment(
     if blocked is not None:
         raise HTTPException(status_code=409, detail="Slot is blocked")
 
-    # Check for appointment conflicts (application-level, before DB constraint).
     if scheduling.check_slot_conflict(db, service, starts_at_utc):
         raise HTTPException(status_code=409, detail="Slot is no longer available")
 
-    # Derive ends_at.
     ends_at_utc = starts_at_utc + duration
+    effective_source = _structured_source(payload)
 
-    # Create appointment.
     appointment = Appointment(
         service_id=service.id,
         starts_at=starts_at_utc,
@@ -197,25 +194,45 @@ def create_appointment(
         phone=payload.phone,
         reason_category=payload.reason_category,
         status="pending",
-        source=payload.source,
+        source=effective_source,
     )
 
     try:
         db.add(appointment)
+        # Flush first so the 1:1 attribution record can reference appointment.id,
+        # while keeping both records inside the same transaction.
+        db.flush()
+
+        if payload.attribution:
+            attribution = payload.attribution
+            db.add(
+                AppointmentAttribution(
+                    appointment_id=appointment.id,
+                    marketing_session_id=attribution.marketing_session_id,
+                    first_touch=(
+                        attribution.first_touch.model_dump(mode="json", exclude_none=True)
+                        if attribution.first_touch else None
+                    ),
+                    last_touch=(
+                        attribution.last_touch.model_dump(mode="json", exclude_none=True)
+                        if attribution.last_touch else None
+                    ),
+                    partner_code=attribution.partner_code,
+                    traveler_segment=attribution.traveler_segment,
+                    attribution_version=attribution.attribution_version,
+                )
+            )
+
         db.commit()
         db.refresh(appointment)
     except Exception as exc:
         db.rollback()
-        # Check if this is a PostgreSQL exclusion-constraint violation.
         error_msg = str(exc).lower()
         if "exclusion" in error_msg or "conflict" in error_msg or "no_double_booking" in error_msg:
             raise HTTPException(status_code=409, detail="Slot is no longer available")
         logger.error("Unexpected error creating appointment: %s", str(exc)[:200])
         raise HTTPException(status_code=500, detail="Could not create appointment")
 
-    # Best-effort confirmation + notification emails.
-    # Skip for CI smoke-test appointments (source="ci") to avoid bounce spam.
-    # Failure here must NOT affect the 201 response.
     if appointment.source != "ci":
         try:
             send_appointment_emails(appointment, service.name)
@@ -232,11 +249,7 @@ def cleanup_ci(
     authorization: str | None = Header(None, alias="Authorization"),
     db: Session = Depends(get_db),
 ):
-    """Delete CI smoke-test appointments older than 1 hour.
-
-    Requires a pre-shared token: Authorization: Bearer <token>.
-    Only deletes records where source='ci'. Not a public endpoint.
-    """
+    """Delete CI smoke-test appointments older than 1 hour."""
     expected_token = f"Bearer {settings.cleanup_token}"
 
     if not authorization or authorization != expected_token:
