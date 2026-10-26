@@ -102,14 +102,79 @@ GA4 production metadata is known:
 - Web Stream ID `11211773871`
 - Measurement ID `G-D58FTMF05S`
 
-However, Google tag deployment remains separately gated by healthcare/privacy review. The first-party `visit_completed` outcome exists specifically so the clinic can measure business results even if GA4 cannot appropriately observe healthcare pages.
+The selected-page production GA4 wrapper is separate from the business-outcome import. `visit_completed` exists so the clinic can measure completed business outcomes without instrumenting healthcare booking, registration, treatment or clinical pages with detailed Google Analytics events.
 
-## 9. Next import step
+## 9. Google Ads/Data Manager import contract
 
-After this read model passes repository CI and staging validation:
+As of 2026-10-26, Google documents the Data Manager API as the preferred current ingestion path for Google Ads offline conversion events.
 
-1. inspect Google Ads offline-conversion capabilities and exact deduplication fields;
-2. define an approved conversion action for completed visits;
-3. export/import only eligible rows with supported click identifiers;
-4. never send clinical context or patient identity;
-5. reconcile imported conversion counts back to the authoritative first-party outcome count.
+The controlled import target is:
+
+`POST https://datamanager.googleapis.com/v1/events:ingest`
+
+with OAuth scope:
+
+`https://www.googleapis.com/auth/datamanager`
+
+The destination must point to the Google Ads conversion customer that owns the offline conversion action. For the current clinic account, the operating Google Ads customer is `6525103588`; a manager/login customer may differ if the eventual OAuth credential uses manager-account access.
+
+The conversion action ID is intentionally **not** hard-coded yet because the approved `Visit Completed` offline conversion action has not been created/resolved in Google Ads.
+
+Each eligible outbound event uses only:
+
+- `transactionId = visit_completed:<appointment_id>` for deduplication;
+- `eventTimestamp = occurred_at` in RFC 3339 with timezone integrity;
+- `eventSource = OTHER` because this is a backend/offline completed-visit outcome rather than a browser event;
+- exactly one supported Google click identifier in `adIdentifiers`.
+
+Identifier preference for this web-based clinic journey:
+
+1. `gclid`;
+2. `wbraid`;
+3. `gbraid`.
+
+Rows with no supported click identifier remain valid first-party completed visits but are skipped by the click-ID importer.
+
+The outbound event deliberately excludes:
+
+- patient identity and contact data;
+- health/clinical/service context;
+- `marketing_session_id`;
+- partner/hotel codes;
+- traveler segment;
+- source labels not required by the Google destination;
+- conversion value until a separately approved business-value policy exists.
+
+The implementation begins with `validateOnly=true` so Google can reject malformed destination/event payloads before any production conversion is recorded.
+
+## 10. Current implementation state
+
+Branch `feature/google-ads-visit-completed-export-20261026` now contains a pure payload-preparation layer:
+
+`api/app/services/google_ads_offline.py`
+
+It does **not** authenticate or transmit data. It prepares the destination/event request, records eligible versus skipped outcome keys, enforces timezone-aware timestamps and strips unrelated internal fields.
+
+Unit tests cover:
+
+- customer/conversion destination construction;
+- deterministic transaction IDs;
+- RFC 3339 timestamps;
+- click-ID preference;
+- no-click-ID skip behavior;
+- PII/clinical/internal-context non-propagation;
+- manager/login-account support;
+- validation-only mode.
+
+## 11. Remaining gates before first live import
+
+1. Create or resolve a dedicated Google Ads offline conversion action for completed visits, preferably named `Visit Completed`.
+2. Confirm the action is owned by the correct conversion customer and obtain its numeric conversion action ID.
+3. Establish a Google Cloud/OAuth credential with Data Manager API access and scope `https://www.googleapis.com/auth/datamanager` without committing credentials to Git.
+4. Send a controlled `validateOnly=true` request for a synthetic/test-safe eligible row and inspect request diagnostics.
+5. Run one controlled real completed-visit import with a valid click identifier.
+6. Re-run the same transaction ID to verify deduplication behavior.
+7. Reconcile Google Ads accepted conversion count against the authoritative first-party outcome.
+8. Only after that validation, decide whether `Visit Completed` should become a primary bidding conversion.
+
+`G2-MEASUREMENT-READY` remains red until this controlled end-to-end source → appointment → completed visit → accepted Google Ads conversion path passes.
