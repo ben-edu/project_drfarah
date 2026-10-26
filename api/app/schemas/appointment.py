@@ -1,10 +1,8 @@
 """Appointment schemas — creation and response.
 
 The client sends service_code and starts_at. The server derives ends_at
-from the service duration. ends_at from the client is ignored.
-
-No clinical free text. No internal notes. Attribution fields are restricted
-to non-clinical marketing metadata used for source-to-outcome measurement.
+from the service duration. Attribution is restricted to non-clinical
+acquisition metadata used for source-to-outcome measurement.
 """
 
 from datetime import datetime
@@ -13,11 +11,25 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class AttributionTouch(BaseModel):
-    """One first-party acquisition touch, intentionally excluding PII/PHI."""
+CanonicalSource = Literal[
+    "google_ads",
+    "google_organic",
+    "google_business",
+    "direct",
+    "partner_referral",
+    "hotel_concierge",
+    "physician_referral",
+    "social",
+    "other",
+    "unknown",
+    "ci",
+]
 
-    source: str | None = Field(default=None, max_length=64)
-    source_detail: str | None = Field(default=None, max_length=128)
+
+class AttributionTouch(BaseModel):
+    """One acquisition touch, intentionally excluding PII/PHI/free text."""
+
+    source: CanonicalSource | None = None
     utm_source: str | None = Field(default=None, max_length=128)
     utm_medium: str | None = Field(default=None, max_length=128)
     utm_campaign: str | None = Field(default=None, max_length=256)
@@ -43,12 +55,7 @@ class AppointmentAttributionIn(BaseModel):
 class AppointmentCreate(BaseModel):
     """Incoming appointment request from the public booking form."""
 
-    service_code: str = Field(
-        ...,
-        min_length=1,
-        max_length=64,
-        examples=["urgent-care"],
-    )
+    service_code: str = Field(..., min_length=1, max_length=64, examples=["urgent-care"])
     starts_at: str = Field(
         ...,
         examples=["2026-07-28T09:00:00-07:00"],
