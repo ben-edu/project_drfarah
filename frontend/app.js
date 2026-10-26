@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var REVISION = '20261026-2';
+  var REVISION = '20261026-3';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
   if (!document.querySelector('link[data-drfarah-refinement]')) {
@@ -123,11 +123,12 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // First-party attribution. This deliberately stores no page path, service,
-  // reason-for-visit, PII, or clinical data.
+  // First-party attribution. No page path, service, reason-for-visit, PII, or
+  // clinical data is stored in this marketing attribution object.
   var ATTR_SESSION_KEY = 'drfarah_attribution_session_v1';
   var ATTR_PERSIST_KEY = 'drfarah_attribution_persist_v1';
-  var COOKIE_CHOICE_KEY = 'drfarah_cookie_choice';
+  // v2 forces a fresh choice because the prior banner described essential-only storage.
+  var COOKIE_CHOICE_KEY = 'drfarah_cookie_choice_v2';
   var ATTR_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
   function storageGet(storage, key) {
@@ -196,7 +197,6 @@
     if (['yes', 'no', 'unknown'].indexOf(traveler) === -1) traveler = 'unknown';
 
     var touch = {
-      source_detail: rawSource,
       utm_source: clean(p.get('utm_source'), 128),
       utm_medium: clean(p.get('utm_medium'), 128),
       utm_campaign: clean(p.get('utm_campaign'), 256),
