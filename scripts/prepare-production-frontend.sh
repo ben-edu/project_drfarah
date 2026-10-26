@@ -28,6 +28,11 @@ destination_dir="$2"
   exit 1
 }
 
+[ -f "$source_dir/analytics.js" ] || {
+  echo "FAIL: production analytics wrapper is missing." >&2
+  exit 1
+}
+
 mkdir -p "$destination_dir"
 
 if find "$destination_dir" -mindepth 1 -print -quit | grep -q .; then
@@ -48,6 +53,15 @@ from pathlib import Path
 
 root = Path(os.environ["FRONTEND_PRODUCTION_ROOT"])
 staging_tag = '<meta name="robots" content="noindex,nofollow,noarchive">'
+measurement_script = '<script src="/analytics.js?v=20261026-1" defer data-production-measurement="true"></script>'
+measurement_files = {
+    'about.html',
+    'contact.html',
+    'privacy.html',
+    'terms.html',
+    'accessibility.html',
+    'notice-of-privacy-practices.html',
+}
 
 html_files = sorted(root.rglob("*.html"))
 if not html_files:
@@ -55,13 +69,46 @@ if not html_files:
 
 for path in html_files:
     text = path.read_text(encoding="utf-8")
-    path.write_text(text.replace(staging_tag, ""), encoding="utf-8")
+    text = text.replace(staging_tag, "")
+
+    if path.name in measurement_files:
+        if measurement_script not in text:
+            if "</body>" not in text:
+                raise SystemExit(f"FAIL: cannot inject production measurement into {path}")
+            text = text.replace("</body>", measurement_script + "\n</body>", 1)
+    else:
+        text = text.replace(measurement_script, "")
+
+    path.write_text(text, encoding="utf-8")
+
+missing = sorted(name for name in measurement_files if not (root / name).is_file())
+if missing:
+    raise SystemExit("FAIL: approved production measurement page missing: " + ", ".join(missing))
 PY
 
 if grep -R -nF 'noindex,nofollow,noarchive' "$destination_dir" --include='*.html'; then
   echo "FAIL: staging noindex metadata remains in production HTML." >&2
   exit 1
 fi
+
+for page in about.html contact.html privacy.html terms.html accessibility.html notice-of-privacy-practices.html; do
+  grep -qF 'data-production-measurement="true"' "$destination_dir/$page" || {
+    echo "FAIL: approved measurement wrapper missing from $page." >&2
+    exit 1
+  }
+done
+
+for page in book.html patient-registration.html index.html services.html pre-op-clearance.html iv-therapy.html; do
+  if [ -f "$destination_dir/$page" ] && grep -qF 'data-production-measurement="true"' "$destination_dir/$page"; then
+    echo "FAIL: Google measurement leaked onto excluded healthcare/booking page: $page" >&2
+    exit 1
+  fi
+done
+
+grep -qF "G-D58FTMF05S" "$destination_dir/analytics.js" || {
+  echo "FAIL: production GA4 measurement ID is missing from analytics wrapper." >&2
+  exit 1
+}
 
 if grep -R -nF '/wp-content/uploads/' "$destination_dir" --include='*.js' --include='*.html'; then
   echo "FAIL: a production asset still depends on legacy WordPress." >&2
