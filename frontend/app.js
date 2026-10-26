@@ -1,11 +1,9 @@
 (function () {
   'use strict';
 
-  var REVISION = '20261026-1';
+  var REVISION = '20261026-2';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
-  // Keep the approved refinement layer, but load a new revision so staging
-  // cannot reuse the earlier image-handling CSS response.
   if (!document.querySelector('link[data-drfarah-refinement]')) {
     var refinement = document.createElement('link');
     refinement.rel = 'stylesheet';
@@ -14,7 +12,6 @@
     document.head.appendChild(refinement);
   }
 
-  // Compact jump navigation for the Services overview.
   var servicesHero = document.querySelector('.services-hero');
   if (servicesHero && !document.querySelector('.service-jump')) {
     var sectionConfig = [
@@ -46,7 +43,6 @@
     }
   }
 
-  // Stable direct target for the real IV hydration service.
   var ivTreatmentCard = null;
   document.querySelectorAll('.svc-card__title').forEach(function (title) {
     if (title.textContent.trim().toLowerCase() === 'iv hydration & recovery') {
@@ -60,7 +56,6 @@
     });
   }
 
-  // Make pre-op phone scheduling explicit until dedicated online slots exist.
   if (pagePath === '/pre-op-clearance') {
     var preOpHeroCall = document.querySelector('.landing-hero__actions a[href^="tel:"]');
     if (preOpHeroCall) {
@@ -89,7 +84,6 @@
     }
   });
 
-  // Brand mark consistency on legacy static pages.
   document.querySelectorAll('.brand').forEach(function (brand) {
     if (brand.querySelector('.brand__mark') || !brand.querySelector('.brand__text')) return;
     var mark = document.createElement('span');
@@ -99,7 +93,6 @@
     brand.insertBefore(mark, brand.querySelector('.brand__text'));
   });
 
-  // Primary navigation — prominent service destinations requested by the clinic.
   document.querySelectorAll('nav.nav[aria-label="Primary"]').forEach(function (nav) {
     nav.innerHTML =
       '<a href="/services">Services</a>' +
@@ -111,7 +104,6 @@
       '<a href="/about">The Physician</a>';
   });
 
-  // Keep online registration easy to find without overcrowding the main nav.
   document.querySelectorAll('.topbar__inner').forEach(function (topbar) {
     if (topbar.querySelector('.topbar__registration')) return;
     var link = document.createElement('a');
@@ -131,12 +123,8 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // ------------------------------------------------------------------
-  // First-party acquisition attribution.
-  // This deliberately stores no page path, service, reason-for-visit, PII or
-  // clinical data. It preserves only marketing source/campaign identifiers
-  // needed to reconcile acquisition -> appointment -> completed visit.
-  // ------------------------------------------------------------------
+  // First-party attribution. This deliberately stores no page path, service,
+  // reason-for-visit, PII, or clinical data.
   var ATTR_SESSION_KEY = 'drfarah_attribution_session_v1';
   var ATTR_PERSIST_KEY = 'drfarah_attribution_persist_v1';
   var COOKIE_CHOICE_KEY = 'drfarah_cookie_choice';
@@ -161,9 +149,7 @@
     return text ? text.slice(0, maxLength) : null;
   }
   function newSessionId() {
-    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-      return window.crypto.randomUUID();
-    }
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'mkt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
   }
   function isGoogleHost(host) {
@@ -223,24 +209,19 @@
     };
 
     var clickIdPresent = Boolean(touch.gclid || touch.gbraid || touch.wbraid);
-    touch.source = canonicalSource(
-      rawSource, touch.utm_source, touch.utm_medium, partner, clickIdPresent
-    );
-
+    touch.source = canonicalSource(rawSource, touch.utm_source, touch.utm_medium, partner, clickIdPresent);
     Object.keys(touch).forEach(function (key) {
       if (touch[key] === null || touch[key] === '') delete touch[key];
     });
-
-    var hasExplicitSignal = Boolean(
-      rawSource || partner || p.get('traveler') || touch.utm_source || touch.utm_medium ||
-      touch.utm_campaign || touch.utm_content || touch.utm_term || clickIdPresent
-    );
 
     return {
       touch: touch,
       partner_code: partner,
       traveler_segment: traveler,
-      explicit: hasExplicitSignal
+      explicit: Boolean(
+        rawSource || partner || p.get('traveler') || touch.utm_source || touch.utm_medium ||
+        touch.utm_campaign || touch.utm_content || touch.utm_term || clickIdPresent
+      )
     };
   }
 
@@ -273,13 +254,9 @@
 
   var currentCapture = captureCurrentTouch();
   if (!attributionState.first_touch) attributionState.first_touch = currentCapture.touch;
-  if (!attributionState.last_touch || currentCapture.explicit) {
-    attributionState.last_touch = currentCapture.touch;
-  }
+  if (!attributionState.last_touch || currentCapture.explicit) attributionState.last_touch = currentCapture.touch;
   if (currentCapture.partner_code) attributionState.partner_code = currentCapture.partner_code;
-  if (currentCapture.traveler_segment !== 'unknown') {
-    attributionState.traveler_segment = currentCapture.traveler_segment;
-  }
+  if (currentCapture.traveler_segment !== 'unknown') attributionState.traveler_segment = currentCapture.traveler_segment;
   attributionState.updated_at = new Date().toISOString();
 
   function persistAttribution() {
@@ -310,7 +287,6 @@
     }
   };
 
-  // Cookie preference banner.
   var STORAGE_KEY = COOKIE_CHOICE_KEY;
   var banner = document.getElementById('cookie');
   var acceptBtn = document.getElementById('cookieOk');
@@ -326,6 +302,10 @@
     if (banner) banner.hidden = true;
   }
   if (banner) {
+    var bannerText = banner.querySelector('.cookie__text');
+    if (bannerText) {
+      bannerText.innerHTML = 'We use necessary site storage and optional first-party attribution storage to understand which marketing sources lead to bookings. <a href="/privacy">Learn more</a>.';
+    }
     if (!getChoice()) banner.hidden = false;
     var actions = banner.querySelector('.cookie__actions');
     if (acceptBtn) {
