@@ -431,7 +431,6 @@ pipeline {
               exit 1
             fi
 
-            # Maintenance URL (reachable by container name over the private network).
             MAINT_URL="postgresql+psycopg://${PG_USER}:${PG_PASSWORD}@${PG}:5432/${PG_MAINT_DB}"
 
             echo "=== Running PostgreSQL-marked tests in an isolated runner ==="
@@ -1009,10 +1008,6 @@ PY
             echo ""
             echo "=== Production namespace and secret preflight ==="
 
-            # Jenkins runs sh steps with xtrace enabled. Kubernetes Secret
-            # values are not Jenkins-managed credentials, so the masker cannot
-            # protect values returned by kubectl. Disable tracing before any
-            # Secret read and only re-enable it after the values are unset.
             set +x
 
             kubectl apply -f kubernetes/drfarah/namespace.yaml
@@ -1410,7 +1405,8 @@ HESTIA_PREFLIGHT
       }
 
       steps {
-        // CI cleanup — token-protected, runs first to clear previous build records.
+        // Keep the CI cleanup credential in scope for both the cleanup call and
+        // the later appointment smoke POST that authenticates with X-CI-Token.
         withCredentials([
           string(
             credentialsId: 'drfarah-staging-ci-cleanup-token',
@@ -1516,157 +1512,152 @@ HESTIA_PREFLIGHT
             cleanup_temp
             trap - EXIT HUP INT TERM
           '''
-        }
 
-        sh '''
-          set -eu
+          sh '''
+            set -eu
 
-          echo "=== Staging API liveness ==="
+            echo "=== Staging API liveness ==="
 
-          live_status="000"
+            live_status="000"
 
-          for attempt in $(seq 1 18); do
-            live_status="$(
+            for attempt in $(seq 1 18); do
+              live_status="$(
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "${STAGING_API_URL}/api/v1/health/live" \
+                  || true
+              )"
+
+              if [ -z "$live_status" ]; then
+                live_status="000"
+              fi
+
+              if [ "$live_status" = "200" ]; then
+                echo "Liveness passed on attempt $attempt."
+                break
+              fi
+
+              echo "  attempt $attempt/18 -> HTTP $live_status"
+              sleep 5
+            done
+
+            if [ "$live_status" != "200" ]; then
+              echo "FAIL: staging liveness returned HTTP $live_status"
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Staging API readiness ==="
+
+            ready_status="000"
+
+            for attempt in $(seq 1 12); do
+              ready_status="$(
+                curl -sS \
+                  -o /dev/null \
+                  -w '%{http_code}' \
+                  "${STAGING_API_URL}/api/v1/health/ready" \
+                  || true
+              )"
+
+              if [ -z "$ready_status" ]; then
+                ready_status="000"
+              fi
+
+              if [ "$ready_status" = "200" ]; then
+                echo "Readiness passed on attempt $attempt."
+                break
+              fi
+
+              echo "  attempt $attempt/12 -> HTTP $ready_status"
+              sleep 5
+            done
+
+            if [ "$ready_status" != "200" ]; then
+              echo "FAIL: staging readiness returned HTTP $ready_status"
+              exit 1
+            fi
+
+            echo ""
+            echo "=== Staging services endpoint ==="
+
+            SERVICES_JSON="$(
               curl -sS \
-                -o /dev/null \
-                -w '%{http_code}' \
-                "${STAGING_API_URL}/api/v1/health/live" \
+                "${STAGING_API_URL}/api/v1/services" \
                 || true
             )"
 
-            if [ -z "$live_status" ]; then
-              live_status="000"
+            if [ -z "$SERVICES_JSON" ]; then
+              echo "FAIL: services endpoint returned empty response"
+              exit 1
             fi
 
-            if [ "$live_status" = "200" ]; then
-              echo "Liveness passed on attempt $attempt."
-              break
+            SERVICE_COUNT="$(
+              echo "$SERVICES_JSON" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('services',[])))" \
+              2>/dev/null || echo "0"
+            )"
+
+            if [ "$SERVICE_COUNT" -eq 0 ]; then
+              echo "FAIL: no active services found — migrations may have failed"
+              echo "$SERVICES_JSON"
+              exit 1
             fi
 
-            echo "  attempt $attempt/18 -> HTTP $live_status"
-            sleep 5
-          done
+            SERVICE_CODE="$(
+              echo "$SERVICES_JSON" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['services'][0]['code'])"
+            )"
 
-          if [ "$live_status" != "200" ]; then
-            echo "FAIL: staging liveness returned HTTP $live_status"
-            exit 1
-          fi
+            echo "Services endpoint returned ${SERVICE_COUNT} active service(s)."
+            echo "Selected service for smoke test: $SERVICE_CODE"
 
-          echo ""
-          echo "=== Staging API readiness ==="
+            echo ""
+            echo "=== Staging availability endpoint ==="
 
-          ready_status="000"
+            START_DATE="$(date -d '+1 day' '+%Y-%m-%d' 2>/dev/null || date -v+1d '+%Y-%m-%d')"
+            END_DATE="$(date -d '+14 days' '+%Y-%m-%d' 2>/dev/null || date -v+14d '+%Y-%m-%d')"
 
-          for attempt in $(seq 1 12); do
-            ready_status="$(
+            AVAIL_JSON="$(
               curl -sS \
-                -o /dev/null \
-                -w '%{http_code}' \
-                "${STAGING_API_URL}/api/v1/health/ready" \
+                "${STAGING_API_URL}/api/v1/availability?service_code=${SERVICE_CODE}&start_date=${START_DATE}&end_date=${END_DATE}" \
                 || true
             )"
 
-            if [ -z "$ready_status" ]; then
-              ready_status="000"
+            if [ -z "$AVAIL_JSON" ]; then
+              echo "FAIL: availability endpoint returned empty response"
+              exit 1
             fi
 
-            if [ "$ready_status" = "200" ]; then
-              echo "Readiness passed on attempt $attempt."
-              break
+            SLOT_COUNT="$(
+              echo "$AVAIL_JSON" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('slots',[])))" \
+              2>/dev/null || echo "0"
+            )"
+
+            if [ "$SLOT_COUNT" -eq 0 ]; then
+              echo "FAIL: no available slots in 14-day window for $SERVICE_CODE"
+              echo "$AVAIL_JSON"
+              exit 1
             fi
 
-            echo "  attempt $attempt/12 -> HTTP $ready_status"
-            sleep 5
-          done
+            SLOT_START="$(
+              echo "$AVAIL_JSON" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['slots'][0]['starts_at'])"
+            )"
 
-          if [ "$ready_status" != "200" ]; then
-            echo "FAIL: staging readiness returned HTTP $ready_status"
-            exit 1
-          fi
+            echo "Availability returned ${SLOT_COUNT} slot(s)."
+            echo "First available slot: $SLOT_START"
 
-          echo ""
-          echo "=== Staging services endpoint ==="
+            echo ""
+            echo "=== Staging appointment smoke test ==="
 
-          SERVICES_JSON="$(
-            curl -sS \
-              "${STAGING_API_URL}/api/v1/services" \
-              || true
-          )"
+            APPT_RESPONSE="$(mktemp)"
+            APPT_PAYLOAD="$(mktemp)"
 
-          if [ -z "$SERVICES_JSON" ]; then
-            echo "FAIL: services endpoint returned empty response"
-            exit 1
-          fi
-
-          SERVICE_COUNT="$(
-            echo "$SERVICES_JSON" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('services',[])))" \
-            2>/dev/null || echo "0"
-          )"
-
-          if [ "$SERVICE_COUNT" -eq 0 ]; then
-            echo "FAIL: no active services found — migrations may have failed"
-            echo "$SERVICES_JSON"
-            exit 1
-          fi
-
-          SERVICE_CODE="$(
-            echo "$SERVICES_JSON" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['services'][0]['code'])"
-          )"
-
-          echo "Services endpoint returned ${SERVICE_COUNT} active service(s)."
-          echo "Selected service for smoke test: $SERVICE_CODE"
-
-          echo ""
-          echo "=== Staging availability endpoint ==="
-
-          START_DATE="$(date -d '+1 day' '+%Y-%m-%d' 2>/dev/null || date -v+1d '+%Y-%m-%d')"
-          END_DATE="$(date -d '+14 days' '+%Y-%m-%d' 2>/dev/null || date -v+14d '+%Y-%m-%d')"
-
-          AVAIL_JSON="$(
-            curl -sS \
-              "${STAGING_API_URL}/api/v1/availability?service_code=${SERVICE_CODE}&start_date=${START_DATE}&end_date=${END_DATE}" \
-              || true
-          )"
-
-          if [ -z "$AVAIL_JSON" ]; then
-            echo "FAIL: availability endpoint returned empty response"
-            exit 1
-          fi
-
-          SLOT_COUNT="$(
-            echo "$AVAIL_JSON" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('slots',[])))" \
-            2>/dev/null || echo "0"
-          )"
-
-          if [ "$SLOT_COUNT" -eq 0 ]; then
-            echo "FAIL: no available slots in 14-day window for $SERVICE_CODE"
-            echo "$AVAIL_JSON"
-            exit 1
-          fi
-
-          SLOT_START="$(
-            echo "$AVAIL_JSON" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['slots'][0]['starts_at'])"
-          )"
-
-          echo "Availability returned ${SLOT_COUNT} slot(s)."
-          echo "First available slot: $SLOT_START"
-
-          # The deprecated /api/v1/bookings endpoint is covered by API tests.
-          # Do not POST it from CI because it sends an operational email by design.
-
-          echo ""
-          echo "=== Staging appointment smoke test ==="
-
-          APPT_RESPONSE="$(mktemp)"
-          APPT_PAYLOAD="$(mktemp)"
-
-          # Build the JSON with python3 to avoid shell/Groovy quoting issues.
-          SERVICE_CODE="$SERVICE_CODE" SLOT_START="$SLOT_START" \
-            python3 -c '
+            SERVICE_CODE="$SERVICE_CODE" SLOT_START="$SLOT_START" \
+              python3 -c '
 import json, os
 print(json.dumps({
     "service_code": os.environ["SERVICE_CODE"],
@@ -1680,90 +1671,84 @@ print(json.dumps({
 }))
 ' > "$APPT_PAYLOAD"
 
-          set +x
-          appt_status="$(
-            curl -sS \
-              -o "$APPT_RESPONSE" \
-              -w '%{http_code}' \
-              -X POST \
-              -H 'Content-Type: application/json' \
-              -H "X-CI-Token: $CLEANUP_TOKEN" \
-              --data-binary "@$APPT_PAYLOAD" \
-              "${STAGING_API_URL}/api/v1/appointments" \
-              || true
-          )"
-          set -x
+            set +x
+            appt_status="$(
+              curl -sS \
+                -o "$APPT_RESPONSE" \
+                -w '%{http_code}' \
+                -X POST \
+                -H 'Content-Type: application/json' \
+                -H "X-CI-Token: $CLEANUP_TOKEN" \
+                --data-binary "@$APPT_PAYLOAD" \
+                "${STAGING_API_URL}/api/v1/appointments" \
+                || true
+            )"
+            set -x
 
-          rm -f "$APPT_PAYLOAD"
-          if [ "$appt_status" = "201" ]; then
-            echo "Appointment smoke test: HTTP 201 (created)"
-            # The CI appointment carries source=ci and is removed by the
-            # cleanup step at the start of the next health-check run, keeping
-            # repeated dev builds idempotent. No teardown needed here.
-          elif [ "$appt_status" = "409" ]; then
-            # 409 proves the endpoint is live and the double-booking exclusion
-            # constraint is working. A prior CI appointment still holds the slot;
-            # this is a healthy signal, not a failure. The start-of-run cleanup
-            # frees source=ci appointments on the next build.
-            echo "Appointment smoke test: HTTP 409 (slot held by exclusion constraint) — treated as PASS"
-          else
-            echo "FAIL: appointment smoke test returned HTTP $appt_status"
-            echo "Response body:"
-            cat "$APPT_RESPONSE"
+            rm -f "$APPT_PAYLOAD"
+            if [ "$appt_status" = "201" ]; then
+              echo "Appointment smoke test: HTTP 201 (created)"
+            elif [ "$appt_status" = "409" ]; then
+              echo "Appointment smoke test: HTTP 409 (slot held by exclusion constraint) — treated as PASS"
+            else
+              echo "FAIL: appointment smoke test returned HTTP $appt_status"
+              echo "Response body:"
+              cat "$APPT_RESPONSE"
+              rm -f "$APPT_RESPONSE"
+              exit 1
+            fi
+
+            echo "Appointment endpoint returned a healthy smoke-test response."
             rm -f "$APPT_RESPONSE"
-            exit 1
-          fi
 
-          echo "Appointment endpoint returned HTTP 201."
-          rm -f "$APPT_RESPONSE"
+            echo ""
+            echo "=== Immutable image verification ==="
 
-          echo ""
-          echo "=== Immutable image verification ==="
+            IMAGE_TAG="$(git rev-parse HEAD)"
 
-          IMAGE_TAG="$(git rev-parse HEAD)"
+            if [ -z "$IMAGE_TAG" ]; then
+              echo "FAIL: git rev-parse HEAD returned an empty string."
+              exit 1
+            fi
 
-          if [ -z "$IMAGE_TAG" ]; then
-            echo "FAIL: git rev-parse HEAD returned an empty string."
-            exit 1
-          fi
+            if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
+              echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
+              exit 1
+            fi
 
-          if ! echo "$IMAGE_TAG" | grep -qE '^[0-9a-f]{40}$'; then
-            echo "FAIL: Git SHA is not a valid 40-char hex string: '$IMAGE_TAG'"
-            exit 1
-          fi
+            FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
 
-          FULL_IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${API_IMAGE_NAME}:${IMAGE_TAG}"
+            DEPLOYED_IMAGE="$(
+              kubectl -n "$STAGING_NAMESPACE" \
+                get deployment drfarah-staging-api \
+                -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
+            )"
 
-          DEPLOYED_IMAGE="$(
-            kubectl -n "$STAGING_NAMESPACE" \
-              get deployment drfarah-staging-api \
-              -o jsonpath='{.spec.template.spec.containers[?(@.name=="api")].image}'
-          )"
+            DEPLOYED_INIT_IMAGE="$(
+              kubectl -n "$STAGING_NAMESPACE" \
+                get deployment drfarah-staging-api \
+                -o jsonpath='{.spec.template.spec.initContainers[?(@.name=="db-migrate")].image}'
+            )"
 
-          DEPLOYED_INIT_IMAGE="$(
-            kubectl -n "$STAGING_NAMESPACE" \
-              get deployment drfarah-staging-api \
-              -o jsonpath='{.spec.template.spec.initContainers[?(@.name=="db-migrate")].image}'
-          )"
+            echo "Expected image: $FULL_IMAGE"
+            echo "Deployed api container:        $DEPLOYED_IMAGE"
+            echo "Deployed db-migrate container: $DEPLOYED_INIT_IMAGE"
 
-          echo "Expected image: $FULL_IMAGE"
-          echo "Deployed api container:        $DEPLOYED_IMAGE"
-          echo "Deployed db-migrate container: $DEPLOYED_INIT_IMAGE"
+            if [ "$DEPLOYED_IMAGE" != "$FULL_IMAGE" ]; then
+              echo "FAIL: deployed api image does not match the immutable commit SHA."
+              exit 1
+            fi
 
-          if [ "$DEPLOYED_IMAGE" != "$FULL_IMAGE" ]; then
-            echo "FAIL: deployed api image does not match the immutable commit SHA."
-            exit 1
-          fi
+            if [ "$DEPLOYED_INIT_IMAGE" != "$FULL_IMAGE" ]; then
+              echo "FAIL: deployed db-migrate image does not match the immutable commit SHA."
+              exit 1
+            fi
 
-          if [ "$DEPLOYED_INIT_IMAGE" != "$FULL_IMAGE" ]; then
-            echo "FAIL: deployed db-migrate image does not match the immutable commit SHA."
-            exit 1
-          fi
-
-          echo "Immutable image verification passed (both containers)."
-          echo ""
-          echo "Staging API health checks passed."
-        '''
+            echo "Immutable image verification passed (both containers)."
+            echo ""
+            echo "Staging API health checks passed."
+          '''
+        }
       }
     }
 
@@ -2690,8 +2675,6 @@ PY
               exit 1
             }
 
-            # These redirects are installed only on production. Check the first
-            # Location header so a hidden http -> https hop cannot pass.
             for mapping in \
               'booking/|book' \
               'services/|services' \
@@ -2706,7 +2689,7 @@ PY
               headers="$(curl -fsS -D - -o /dev/null \
                 "https://${PRODUCTION_FRONTEND_HOST}/${source_path}")"
               response_code="$(printf '%s\n' "$headers" | awk '$1 ~ /^HTTP/ {code=$2} END {print code}')"
-              location="$(printf '%s\n' "$headers" | tr -d '\\r' | awk 'tolower($1)=="location:" {print $2; exit}')"
+              location="$(printf '%s\n' "$headers" | tr -d '\r' | awk 'tolower($1)=="location:" {print $2; exit}')"
               expected="https://${PRODUCTION_FRONTEND_HOST}/${target_path}"
               if [ "$response_code" != '301' ] || [ "$location" != "$expected" ]; then
                 echo "FAIL: ${source_path} -> ${response_code} ${location} (expected 301 ${expected})"
