@@ -29,11 +29,11 @@
 
 Immediate objective:
 
-> complete the first-party measurement/attribution foundation, then activate only approved Google measurement, build `visit_completed`, finish Google forensic baselines/corrections, and prepare a controlled paid relaunch optimized toward real business outcomes.
+> validate the merged first-party attribution foundation, build a privacy-safe `visit_completed` business-outcome read model, keep Google measurement blocked until eligible pages/events are approved, then build controlled Ads offline conversion import and prepare a measured paid relaunch.
 
 Current order:
 
-`first-party attribution → GA4 stream/tag/privacy implementation → visit_completed → Search/Ads/GBP forensic baselines and corrections → economics/service priorities → landing paths → controlled Ads relaunch → local/reputation cycle → Traveler/Pre-Op/Content → Growth Intelligence/scale`
+`first-party attribution validation → visit_completed → GA4/privacy page classification → approved minimal Google tag if permitted → Ads offline conversion import → Search/Ads/GBP forensic baselines and corrections → economics/service priorities → landing paths → controlled Ads relaunch → local/reputation cycle → Traveler/Pre-Op/Content → Growth Intelligence/scale`
 
 The roadmap is gate-based, not rigidly linear. If a HARD dependency blocks one item, record the restart condition and continue the highest-value independent READY item.
 
@@ -81,12 +81,17 @@ Do not bulk-delete services because the catalogue is large. Change services only
 
 Detailed baseline: `docs/GBP_BASELINE_2026-10-24.md`.
 
-### GA4 — access now resolved
+### GA4 — access and production stream metadata resolved
 
-**FACT — verified 2026-10-26:** Windsor.ai now exposes the correct clinic GA4 property:
+**FACT — verified 2026-10-26:** Windsor.ai exposes the correct clinic GA4 property:
 
 - property ID: `489069776`
 - name: `drfarahvipurgentcare.com`
+
+**OWNER-PROVIDED GA4 ADMIN METADATA — 2026-10-26:**
+
+- Web Stream ID: `11211773871`
+- Measurement ID: `G-D58FTMF05S`
 
 A live recent-period data query succeeds and returns zero rows/events, which is consistent with the fact that no approved production GA4 tag/event implementation is currently active on the site.
 
@@ -94,16 +99,16 @@ The unrelated property `483894121` (`safeguardsupport.com`) is not part of this 
 
 Still needed:
 
-- exact production Web stream ID;
-- exact `G-...` measurement ID;
 - timezone/currency/Enhanced Measurement live-setting confirmation;
-- approved page/event boundary;
+- appropriate legal/privacy classification of any pages/events proposed for Google measurement;
 - Google Ads link/destination review;
-- controlled first event after implementation.
+- controlled first event only after tag deployment is approved.
+
+Current Google Analytics guidance for HIPAA-regulated entities says Google Analytics must not receive PHI and does not offer a HIPAA BAA; authenticated pages are likely HIPAA-covered and some unauthenticated healthcare-service pages may also need exclusion. Do not deploy GA4 site-wide by default.
 
 Detailed architecture: `docs/GA4_ARCHITECTURE_2026-10-24.md`.
 
-### Search Console — access now resolved
+### Search Console — access resolved
 
 **FACT — verified 2026-10-26:** the correct domain property is connected and readable:
 
@@ -121,7 +126,9 @@ Important early signals:
 - exact brand query performs strongly;
 - local non-brand urgent-care queries have meaningful impressions but weaker position/CTR;
 - educational wound-care content drives substantial organic visibility;
-- HTTP homepage variant still appears in historical Search Console data and requires canonical/redirect verification before treating it as a current defect.
+- HTTP homepage variant still appears in historical Search Console data and requires current redirect/canonical verification before treating it as an active defect.
+
+The sitemap contradiction was corrected on 2026-10-26: `/book` and `/patient-registration` remain `noindex` and are no longer listed in the XML sitemap.
 
 Detailed baseline: `docs/SEARCH_CONSOLE_BASELINE_2026-10-26.md`.
 
@@ -131,13 +138,15 @@ Compact model:
 
 - diagnostic signals only where they answer a real question;
 - `booking_request_created` = secondary lead signal;
-- `visit_completed` = intended primary business outcome once source-to-appointment linkage/import is validated.
+- `visit_completed` = intended primary business outcome.
 
 Do not equate platform conversions with completed patient visits.
 
 ### First-party attribution implementation
 
-**IN PROGRESS on branch:** `feature/attribution-foundation-20261026`
+**MERGED TO `dev` 2026-10-26 after owner-confirmed successful Jenkins validation.**
+
+Merged PR: `#83` / merge commit `799c0a021c8b2c1067570205f13555b71761415b`.
 
 Implementation scope:
 
@@ -153,7 +162,22 @@ Implementation scope:
 - privacy page and cookie notice updated to match first-party attribution behavior;
 - no GA4/Ads tag deployed by this implementation.
 
-This foundation is designed so `visit_completed` can later join the authoritative appointment outcome to acquisition identifiers without depending on browser analytics.
+Staging behavior still needs an end-to-end campaign-marker persistence check after the merged `dev` build is available.
+
+### `visit_completed` business outcome
+
+**IN PROGRESS on branch:** `feature/visit-completed-read-model-20261026`
+
+Initial design deliberately uses a read model rather than another event table:
+
+- authoritative condition: `Appointment.status == completed`;
+- one deterministic outcome key per appointment: `visit_completed:<appointment_id>`;
+- stable initial occurrence time: appointment `starts_at`;
+- join non-clinical acquisition identifiers from `appointment_attributions`;
+- no patient name, email, phone, reason-for-visit, service/clinical context or registration data in the marketing outcome row;
+- no external transmission yet.
+
+Detailed contract: `docs/VISIT_COMPLETED_OUTCOME_2026-10-26.md`.
 
 ---
 
@@ -168,28 +192,29 @@ This foundation is designed so `visit_completed` can later join the authoritativ
 **State:** IN_PROGRESS  
 **Class:** HARD for paid relaunch
 
-Still needed after attribution foundation:
+Still needed:
 
-- GA4 stream/measurement metadata;
-- approved healthcare/privacy page/event classification;
-- controlled Google tag/consent implementation where permitted;
-- `booking_request_created` validation;
-- `visit_completed` outcome generation/import;
+- staging validation of merged first-party attribution;
+- `visit_completed` read-model CI + staging validation;
+- appropriate healthcare/privacy page/event classification before any Google tag deployment;
+- controlled Google tag/consent implementation only where permitted;
+- `booking_request_created` policy/implementation decision;
+- Ads offline conversion import design and deduplication validation;
 - end-to-end no-duplicate/no-sensitive-data validation.
 
-### B-003 — GA4 access
+### B-003 — GA4 access / stream metadata
 
-**State:** ACCESS RESOLVED / IMPLEMENTATION PENDING  
-**Class:** no longer an access blocker.
+**State:** RESOLVED / TAG DEPLOYMENT GATED  
+**Class:** no longer an access or ID blocker.
 
-Property `489069776` is connected. Remaining work is implementation metadata + approved event/tag architecture.
+Property `489069776`, Web Stream ID `11211773871`, and Measurement ID `G-D58FTMF05S` are recorded. Remaining work is privacy/page eligibility + live setting confirmation + controlled implementation.
 
 ### B-004 — Search Console access
 
 **State:** ACCESS RESOLVED / TECHNICAL BASELINE CONTINUES  
 **Class:** no longer an access blocker.
 
-Search Analytics is readable. Sitemap/indexing/canonical coverage still needs dedicated validation.
+Search Analytics is readable. Sitemap contradiction has been corrected; current indexing/canonical/redirect coverage still needs dedicated validation.
 
 ### B-005 — Project Source cleanup
 
@@ -199,24 +224,26 @@ Search Analytics is readable. Sitemap/indexing/canonical coverage still needs de
 
 ## 5. Exact next actions
 
-1. validate branch `feature/attribution-foundation-20261026` with repository CI/tests and merge only if clean;
-2. validate first-party attribution on staging: campaign marker survives navigation to booking and persists to the appointment attribution record;
-3. obtain/record GA4 Web stream ID + `G-...` measurement ID and confirm timezone/currency/Enhanced Measurement settings;
-4. classify which pages/events are eligible for Google measurement and implement the smallest compliant production-only Google tag footprint;
-5. implement `visit_completed` generation/import from authoritative appointment completion with deduplication;
-6. complete Search Console sitemap/indexing/canonical technical baseline;
-7. continue Google Ads historical forensic audit and GBP high-confidence corrections in parallel where safe;
-8. keep `G2-MEASUREMENT-READY` red until the controlled end-to-end test passes.
+1. run repository CI/Jenkins for branch `feature/visit-completed-read-model-20261026` and merge only if clean;
+2. validate merged first-party attribution on staging: campaign marker survives navigation to booking and persists to `appointment_attributions` without clinical data;
+3. validate `visit_completed` read model against staged completed/non-completed appointments;
+4. inspect Google Ads offline-conversion capabilities and exact deduplication/import fields;
+5. define the approved completed-visit conversion action and controlled import path without PII/PHI;
+6. separately obtain the appropriate legal/privacy classification for any pages proposed for GA4 measurement;
+7. only if approved, implement a production-only page allowlist + basic consent loader for `G-D58FTMF05S`;
+8. complete Search Console indexing/canonical technical baseline and continue Ads/GBP forensic corrections in parallel;
+9. keep `G2-MEASUREMENT-READY` red until the controlled source → appointment → completed visit → import test passes.
 
 ---
 
 ## 6. Do not do yet
 
 - do not relaunch/materially scale Google Ads while `G2-MEASUREMENT-READY` is red;
-- do not deploy GA4 site-wide by default on the healthcare site without page/event classification;
-- do not tag booking/admin/authenticated flows by default;
-- do not send unnecessary PII/PHI or clinical intent to Google analytics/advertising systems;
+- do not deploy GA4 site-wide by default on the healthcare site;
+- do not tag booking, patient-registration, admin or authenticated flows by default;
+- do not send unnecessary PII/PHI, service/clinical context or health intent to Google analytics/advertising systems;
 - do not make page views, directions or generic call clicks the long-term primary Ads outcome;
+- do not upload `visit_completed` rows to Google until the Ads conversion action/import contract and deduplication behavior are validated;
 - do not bulk-delete GBP services merely because the list is long;
 - do not create another roadmap or depend on deleted chat tabs;
 - do not leave material project results only in chat.
