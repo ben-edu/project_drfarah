@@ -1516,7 +1516,6 @@ HESTIA_PREFLIGHT
             cleanup_temp
             trap - EXIT HUP INT TERM
           '''
-        }
 
         sh '''
           set -eu
@@ -1764,6 +1763,7 @@ print(json.dumps({
           echo ""
           echo "Staging API health checks passed."
         '''
+        }
       }
     }
 
