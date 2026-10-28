@@ -2,1208 +2,621 @@
 
 > **Repository:** `ben-edu/project_drfarah`  
 > **Canonical roadmap:** this file only  
-> **Integration/default branch:** `dev`  
-> **Active ChatGPT workspace:** the existing `BG-20` project tab, now serving as the single unified project workspace  
-> **OpenProject:** authoritative for live work-package status, assignee, dates, dependencies, milestones and completion  
-> **GitHub:** durable project memory, roadmap, handoff, decisions, code, runbooks and evidence  
-> **Live systems:** authoritative for their own current configuration and performance
+> **Integration branch:** `dev`  
+> **Production branch:** `main`  
+> **GitHub:** durable project memory, code, roadmap, handoff, decisions and evidence  
+> **OpenProject:** authoritative for live work-package status, assignee, dates, dependencies and milestones  
+> **Live systems:** authoritative for their own current state
+
+**Operating mode updated 2026-10-28:** Growth Acceleration / parallel execution.
 
 ---
 
-## 1. Purpose and consolidation decision
+## 1. Mission
 
-This is the **single master roadmap** for the Dr. Farah project.
+The project is not only a website or measurement implementation. The operating objective is to build and run an integrated growth system that coordinates:
 
-It consolidates:
-
-- website and booking development/stabilization;
-- governance and measurement;
 - Google Ads and paid acquisition;
-- Google Business Profile, Local SEO and reputation;
-- traveler / hotel / VIP growth;
-- pre-operative referral growth;
-- physician-led video/social/creative;
-- service-priority and economics work;
-- analytics, attribution and Growth Intelligence;
-- operational, privacy and compliance readiness;
-- the work that was previously distributed across separate ChatGPT tabs aligned to OpenProject workstreams.
+- Google Search Console / organic search;
+- Google Business Profile / Maps / reputation;
+- GA4 and privacy-safe measurement;
+- first-party attribution and completed-visit conversion feedback;
+- conversion-focused website and landing paths;
+- service economics, capacity and budget decisions;
+- AI/ChatGPT advertising where eligible and economically justified;
+- traveler/hotel, pre-op referral and physician-led content channels;
+- Growth Intelligence, reporting and recurring optimization.
 
-The unified control plane is now merged to `dev`. The separate project chat tabs may be retired after the minimal Project Sources are replaced to point to `dev` and a resume test confirms that this control plane is sufficient. Their work is **not cancelled**; it is represented below by workstream code, roadmap phase, dependencies and acceptance evidence.
-
-No second roadmap should be created for website development, marketing, Growth Intelligence or another workstream. Detailed technical plans/runbooks may remain in their specialized files, but sequencing belongs here.
-
-`PROJECT.md` remains the stable product/technical charter. `HANDOFF.md` remains historical/detailed website/deployment evidence. Neither is a competing roadmap.
+The system must optimize toward business outcomes, especially completed visits and defensible economics, rather than clicks, views or platform-reported conversions alone.
 
 ---
 
-## 2. Authority hierarchy
+## 2. Authority and control
 
 When sources disagree, use this order:
 
 1. current verified clinic/business fact from Dr. Farah or authoritative clinic record;
-2. live production/account system for its own current state;
-3. approved decision in `docs/DECISIONS.md`;
-4. current `PROJECT_HANDOFF.md` and this roadmap;
+2. live production/account system for its own state;
+3. approved `docs/DECISIONS.md`;
+4. current `PROJECT_HANDOFF.md` + this roadmap;
 5. stable repository specifications/runbooks/code;
 6. OpenProject for live execution metadata;
-7. historical reports, old Project Sources and prior chat conclusions.
+7. historical reports/old project sources/chats.
 
-Special cases:
+Special authorities:
 
-- website/code/deployment → GitHub + Jenkins + live environment evidence;
+- website/deployment → GitHub + Jenkins + live environment;
 - Google Ads → live Google Ads account;
-- Google Business Profile → live verified profile;
-- organic Google Search → Search Console + live site;
+- GBP → live verified profile;
+- organic search → Search Console + live site;
 - GA4 → live GA4 property/data stream;
-- booking outcome → booking/admin platform;
-- work-package state → OpenProject.
+- completed visit → booking/admin platform;
+- work-package metadata → OpenProject.
 
-A newer verified fact supersedes an older Project Source statement. Example: live Google Ads evidence has superseded the former assumption that the account had no campaign history.
-
----
-
-## 3. Project-control mechanism
-
-### 3.1 Required operating states
-
-Every roadmap item uses one state:
-
-- `NOT_STARTED`
-- `READY`
-- `IN_PROGRESS`
-- `VALIDATING`
-- `BLOCKED`
-- `PAUSED`
-- `WAITING_EXTERNAL`
-- `DONE`
-- `DEFERRED`
-- `CANCELLED`
-
-`DONE` requires acceptance evidence, not merely a recommendation, code commit or account edit.
-
-### 3.2 Blocker classes
-
-Every blocker is classified as:
-
-- **HARD** — downstream work would create invalid data, production risk, policy/compliance risk or significant rework;
-- **SOFT** — the blocked item waits, but independent work may proceed safely.
-
-For every blocked/paused item record in `PROJECT_HANDOFF.md`:
-
-1. item/workstream;
-2. reason;
-3. hard vs soft;
-4. evidence/action required to unblock;
-5. downstream work prohibited while blocked;
-6. safe parallel work;
-7. exact restart point.
-
-### 3.3 Next-task selection algorithm
-
-At the start of every substantive session:
-
-1. read `PROJECT_HANDOFF.md`;
-2. re-check all HARD blockers;
-3. choose the highest-priority `READY` item with no unsatisfied HARD dependency;
-4. if an item becomes blocked, record it immediately and move to the next eligible item;
-5. do not create lower-value work merely because a high-priority item is waiting;
-6. after material work, update the handoff before ending the session.
-
-This rule is what allows a future chat/context window/operator to resume precisely without relying on chat memory.
-
-### 3.4 Material-session close protocol
-
-A material session is incomplete until:
-
-- verified facts/results are recorded in an appropriate GitHub file;
-- `PROJECT_HANDOFF.md` is updated with state, evidence, blockers and exact next actions;
-- this roadmap is updated only if sequencing/gates/scope changed;
-- `docs/DECISIONS.md` is updated only for approved decisions;
-- `SESSION_LOG.md` receives a concise historical entry where appropriate;
-- OpenProject is updated separately when live work-package state/evidence changes.
-
-No material result should live only in chat.
+`PROJECT_HANDOFF.md` is the exact live resume point and must be updated after every material session.
 
 ---
 
-## 4. Workstream registry retained from the former tabs
+## 3. Execution rules — Growth Acceleration mode
 
-| Code | Workstream | Durable purpose |
-|---|---|---|
-| BG-00 | Governance, Decisions & Measurement | authority, access, taxonomy, KPI and decision discipline |
-| BG-10 | Website & Conversion | public site, booking, landing pages, technical SEO, tracking implementation |
-| BG-20 | Google Ads & Paid Acquisition | historical forensic audit, corrections, relaunch and optimization |
-| BG-30 | Google Business, Local SEO & Reputation | GBP, Search Console, reviews, Maps/local visibility |
-| BG-40 | Hotel / Traveler / VIP Growth | traveler baseline, service model, partner pipeline and pilot |
-| BG-50 | Pre-Op Referral Engine | baseline, economics, proposition, target practices and pilot |
-| BG-60 | Video, Social & Creative | reusable physician-led content system |
-| BG-70 | Service Priority & Economics | service value, margin, capacity and acquisition priority |
-| BG-80 | Analytics & Growth Intelligence | full funnel, attribution, dashboards, reporting and experiments |
-| BG-90 | Operations / Compliance Readiness | claims, privacy, capacity, mobile/hotel readiness and compliance triggers |
-
-The workstream identities remain useful for OpenProject mapping and handoffs even though only one ChatGPT tab remains active.
+1. **Parallel by default.** Independent workstreams proceed simultaneously; a blocker in one lane does not stop safe work in another.
+2. **Production is the destination.** Growth infrastructure that passes staging/quality gates must not remain indefinitely on `dev`. Promote coherent batches through normal Jenkins controls.
+3. **Develop more, build less.** Batch related changes, tests and docs before CI/build. Do not trigger redundant builds, but never trade away correctness or safety.
+4. **One integrated measurement model.** Google Ads, Search Console, GBP, GA4, first-party attribution and the website must be designed as one acquisition system.
+5. **Legacy evidence before cleanup.** Historical campaigns/settings may be archived or removed only after extracting useful performance/configuration evidence. Do not destroy forensic value first.
+6. **Do not relaunch the legacy Smart campaign by default.** The first new paid experiment should use a controllable campaign architecture unless live evidence demonstrates a better alternative.
+7. **Working assumptions are allowed.** Missing exact clinic economics must not stall research/design. Use clearly labeled provisional assumptions derived from market/account evidence, then replace them when authoritative business figures become available.
+8. **Completed visit is the primary business outcome.** Booking/call signals may remain secondary/diagnostic.
+9. **Privacy boundary.** Do not send unnecessary patient PII/PHI, reason for visit, service/clinical context or registration data to marketing platforms.
+10. **AI paid acquisition is a real workstream.** ChatGPT/OpenAI Ads eligibility, policy, targeting, measurement and economics are to be evaluated as a potential paid channel, not left as a side note.
 
 ---
 
-## 5. Master gates
+## 4. Master gates
 
 | Gate | Meaning | Minimum evidence |
 |---|---|---|
-| `G0-CONTROL-PLANE-LIVE` | GitHub can carry project continuity without old tabs | roadmap + handoff + decisions on `dev` + minimal Project Sources pointing to `dev` + successful resume test |
-| `G1-BOOKING-HEALTHY` | booking path is operationally safe | production booking persists + expected notification behavior verified |
-| `G2-MEASUREMENT-READY` | acquisition can be measured without duplicate/bad data | GA4/tag architecture + attribution + key conversions tested |
-| `G3-GOOGLE-BASELINES-CAPTURED` | Ads/GBP/SC/GA4 current state known | dated baselines from live systems |
-| `G4-FOUNDATION-CORRECTED` | high-confidence factual/technical/policy issues corrected | before/after evidence |
-| `G5-ECONOMICS-AND-PRIORITIES-READY` | acquisition priorities can be judged economically | source/service baseline + priority matrix |
-| `G6-LANDING-PATHS-READY` | intended acquisition traffic has fit-for-purpose destinations | approved page/CTA/tracking paths |
-| `G7-FIRST-PAID-EXPERIMENT-LIVE` | controlled paid relaunch started | launch spec + budget + measurement + stop/scale rules |
-| `G8-LOCAL-GROWTH-CYCLE-LIVE` | GBP/reputation/local SEO operating cycle established | workflow + baseline + measurement cadence |
-| `G9-FIRST-PARTNERSHIP-EXPERIMENTS-LIVE` | traveler/pre-op pilots running where validated | operational/compliance + attribution + pilot spec |
-| `G10-CONTENT-ENGINE-LIVE` | first reusable content batch published/measured | approved asset system + distribution + performance review |
-| `G11-GROWTH-INTELLIGENCE-BASELINE-LIVE` | source→visit outcome reporting operational | attribution joins + dashboard/reporting + quality checks |
-| `G12-REPEATABLE-GROWTH-CYCLE` | scale/modify/stop cadence is routine | recurring reviews tied to business outcomes |
+| `G0-CONTROL-PLANE-LIVE` | GitHub can carry continuity | roadmap + handoff + decisions + resume protocol |
+| `G1-BOOKING-HEALTHY` | production booking is operationally safe | booking persists + notification behavior verified |
+| `G2-MEASUREMENT-READY` | acquisition can be measured to business outcome | production attribution + completed-visit import path tested without duplicate/bad data |
+| `G3-GOOGLE-BASELINES-CAPTURED` | current Ads/GBP/SC/GA4 state is known | dated live evidence |
+| `G4-FOUNDATION-CORRECTED` | verified high-confidence issues corrected | before/after evidence |
+| `G5-ECONOMICS-AND-PRIORITIES-READY` | services/budget can be judged economically | service/source baseline or defensible provisional model |
+| `G6-LANDING-PATHS-READY` | paid intent lands on appropriate page/CTA | page + message + tracking acceptance |
+| `G7-FIRST-PAID-EXPERIMENT-LIVE` | controlled paid experiment is spending | campaign spec + budget + measurement + stop/scale rules |
+| `G8-LOCAL-GROWTH-CYCLE-LIVE` | GBP/reputation/local SEO has recurring operating cycle | workflow + baseline + cadence |
+| `G9-AI-PAID-EXPERIMENT-READY` | AI advertising can be tested responsibly | eligibility + campaign hypothesis + measurement + budget/stop rules |
+| `G10-PARTNERSHIP-EXPERIMENTS-LIVE` | traveler/pre-op pilots running | operational/compliance + attribution + pilot spec |
+| `G11-CONTENT-ENGINE-LIVE` | reusable physician-led content system live | first batch published/measured |
+| `G12-GROWTH-INTELLIGENCE-LIVE` | source→completed-visit reporting operational | joins + quality checks + reporting |
+| `G13-REPEATABLE-GROWTH-CYCLE` | scale/modify/stop cadence is routine | recurring reviews tied to outcomes/economics |
+
+Current gate state on 2026-10-28:
+
+- `G1-BOOKING-HEALTHY`: GREEN unless new regression appears.
+- `G2-MEASUREMENT-READY`: RED / IN_PROGRESS.
+- `G3-GOOGLE-BASELINES-CAPTURED`: PARTIAL; Ads/GBP/Search Console baselines exist, GA4 live receipt still needs confirmation.
+- downstream paid-scale gates remain unearned.
 
 ---
 
-# Phase 0 — Consolidate the Project Control Plane
+# Phase A — Immediate Production Measurement Completion
 
-**Objective:** make project continuity independent of any single ChatGPT context window.
+**Objective:** move the already-built measurement stack from development to verified production as one coherent batch.
 
-### P0.1 — Merge the unified control plane to `dev`
+### A1 — Validate current `dev` runtime
 
-**State:** `DONE`  
-**Primary workstreams:** BG-00 / project control  
-**Acceptance evidence:** PR #78 merged to `dev` on 2026-10-24; squash merge `c10b7bec5f9acad0531b88bac9056d4950d918a6`.
+Current `dev` head: `c976a56836ca4160684be2b190d6aa29e7244032`; Jenkins `dev/24` is green.
 
-Required:
+Validate, without unnecessary new application builds where possible:
 
-- one `ROADMAP.md` in the repository;
-- one current `PROJECT_HANDOFF.md`;
-- `docs/DECISIONS.md` for approved decisions;
-- `docs/PROJECT_OPERATING_MODEL.md` for operating rules;
-- `docs/BUSINESS_GROWTH_SOURCE.md` for compact durable business context;
-- README reading order;
-- no contradictory roadmap file.
+- service-account credential readability and ADC auth;
+- Google Data Manager API reachability;
+- destination/customer/conversion-action acceptance in `validateOnly` mode;
+- no click-ID or patient-data leakage to logs/errors;
+- attribution persistence and `visit_completed` construction.
 
-### P0.2 — Replace Project Sources with minimal GitHub routers
+### A2 — Promote coherent measurement batch to `main`
 
-**State:** `IN_PROGRESS`
+After A1 passes, promote the complete compatible batch rather than leaving it on `dev`:
 
-The uploaded ChatGPT Project `.md` sources should contain only:
+- Google Data Manager payload preparation;
+- guarded Data Manager client;
+- credential mount/readiness behavior;
+- any required documentation/runbook changes.
 
-- GitHub repository identity;
-- authority hierarchy;
-- session start/resume instructions;
-- workstream routing;
-- privacy/data-use principle;
-- explicit statement that GitHub/live systems supersede Project Sources.
+Production deployment must remain Jenkins-controlled.
 
-They must not become a parallel business database.
+### A3 — Production smoke validation
 
-### P0.3 — Retire specialized ChatGPT tabs
+Verify on production:
 
-**State:** `WAITING_EXTERNAL` until P0.2 and the resume test are complete.
+- real landing URL with safe test campaign parameters preserves attribution to booking;
+- production booking remains healthy;
+- selected-page GA4 behavior matches approved privacy architecture;
+- excluded sensitive pages do not receive unintended analytics measurement;
+- conversion import remains guarded until controlled recording approval.
 
-After P0.1/P0.2 are verified:
+### A4 — First controlled completed-visit import
 
-- keep the existing BG-20 tab as the single active project workspace;
-- retire/delete the other specialized project tabs at the owner's discretion;
-- continue referencing BG-00 through BG-90 as logical/OpenProject workstreams.
+When one legitimate completed appointment has an eligible real Google click ID:
 
-### P0.4 — BG00-01 Validate OpenProject Project Access & Membership
+1. validate the exact real row with recording disabled;
+2. send one controlled `visit_completed` conversion with explicit recording authorization;
+3. verify dedupe/idempotency by replaying the same transaction ID safely;
+4. reconcile Google Ads against the internal completed appointment;
+5. keep the conversion action Secondary until the end-to-end path is trusted.
 
-Preserve the prior BG-00 requirement:
-
-- correct OpenProject project identified;
-- Behnam/Dr. Farah membership and permissions verified where current evidence is available;
-- workstream/milestone structure mapped;
-- no role change made merely because a difference is observed.
-
-### P0.5 — BG00-02 Inventory Growth Data & Account Access
-
-Maintain a current matrix for:
-
-- GitHub;
-- OpenProject;
-- website/deployment;
-- booking/admin data;
-- Google Ads;
-- Google Business Profile;
-- GA4;
-- Search Console;
-- social/content platforms when activated;
-- finance/service outcome data required for economics.
-
-**Current known:** Google Ads and GBP are connected through Windsor.ai; GA4 and Dr. Farah Search Console still require resolution.
-
-**Gate:** `G0-CONTROL-PLANE-LIVE`
+**Gate:** `G2-MEASUREMENT-READY`.
 
 ---
 
-# Phase 1 — Stabilize Website, Booking and Production Operations
+# Phase B — Google Ads Forensics, Cleanup and New Campaign Architecture
 
-**Objective:** protect the core conversion path before increasing demand.
+This phase proceeds in parallel with Phase A.
 
-### P1.1 — Resolve/verify Brevo booking delivery incident
+### B1 — Preserve/extract legacy campaign evidence before deletion
 
-**State:** `IN_PROGRESS`  
-**Workstream:** BG-10
+Historical Smart campaign: `Urgent Care Medical Center`, paused, June 2025–February 2026, approximately 258,541 impressions, 5,590 clicks, $4,494.86 spend and 16 platform-reported conversions.
 
-Acceptance:
+Extract all useful recoverable evidence before archive/deletion decisions:
 
-- production booking request persists;
-- clinic/patient notification behavior matches the approved workflow;
-- controlled receipt evidence exists;
-- email failure cannot silently destroy the booking;
-- no secret values are exposed in Git/chat/logs.
-
-This is a HARD gate for meaningful paid traffic.
-
-### P1.2 — Preserve accepted production/deployment controls
-
-Do not restart completed migration work merely because old checklists exist.
-Maintain:
-
-- `dev` staging / `main` production separation;
-- Jenkins-only deployment authority;
-- environment/database/secret isolation;
-- tested backup/restore controls;
-- canonical production/staging domains;
-- no routine direct commits to `main`;
-- branch/PR discipline.
-
-### P1.3 — Close remaining website operational inputs
-
-Track and resolve where still current:
-
-- final clinic factual/legal copy approvals;
-- privacy/tracking copy after measurement design is implemented;
-- staff MFA evidence where required;
-- any unresolved production receipt evidence;
-- approved imagery/video assets;
-- high-resolution replacement assets where current quality is insufficient;
-- any booking/admin usability defects discovered by marketing measurement.
-
-### P1.4 — Maintain website conversion architecture
-
-The website remains booking-first. Preserve/validate:
-
-- prominent booking CTA;
-- direct `/book` flow;
-- click-to-call path;
-- service-to-booking context;
-- clear pending vs confirmed booking semantics;
-- minimal collection of clinical information in marketing-facing flows;
-- landing pages created only when supported by acquisition/search/business evidence.
-
-**Gate:** `G1-BOOKING-HEALTHY`
-
----
-
-# Phase 2 — Build the Measurement, Privacy and Attribution Foundation
-
-**Objective:** optimize toward completed business outcomes, not superficial platform events.
-
-### P2.1 — Complete production tag/measurement inventory
-
-Known repository finding:
-
-- no `gtag`, GTM, GA4 event layer or booking/call analytics implementation was found in inspected source;
-- Google Ads account has Google tag `AW-17076731177` available;
-- auto-tagging is enabled in Google Ads;
-- current site implementation has not been validated as using that tag.
-
-Complete runtime validation and document all production/staging trackers before implementation.
-
-### P2.2 — Resolve GA4 access / property architecture
-
-Required:
-
-- identify/create the correct production GA4 property/data stream if needed;
-- connect authorized access to the project analysis workflow;
-- isolate staging from production;
-- document measurement ID and ownership without exposing secrets;
-- validate pageview/event receipt.
-
-### P2.3 — Resolve Search Console access
-
-Required:
-
-- identify the correct production property for `drfarahvipurgentcare.com`;
-- confirm ownership/verification;
-- connect authorized access to the project workflow;
-- validate sitemap/indexing reporting.
-
-This task is also a dependency for BG30-04.
-
-### P2.4 — BG00-03 Define canonical acquisition-source taxonomy
-
-Canonical acquisition sources must distinguish at minimum:
-
-- Google Ads;
-- Google organic Search;
-- Google Business/Maps where separately identifiable;
-- direct;
-- partner/referral;
-- hotel/concierge;
-- physician/surgery referral;
-- social/content;
-- other/unknown.
-
-Preserve first-touch and useful last-non-direct/partner detail where technically appropriate.
-
-### P2.5 — BG00-04 Define traveler/referral source capture
-
-Separate:
-
-- segment (`traveler yes/no/unknown`);
-- acquisition source;
-- source detail / partner identifier.
-
-A traveler staying in a hotel is not automatically a hotel referral.
-
-### P2.6 — Implement Google tag / GA4 architecture
-
-Requirements:
-
-- smallest non-duplicative implementation;
-- production/staging isolation;
-- source/campaign/partner preservation;
-- support Google Ads attribution identifiers such as GCLID where applicable;
-- no unnecessary patient clinical detail sent to marketing platforms;
-- deploy through normal Git/Jenkins controls.
-
-### P2.7 — Implement canonical conversion model
-
-Use three layers rather than over-fragmenting optimization:
-
-1. **diagnostic events** — site/funnel behavior;
-2. **lead signal** — `booking_request_created` and qualified call signals;
-3. **primary business outcome** — `visit_completed` once reliable linkage/import is validated.
-
-`booking_request_created` must not be mislabeled as a confirmed visit.
-
-### P2.8 — Implement `visit_completed` attribution/import
-
-Target flow:
-
-`ad/source identifier → booking/session linkage → appointment → status=completed → approved business-outcome event/import`
-
-Requirements:
-
-- opaque/internal linkage where possible;
-- no unnecessary diagnosis/symptom/clinical narrative in marketing payload;
-- deduplication/idempotency;
-- timestamp/timezone integrity;
-- defined correction behavior for status changes;
-- end-to-end controlled test.
-
-### P2.9 — Implement call/lead tracking where useful
-
-Map to BG80-03. Distinguish:
-
-- click-to-call;
-- call;
-- qualified call/contact where measurable;
-- completed visit.
-
-Do not treat every phone interaction as equivalent business value.
-
-### P2.10 — Update privacy/cookie/tracking disclosures after architecture is final
-
-Use the strongest useful lawful/platform-compliant measurement capability; do not impose arbitrary restrictions.
-
-At the same time, align published privacy/cookie language with actual site behavior and applicable requirements.
-The privacy page must no longer claim “essential cookies only / no third-party tracking” if the implemented stack contradicts that statement.
-
-### P2.11 — End-to-end measurement validation
-
-Validate a controlled journey from acquisition identifier through:
-
-- landing page/session;
-- booking request;
-- appointment outcome;
-- `visit_completed`;
-- GA4 visibility;
-- Google Ads conversion readiness/import;
-- no duplicate firing;
-- no unintended clinical data in marketing payloads.
-
-**Gate:** `G2-MEASUREMENT-READY`
-
----
-
-# Phase 3 — Capture Current Google and Search Baselines
-
-This phase can proceed in parallel with Phase 1/2 where safe.
-
-### P3.1 — BG20-01 Google Ads Forensic Audit
-
-The former “pre-launch only” assumption is superseded.
-
-**Verified historical fact:** the account contains paused Smart campaign `Urgent Care Medical Center` with activity from June 2025 through February 2026. Current live baseline documented in `docs/GOOGLE_ADS_BASELINE_2026-10-24.md` includes approximately:
-
-- 258,541 impressions;
-- 5,590 clicks;
-- $4,494.86 spend;
-- 16 platform-reported conversions.
-
-Therefore BG20-01 is now a **historical forensic audit + relaunch-readiness audit**.
-
-Preserve the original OpenProject children:
-
-- `BG20-01.1` — Obtain Google Ads Access & Audit Window;
-- `BG20-01.2` — Inventory Campaigns, Conversion Actions & Landing Pages;
-- `BG20-01.3` — Analyze Search Terms, Keywords, Match Types & Negatives;
-- `BG20-01.4` — Analyze Geography, Devices & Day/Hour Performance;
-- `BG20-01.5` — Reconcile Google Ads to Qualified Contacts / Bookings / Completed Visits;
-- `BG20-01.6` — Produce Google Ads Audit Findings & Decision Recommendations;
-- `ADS-M1` — Google Ads Audit Decision-Ready.
-
-Audit dimensions:
-
-- account/campaign history;
-- spend by period/campaign;
-- conversion-action quality;
-- Smart campaign legacy configuration;
-- search terms/query intent where recoverable;
-- geo/device/day-hour performance;
+- search/query themes where available;
+- geography;
+- device;
+- day/hour;
 - landing destinations;
-- automated rules;
+- ad/creative/message history;
+- conversion actions and goal configuration;
 - location assets/GBP linkage;
-- healthcare policy exposure;
-- relationship between platform conversions and actual completed visits.
+- automated settings/rules;
+- spend and outcome trends;
+- policy/disapproval history where available.
 
-### P3.2 — BG30-01 Google Business Profile Baseline
+Do not assume platform conversions equal completed visits.
 
-Preserve complete before-state before broad edits.
+### B2 — Decide legacy cleanup
 
-Live baseline already verifies:
+After B1:
 
-- profile `Dr Farah VIP Urgent Care`;
-- primary category `Urgent care center`;
-- rating 5.0;
-- 109 total reviews at the last live check;
-- current profile service catalogue is extensive;
-- Friday hours in the live profile were 8:30–16:30 while owner-confirmed regular hours were reported as 8:30–17:30 Monday–Friday.
+- keep only objects that still provide useful history/reference or are needed for account integrity;
+- pause/archive/remove obsolete assets/settings when safe;
+- do not reactivate the old Smart campaign as the primary relaunch vehicle by default.
 
-Capture:
+### B3 — Build the new first Google Ads campaign architecture
 
-- ownership/verification;
-- clinic/practitioner/duplicate structure;
-- address/map pin;
-- phone/site/booking links;
-- categories;
-- services;
-- regular/special hours;
-- service area;
-- description;
-- photos/video;
-- reviews/replies;
-- warnings/updates;
-- performance/search keywords.
+Default hypothesis: tightly controlled Search campaign(s), not Smart, subject to live account/policy evidence.
 
-**Service-catalog rule:** do not remove services merely because the list is large. Evaluate factual availability, demand, economics, clarity, duplication, conversion usefulness, wording/pricing accuracy and Google policy before consolidating, rewriting, reprioritizing or removing anything.
+Before launch define:
 
-### P3.3 — BG30-04 Search Console & Local SEO Baseline
+- high-intent service/query clusters;
+- campaign/ad-group structure;
+- exact/phrase/broad-match role based on data and bidding maturity;
+- comprehensive negative-keyword system;
+- Beverly Hills / relevant service-area geography and location option settings;
+- device/day-hour logic;
+- ad copy and assets;
+- landing page per intent cluster;
+- primary/secondary conversion roles;
+- bidding strategy appropriate to conversion-volume maturity;
+- learning budget;
+- stop / modify / scale thresholds.
 
-After P2.3 access is resolved, audit:
+### B4 — Keyword and demand research
 
-- verification/property;
-- sitemap;
-- indexing;
-- clicks/impressions/CTR;
-- top queries/pages;
-- branded vs non-branded demand;
-- devices;
-- urgent/pre-op/traveler/service themes;
-- technical SEO handoffs.
+Use together:
 
-### P3.4 — GA4 behavioral baseline
+- historical Google Ads evidence;
+- Google Search Console query data;
+- current Keyword Planner/live Google Ads planning data where available;
+- local competitor/query evidence;
+- service economics and capacity;
+- landing-page relevance.
 
-After P2.2/P2.6 are operational, establish baseline for:
+The objective is not the largest keyword list. It is maximum useful intent coverage with controlled waste.
 
-- landing pages;
-- traffic source/medium;
-- booking funnel events;
-- click-to-call;
-- engagement by acquisition path;
-- attribution quality/data gaps.
+### B5 — Pilot budget model
 
-### P3.5 — BG30-05 Beverly Hills Local Search / Maps Competitor Baseline
+Until exact clinic economics are supplied, use provisional assumptions clearly labeled as such. Build the pilot budget from:
 
-Use controlled query/location methodology. Compare relevant competitors by:
+- forecast CPC/query volume;
+- expected click→booking rate range;
+- expected booking→completed-visit rate range;
+- plausible completed-visit contribution range;
+- minimum sample needed to make a decision;
+- hard spend ceiling and early-stop triggers.
 
-- visibility;
-- category;
-- rating/review volume;
-- hours;
-- booking path;
-- service messaging;
-- website experience.
+Replace assumptions with authoritative clinic revenue/cost/capacity data when available; do not block campaign design waiting for perfect figures.
 
-Do not claim one manual search equals universal ranking.
-
-**Gate:** `G3-GOOGLE-BASELINES-CAPTURED`
+**Gate:** `G5` + `G6` → `G7-FIRST-PAID-EXPERIMENT-LIVE`.
 
 ---
 
-# Phase 4 — Correct High-Confidence Foundation Problems
+# Phase C — Google Search Console, SEO and Landing-Page Growth
 
-**Objective:** correct verified problems before major experimentation.
+Proceed in parallel with A/B.
 
-Priority order:
+Current Search Console property: `sc-domain:drfarahvipurgentcare.com`.
 
-1. factual/policy/eligibility risk;
-2. broken booking/tracking;
-3. wrong public hours/contact/location/link;
-4. conversion-goal misconfiguration;
-5. duplicate profile or account hygiene risk;
-6. service/category/public messaging issues;
-7. landing-page/search-intent mismatch;
-8. data-quality gaps.
+Recent live 90-day baseline captured on 2026-10-28: approximately 32.3K impressions, 308 clicks, CTR ~0.95%, average position ~11.8.
 
-### P4.1 — BG20-02 Implement Approved Google Ads Corrections
+### C1 — Query opportunity map
 
-Possible corrections only after forensic audit:
+Prioritize:
 
-- conversion goals/primary-secondary roles;
-- campaign structure;
-- geo/location options;
-- scheduling;
-- keywords/match types/negatives;
-- assets/landing URLs;
-- automated rules;
-- GBP/location linkage;
-- measurement/import configuration.
+- high-intent local urgent-care queries near positions 4–20;
+- brand queries needing protection/clarity;
+- Beverly Hills / near-me themes;
+- commercially relevant service queries;
+- pre-op/traveler/VIP opportunities;
+- weak or irrelevant query clusters that should not drive paid spend.
 
-### P4.2 — BG30-02 Verify and Correct Core GBP Information
+### C2 — Technical/indexing review
 
-High-confidence factual corrections take priority.
+Continue verified fixes for:
 
-Known candidate: verify and, if still correct, fix Friday closing time to the current approved clinic hours.
-
-Do not perform broad service deletion. Use evidence-based service-catalog optimization.
-
-### P4.3 — Technical SEO / website corrections
-
-Route verified Search Console/GBP/Ads findings to BG-10:
-
-- indexing/canonical/redirect issues;
-- structured data;
+- sitemap/indexing;
+- canonical/redirect behavior;
 - title/meta/content alignment;
-- booking/CTA problems;
-- landing page mismatch;
-- tracking/source propagation;
-- mobile/performance/accessibility issues that materially affect acquisition.
+- schema/structured data where justified;
+- mobile/performance/accessibility issues with acquisition impact.
 
-**Gate:** `G4-FOUNDATION-CORRECTED`
+`/book` and `/patient-registration` remain `noindex` and excluded from sitemap unless strategy changes explicitly.
+
+### C3 — Paid/organic landing map
+
+For each priority intent, decide whether to:
+
+- improve an existing page;
+- create a dedicated landing page;
+- route to a current service page;
+- avoid targeting until content/operational readiness exists.
+
+Each page must have one intended audience, primary CTA, tracking plan and acceptance metric.
+
+**Gate:** `G6-LANDING-PATHS-READY`.
 
 ---
 
-# Phase 5 — Establish Source, Service and Economic Decision Baselines
+# Phase D — Google Business Profile, Maps and Reputation Optimization
 
-**Objective:** know which growth opportunities deserve investment.
+Current profile: Dr Farah VIP Urgent Care; primary category `Urgent care center`; baseline rating 5.0 / 109 reviews at captured baseline.
 
-### P5.1 — BG00-05 Establish Current Service & Revenue Baseline Request
+Recent 90-day live data captured 2026-10-28: approximately 120 website clicks and 123 call clicks.
 
-Collect sufficient business-level data for service prioritization, including where available:
+### D1 — Core factual accuracy
+
+Validate and correct:
+
+- regular/special hours;
+- address/map pin;
+- phone;
+- website/booking links;
+- primary/secondary categories;
+- service-area representation.
+
+### D2 — Service-catalog optimization
+
+Do not bulk-delete merely because the catalogue is large. Evaluate each relevant service for:
+
+- factual availability;
+- demand;
+- economics;
+- clarity/duplication;
+- strategic priority;
+- website/landing alignment;
+- claims/pricing accuracy;
+- Google policy.
+
+### D3 — Reputation operating system
+
+Establish privacy-safe workflow for:
+
+- genuine neutral review requests;
+- response cadence;
+- response templates/guardrails;
+- issue escalation;
+- review-theme analysis feeding website/Ads/content.
+
+### D4 — Maps/local competitor loop
+
+Track relevant Beverly Hills competitors by visibility, category, reviews, hours, messaging and booking experience; use the evidence to improve GBP/site/Ads, not to copy blindly.
+
+**Gate:** `G8-LOCAL-GROWTH-CYCLE-LIVE`.
+
+---
+
+# Phase E — GA4 and Cross-Channel Measurement Quality
+
+GA4 production property: `489069776`; Web Stream `11211773871`; Measurement ID `G-D58FTMF05S`.
+
+### E1 — Confirm live data receipt/settings
+
+Verify:
+
+- Realtime/DebugView safe controlled event;
+- timezone/currency;
+- Enhanced Measurement settings;
+- selected-page allowlist behavior;
+- consent behavior;
+- no unintended page/query/title/referrer/clinical leakage.
+
+### E2 — Keep roles clear
+
+- GA4 = behavioral/diagnostic analysis on approved low-risk surfaces;
+- first-party database = source/click→appointment linkage;
+- Google Ads offline conversion = advertising optimization feedback;
+- Search Console = organic Google search truth;
+- GBP = Maps/profile truth.
+
+Do not duplicate measurement simply because multiple Google tools can collect something similar.
+
+---
+
+# Phase F — First Paid Experiment and Optimization Cycle
+
+Launch only when booking is healthy, the relevant landing path is ready and the completed-visit feedback path is sufficiently trusted.
+
+### F1 — Controlled launch
+
+The first experiment must have:
+
+- named hypothesis;
+- exact target intent/geography;
+- finite learning budget;
+- controlled keywords/match types/negatives;
+- relevant landing page;
+- `Visit Completed` business-outcome linkage;
+- secondary booking/call diagnostics;
+- stop/modify/scale thresholds;
+- review date.
+
+### F2 — Search-term waste control
+
+Early review cadence must aggressively identify irrelevant intent and add negatives before scaling.
+
+### F3 — Scale only on business evidence
+
+No channel is scaled only because CTR, clicks, leads or platform conversions increased. Prefer completed visits, defensible CAC/contribution, capacity and measurement confidence.
+
+**Gate:** `G7-FIRST-PAID-EXPERIMENT-LIVE`.
+
+---
+
+# Phase G — Stable Offline Conversion Operations
+
+After the first controlled real conversion succeeds, convert the manual path into a durable background process.
+
+Required behavior:
+
+- identify eligible new `visit_completed` rows with click IDs;
+- record import state/idempotency;
+- batch safely;
+- retry transient failures with bounded backoff;
+- quarantine permanent/schema/auth failures;
+- never print click IDs or patient data in routine logs;
+- expose health/metrics without sensitive payloads;
+- alert on sustained failures;
+- reconcile imports to Google Ads periodically.
+
+This is operational automation, not autonomous marketing spend.
+
+---
+
+# Phase H — AI / ChatGPT Ads Paid Channel
+
+Treat this as a current growth workstream.
+
+### H1 — Eligibility and policy verification
+
+Verify current account/healthcare eligibility and applicable policy before spend. Do not assume access or approval.
+
+### H2 — Channel hypothesis
+
+If eligible, determine where ChatGPT Ads can add incremental value versus Google Search, including:
+
+- high-intent local care discovery;
+- traveler/VIP use cases;
+- pre-op/referral-adjacent discovery where policy permits;
+- brand/context discovery.
+
+### H3 — Measurement and landing path
+
+Use dedicated source/UTM/partner-style attribution and the same completed-visit business outcome where technically and policy-compliantly possible.
+
+### H4 — Controlled pilot
+
+Create a finite-budget pilot with explicit stop/scale rules. Do not treat AI advertising as profitable merely because it is new.
+
+**Gate:** `G9-AI-PAID-EXPERIMENT-READY`.
+
+---
+
+# Phase I — Service Economics and Capacity
+
+Work in parallel; do not wait for perfect accounting.
+
+For each priority service estimate/collect:
 
 - completed visit count;
 - collected revenue;
 - variable/consumable cost;
 - physician/staff time;
 - capacity;
-- repeat rate;
-- referral leverage;
-- acquisition source;
-- cancellation/no-show burden.
-
-### P5.2 — BG70-01 Evidence-Based Service Priority Matrix
-
-Rank service lines using evidence, not enthusiasm alone:
-
-- demand;
-- revenue/contribution;
-- capacity;
-- clinical/operational fit;
-- repeat potential;
-- referral leverage;
-- differentiation;
+- repeat/referral leverage;
+- no-show/cancellation burden;
 - acquisition cost;
-- policy/compliance constraints.
+- policy/operational constraints.
 
-The matrix governs which services receive sustained Google Ads, Local SEO, landing-page and content investment.
+Rank services by demand × contribution × capacity × differentiation × acquisition efficiency × strategic value.
 
-### P5.3 — BG00-06 Establish Growth Review & Decision Log Process
-
-Adopt common decision vocabulary:
-
-`SCALE / MODIFY / STOP / CONTINUE_MEASURING / MEASURE_FIRST / NO_ACTION`
-
-### P5.4 — Establish source-completeness baseline
-
-Measure how much of completed business can be assigned to a defensible acquisition/referral source.
-
-**Gate:** `G5-ECONOMICS-AND-PRIORITIES-READY`
+**Gate:** `G5-ECONOMICS-AND-PRIORITIES-READY`.
 
 ---
 
-# Phase 6 — Build Evidence-Backed Landing Paths and Organic Foundations
+# Phase J — Traveler / Hotel / VIP Growth
 
-**Objective:** acquisition intent must land on the right page with the right CTA and measurement.
+Preserve sequence:
 
-### P6.1 — Prioritize landing-page needs
+- traveler baseline;
+- existing hotel/concierge sources;
+- target list;
+- service scope/response model;
+- partner interviews;
+- partner kit;
+- attribution;
+- small pilot;
+- completed-visit/revenue/repeat-referral review.
 
-Candidate intent groups:
-
-- urgent/same-day;
-- brand;
-- pre-op;
-- traveler/VIP;
-- selected high-priority services from BG70-01.
-
-Create separate pages only when justified by demand, clarity, policy, SEO or campaign intent.
-
-### P6.2 — Website handoff implementation
-
-Each marketing → website handoff must include:
-
-- evidence;
-- affected URL/page;
-- exact requirement;
-- intended query/audience;
-- approved claims;
-- CTA;
-- measurement requirement;
-- primary KPI;
-- acceptance evidence.
-
-### P6.3 — Local/technical SEO implementation
-
-Implement only evidence-backed changes from BG30-04/BG30-05.
-
-### P6.4 — Review/testimonial website use
-
-Use verified review excerpts only with appropriate authenticity/privacy/source handling. Preserve original meaning.
-
-**Gate:** `G6-LANDING-PATHS-READY`
+No unsupported 24/7, mobile or response-time promise.
 
 ---
 
-# Phase 7 — Relaunch and Optimize Paid Acquisition
+# Phase K — Pre-Op Referral Engine
 
-### P7.1 — Design first controlled Google Ads experiment
+Preserve sequence:
 
-Candidate campaign order is evidence-dependent, not fixed:
+- current baseline;
+- economics/capacity;
+- value proposition;
+- current/warm referrer map;
+- target surgeons/surgery centers;
+- referral package/workflow;
+- claims/privacy/compliance review;
+- small outreach pilot;
+- completed clearance/repeat-referral/revenue review.
 
-- Brand where protection/measurement justifies it;
-- Urgent / Same-Day high-intent search;
-- Pre-Op after landing/economics readiness;
-- Traveler/Hotel only after operational readiness;
-- sensitive services only after current policy review.
-
-Define before launch:
-
-- hypothesis;
-- search intent/audience;
-- geography;
-- campaign/ad-group structure;
-- keywords/match types;
-- negatives;
-- bidding;
-- learning budget;
-- landing page;
-- primary/secondary conversions;
-- `visit_completed` linkage plan;
-- stop/modify/scale thresholds;
-- decision date.
-
-### P7.2 — Launch only after gates
-
-Hard launch dependencies:
-
-- `G1-BOOKING-HEALTHY`;
-- `G2-MEASUREMENT-READY`;
-- relevant `G4` corrections;
-- relevant `G6` landing path readiness.
-
-### P7.3 — BG20-03 Establish Paid Acquisition Optimization Cycle
-
-Recurring review:
-
-- spend;
-- search terms;
-- negatives;
-- geo/device/day-hour;
-- calls/bookings;
-- completed visits;
-- CAC where defensible;
-- revenue/contribution where available;
-- policy/disapproval changes.
-
-**Gate:** `G7-FIRST-PAID-EXPERIMENT-LIVE`
+No per-patient/referral compensation arrangement without appropriate compliance review.
 
 ---
 
-# Phase 8 — Establish Google Business, Reputation and Local SEO Growth Cycle
+# Phase L — Physician-Led Content / Creative
 
-Preserve BG-30 OpenProject work:
+Content priorities must be fed by Search Console, Ads search terms, GBP/reviews, traveler/pre-op questions, website friction and service economics.
 
-- `BG30-01` Google Business Profile Baseline;
-- `BG30-02` Verify and Correct Core GBP Information;
-- `BG30-03` Establish Review Acquisition & Response Workflow;
-- `BG30-04` Search Console & Local SEO Baseline;
-- `BG30-05` Beverly Hills Local Search / Maps Competitor Baseline;
-- `REP-M1` Local Presence Baseline Complete.
-
-### P8.1 — Review acquisition workflow
-
-Use genuine, neutral review requests; no gating/fake reviews/incentivized five-star requests.
-
-Track:
-
-- new reviews/month;
-- review request volume where available;
-- rating;
-- response rate/time;
-- recurring reputation themes.
-
-### P8.2 — Review response system
-
-Responses remain privacy-safe and do not unnecessarily confirm treatment details.
-Route serious clinical, billing, privacy or legal disputes appropriately.
-
-### P8.3 — GBP optimization cycle
-
-Optimize based on evidence:
-
-- categories;
-- services;
-- hours/special hours;
-- links;
-- photos/video;
-- description;
-- posts where useful;
-- search-keyword/performance data.
-
-### P8.4 — Local SEO cycle
-
-Use Search Console + GBP + competitor evidence to drive specific website changes and content priorities.
-
-**Gate:** `G8-LOCAL-GROWTH-CYCLE-LIVE`
+Build reusable long-form + short-form + website + paid creative derivatives. Measure qualified business contribution, not views alone.
 
 ---
 
-# Phase 9 — Hotel / Traveler / VIP Growth
+# Phase M — Growth Intelligence and Recurring Operating Cycle
 
-Preserve the complete BG-40 OpenProject sequence:
+Technical/business sequence:
 
-- `BG40-01` Establish Traveler Patient Baseline;
-- `BG40-02` Identify Existing Hotel / Concierge Referral Sources;
-- `BG40-03` Build Priority Hotel / Concierge Target List;
-- `BG40-04` Define Traveler / VIP Service Scope & Response Model;
-- `BG40-05` Conduct Initial Hotel / Concierge Interviews;
-- `BG40-06` Define Hotel Partner Kit Requirements;
-- `BG40-07` Launch First Hotel / Concierge Partnership Pilot;
-- `TRV-M1` Traveler Baseline Validated;
-- `TRV-M2` First Hotel / Concierge Pilot Live.
-
-Execution order:
-
-1. measure current traveler volume/source/service/revenue/operational burden;
-2. identify current/warm hotel/concierge sources;
-3. define clinic/mobile/telehealth scope and response model;
-4. conduct partner discovery interviews;
-5. rank target partners;
-6. define partner kit and attribution;
-7. launch a small pilot;
-8. evaluate completed visits, revenue, repeat referrals and operational reliability.
-
-Dependencies:
-
-- `BG90-03` hotel/mobile operational readiness & SLA;
-- `BG90-04` physician/clinic capacity baseline;
-- `BG90-05` referral-partnership compliance trigger;
-- `BG90-06` marketing data privacy boundary;
-- BG-80 attribution/source measurement.
-
-Do not promise response times, mobile coverage or 24/7 availability until operationally approved.
-
----
-
-# Phase 10 — Pre-Op Referral Engine
-
-Preserve the complete BG-50 OpenProject sequence:
-
-- `BG50-01` Establish Current Pre-Op Baseline;
-- `BG50-02` Validate Pre-Op Referral Economics;
-- `BG50-03` Define Pre-Op Referral Value Proposition;
-- `BG50-04` Build Surgeon / Surgery-Center Target Database;
-- `BG50-05` Create Pre-Op Referral Package;
-- `BG50-06` Launch Initial Pre-Op Referral Outreach Pilot;
-- `PREOP-M1` Pre-Op Referral Package Approved;
-- `PREOP-M2` First Pre-Op Referral Pilot Live.
-
-Execution order:
-
-1. measure existing volume/source/revenue/turnaround/no-show;
-2. quantify economics and capacity;
-3. define referrer/patient value proposition;
-4. map current/warm referrers;
-5. build prioritized target list;
-6. define referral package/workflow;
-7. approve claims/turnaround/privacy/compliance;
-8. run small outreach pilot;
-9. measure active practices, referrals, completed clearances, repeat referrals, revenue and acquisition cost.
-
-No referral compensation/per-patient arrangement without the appropriate BG90-05 compliance review trigger.
-
----
-
-# Phase 11 — Physician-Led Video, Social and Creative System
-
-Preserve BG-60 OpenProject work:
-
-- `BG60-01` First Physician-Led Content Production Batch;
-- `BG60-01.1` Define First Batch Audience, Goals & Content Pillars;
-- `BG60-01.2` Prepare Filming Brief, Shot List & Asset Plan;
-- `BG60-01.3` Prepare Scripts / Talking Points for Clinical Approval;
-- `BG60-01.4` Produce First Professional Filming Session;
-- `BG60-01.5` Organize Master Media Asset Library;
-- `BG60-01.6` Edit Long-Form Physician Content;
-- `BG60-01.7` Edit Short-Form Reels / Shorts / TikTok Assets;
-- `BG60-01.8` Create Paid Social / Ad Creative Variants;
-- `BG60-01.9` Create Website Video / Photography Derivatives;
-- `BG60-01.10` Publish / Distribute Approved First Batch;
-- `BG60-01.11` Review First-Batch Performance;
-- `VID-M1` First Professional Content Batch Ready;
-- `VID-M2` First Approved Content Batch Published;
-- `BG60-02` Establish Ongoing Content Production & Distribution Cycle.
-
-Content priorities should be fed by actual evidence from:
-
-- Ads/search terms;
-- Search Console;
-- GBP/reviews;
-- traveler interviews;
-- pre-op referral questions;
-- website/booking friction;
-- BG70 service priorities.
-
-Measure qualified traffic/booking assistance/business usefulness and reusable asset value, not views alone.
-
-**Gate:** `G10-CONTENT-ENGINE-LIVE`
-
----
-
-# Phase 12 — Analytics & Growth Intelligence
-
-Preserve the known BG-80/OpenProject structure:
-
-- `BG80-01` Instrument full conversion funnel;
-- `BG80-02` Build growth dashboard & KPI reporting;
-- `BG80-03` Implement call & lead tracking;
-- `BG80-04` Establish attribution model;
-- `BG80-05` Set up cohort & retention analytics;
-- `BG80-06` Build experiment measurement framework;
-- `BG80-07` Automate weekly growth report;
-- `BG80-08` Integrate ChatGPT with OpenProject execution workflow;
-- `EXP-GIP-001` Define Growth Intelligence MVP requirements;
-- `GIP-M1` Growth analytics baseline live.
-
-Where an older source called `BG80-01` “Define Minimum Attribution Model,” treat that as an earlier requirement concept now covered by the current BG80-01/BG80-04 structure; do not create a duplicate OpenProject item without verification.
-
-### Technical sequence
-
-1. stable acquisition/source taxonomy;
-2. first-party session/source capture;
-3. booking linkage via opaque internal reference;
-4. confirmed/completed/cancelled/no-show outcome sync;
-5. Google Ads cost ingestion (read-only initially);
-6. referral/partner attribution;
-7. revenue/business-outcome join where approved;
-8. analytical views;
-9. dashboard/KPI reporting;
+1. stable source taxonomy;
+2. source/session capture;
+3. booking linkage;
+4. completed/cancelled/no-show outcomes;
+5. Ads cost;
+6. GBP/Search/GA4 signals;
+7. referral/partner attribution;
+8. revenue/contribution where approved;
+9. analytical views/dashboard;
 10. experiment framework;
-11. weekly automated report;
-12. AI/Jupyter analysis on approved analytics views;
-13. controlled external write automation only after later explicit approval.
+11. weekly growth report;
+12. recurring SCALE / MODIFY / STOP / CONTINUE_MEASURING decisions.
 
-The Growth Intelligence system is a business/marketing intelligence layer, not a second EHR.
+The Growth Intelligence layer is not an EHR and must not become one.
 
-**Gate:** `G11-GROWTH-INTELLIGENCE-BASELINE-LIVE`
-
----
-
-# Phase 13 — Operations, Capacity, Privacy and Compliance Readiness
-
-BG-90 is a cross-cutting dependency, not a final cleanup phase. Its tasks should run when triggered by the phases above.
-
-Known required work packages from the former sources include:
-
-- `BG90-03` Define Hotel / Mobile Care Operational Readiness & SLA / establish HIPAA-compliant marketing operations where applicable;
-- `BG90-04` Establish Physician / Clinic Capacity Baseline;
-- `BG90-05` Referral Partnership Compliance Review Trigger;
-- `BG90-06` Establish Marketing Data Privacy Boundary.
-
-Do not invent BG90-01/BG90-02 identifiers without OpenProject verification.
-
-Trigger BG-90 review when work involves:
-
-- public insurance/network claims;
-- emergency/24-hour/same-day/mobile availability promises;
-- sensitive healthcare advertising;
-- referral compensation;
-- review/privacy disputes;
-- patient communication privacy;
-- marketing/analytics data handling;
-- service-area representations;
-- scaling beyond clinic/physician capacity.
-
-Privacy operating principle: use useful lawful/platform-compliant marketing measurement and attribution without unnecessary self-restriction, while excluding unnecessary medical-record detail and respecting required consent/privacy/platform rules.
+**Gate:** `G12-GROWTH-INTELLIGENCE-LIVE` → `G13-REPEATABLE-GROWTH-CYCLE`.
 
 ---
 
-# Phase 14 — Repeatable Growth Operating Cycle and Scaling
-
-Once live acquisition/partner/content experiments exist, operate a recurring cadence.
-
-### Weekly control review
-
-- production booking/website health;
-- Ads spend/search terms/conversion quality;
-- GBP/review changes;
-- GA4/attribution data quality;
-- source coverage;
-- experiment blockers;
-- urgent operational/compliance risks.
-
-### Monthly business review
-
-- completed visits by source/service;
-- defensible CAC;
-- collected revenue/contribution where available;
-- local/organic performance;
-- partner/referral production;
-- service economics;
-- capacity;
-- retention/repeat/referral;
-- experiment decisions.
-
-### Scale rule
-
-No channel is scaled solely because clicks, leads, views or platform conversions increased.
-Scaling should be supported by completed visits, acceptable economics, capacity and measurement confidence.
-
-**Gate:** `G12-REPEATABLE-GROWTH-CYCLE`
-
----
-
-## 6. Exact OpenProject work-package inventory preserved from former tabs
+## 6. Preserved OpenProject work-package identifiers
 
 ### BG-00
-
-- `BG00-01` Validate OpenProject Project Access & Membership
-- `BG00-02` Inventory Growth Data & Account Access
-- `BG00-03` Define Canonical Patient Acquisition-Source Taxonomy
-- `BG00-04` Define Traveler / Referral Source Capture
-- `BG00-05` Establish Current Service & Revenue Baseline Request
-- `BG00-06` Establish Growth Review & Decision Log Process
-- `M0` Growth Execution System Live
-- `M1` Measurement Baseline Established
-- `M2` First Growth Experiments Live
-- `M3` First Performance Decision Review
-- `M4` Repeatable Growth Operating Cycle Established
+`BG00-01`, `BG00-02`, `BG00-03`, `BG00-04`, `BG00-05`, `BG00-06`, `M0`, `M1`, `M2`, `M3`, `M4`.
 
 ### BG-20
-
-- `BG20-01` Google Ads Forensic Audit
-- `BG20-01.1` Obtain Google Ads Access & Audit Window
-- `BG20-01.2` Inventory Campaigns, Conversion Actions & Landing Pages
-- `BG20-01.3` Analyze Search Terms, Keywords, Match Types & Negatives
-- `BG20-01.4` Analyze Geography, Devices & Day/Hour Performance
-- `BG20-01.5` Reconcile Google Ads to Qualified Contacts / Bookings / Completed Visits
-- `BG20-01.6` Produce Google Ads Audit Findings & Decision Recommendations
-- `ADS-M1` Google Ads Audit Decision-Ready
-- `BG20-02` Implement Approved Google Ads Corrections
-- `BG20-03` Establish Paid Acquisition Optimization Cycle
+`BG20-01`, `BG20-01.1`, `BG20-01.2`, `BG20-01.3`, `BG20-01.4`, `BG20-01.5`, `BG20-01.6`, `ADS-M1`, `BG20-02`, `BG20-03`.
 
 ### BG-30
-
-- `BG30-01` Google Business Profile Baseline
-- `BG30-02` Verify and Correct Core Google Business Profile Information
-- `BG30-03` Establish Review Acquisition & Response Workflow
-- `BG30-04` Search Console & Local SEO Baseline
-- `BG30-05` Beverly Hills Local Search / Maps Competitor Baseline
-- `REP-M1` Local Presence Baseline Complete
+`BG30-01`, `BG30-02`, `BG30-03`, `BG30-04`, `BG30-05`, `REP-M1`.
 
 ### BG-40
-
-- `BG40-01` Establish Traveler Patient Baseline
-- `BG40-02` Identify Existing Hotel / Concierge Referral Sources
-- `BG40-03` Build Priority Hotel / Concierge Target List
-- `BG40-04` Define Traveler / VIP Service Scope & Response Model
-- `BG40-05` Conduct Initial Hotel / Concierge Interviews
-- `BG40-06` Define Hotel Partner Kit Requirements
-- `BG40-07` Launch First Hotel / Concierge Partnership Pilot
-- `TRV-M1` Traveler Baseline Validated
-- `TRV-M2` First Hotel / Concierge Pilot Live
+`BG40-01`, `BG40-02`, `BG40-03`, `BG40-04`, `BG40-05`, `BG40-06`, `BG40-07`, `TRV-M1`, `TRV-M2`.
 
 ### BG-50
-
-- `BG50-01` Establish Current Pre-Op Baseline
-- `BG50-02` Validate Pre-Op Referral Economics
-- `BG50-03` Define Pre-Op Referral Value Proposition
-- `BG50-04` Build Surgeon / Surgery-Center Target Database
-- `BG50-05` Create Pre-Op Referral Package
-- `BG50-06` Launch Initial Pre-Op Referral Outreach Pilot
-- `PREOP-M1` Pre-Op Referral Package Approved
-- `PREOP-M2` First Pre-Op Referral Pilot Live
+`BG50-01`, `BG50-02`, `BG50-03`, `BG50-04`, `BG50-05`, `BG50-06`, `PREOP-M1`, `PREOP-M2`.
 
 ### BG-60
-
-- `BG60-01` First Physician-Led Content Production Batch
-- `BG60-01.1` Define First Batch Audience, Goals & Content Pillars
-- `BG60-01.2` Prepare Filming Brief, Shot List & Asset Plan
-- `BG60-01.3` Prepare Scripts / Talking Points for Clinical Approval
-- `BG60-01.4` Produce First Professional Filming Session
-- `BG60-01.5` Organize Master Media Asset Library
-- `BG60-01.6` Edit Long-Form Physician Content
-- `BG60-01.7` Edit Short-Form Reels / Shorts / TikTok Assets
-- `BG60-01.8` Create Paid Social / Ad Creative Variants
-- `BG60-01.9` Create Website Video / Photography Derivatives
-- `BG60-01.10` Publish / Distribute Approved First Batch
-- `BG60-01.11` Review First-Batch Performance
-- `VID-M1` First Professional Content Batch Ready
-- `VID-M2` First Approved Content Batch Published
-- `BG60-02` Establish Ongoing Content Production & Distribution Cycle
+`BG60-01`, `BG60-01.1`, `BG60-01.2`, `BG60-01.3`, `BG60-01.4`, `BG60-01.5`, `BG60-01.6`, `BG60-01.7`, `BG60-01.8`, `BG60-01.9`, `BG60-01.10`, `BG60-01.11`, `VID-M1`, `VID-M2`, `BG60-02`.
 
 ### BG-70
-
-- `BG70-01` Evidence-Based Service Priority Matrix
-
-Only this exact identifier was recoverable from the consolidated source set. Do not fabricate additional BG-70 OpenProject codes; add them only when verified in OpenProject.
+`BG70-01` only is verified. Do not fabricate additional codes.
 
 ### BG-80
-
-- `BG80-01` Instrument full conversion funnel
-- `BG80-02` Build growth dashboard & KPI reporting
-- `BG80-03` Implement call & lead tracking
-- `BG80-04` Establish attribution model
-- `BG80-05` Set up cohort & retention analytics
-- `BG80-06` Build experiment measurement framework
-- `BG80-07` Automate weekly growth report
-- `BG80-08` Integrate ChatGPT with OpenProject execution workflow
-- `EXP-GIP-001` Define Growth Intelligence MVP requirements
-- `GIP-M1` Growth analytics baseline live
+`BG80-01`, `BG80-02`, `BG80-03`, `BG80-04`, `BG80-05`, `BG80-06`, `BG80-07`, `BG80-08`, `EXP-GIP-001`, `GIP-M1`.
 
 ### BG-90
+Verified: `BG90-03`, `BG90-04`, `BG90-05`, `BG90-06`. Do not invent missing identifiers.
 
-Verified identifiers recovered from the former sources:
-
-- `BG90-03` Define Hotel / Mobile Care Operational Readiness & SLA / marketing-operations readiness dependency
-- `BG90-04` Establish Physician / Clinic Capacity Baseline
-- `BG90-05` Referral Partnership Compliance Review Trigger
-- `BG90-06` Establish Marketing Data Privacy Boundary
-
-Do not invent missing BG90 identifiers until verified against OpenProject.
-
-### BG-10 / website work
-
-The repository itself is the detailed technical source for BG-10. Do not invent OpenProject numeric child codes from memory. The roadmap preserves these durable website obligations:
-
-- booking/email reliability;
-- production/staging/deployment integrity;
-- admin/booking operational usability;
-- technical SEO and redirect/indexing quality;
-- measurement/tag implementation;
-- source/UTM/partner attribution propagation;
-- conversion-focused landing pages;
-- privacy/tracking copy alignment;
-- approved legal/factual content;
-- website media/creative derivatives;
-- performance/accessibility/conversion issues when evidence shows business impact.
-
-When exact BG-10 OpenProject identifiers are needed, verify them in OpenProject and add the mapping to `PROJECT_HANDOFF.md` or this inventory.
+BG-10 exact child identifiers must be verified from OpenProject when needed; repository remains the detailed technical source.
 
 ---
 
-## 7. Current priority queue — 2026-10-24
+## 7. Current parallel priority queue — 2026-10-28
 
-This queue is a snapshot. `PROJECT_HANDOFF.md` is the live resume point and must be updated after every material session.
-
-| Priority | Item | Current state | Dependency / next evidence |
+| Priority | Lane | Item | State / next evidence |
 |---:|---|---|---|
-| 0 | Replace Project Sources with minimal `dev` routers and run resume test | IN_PROGRESS | P0.1 complete; upload replacement files, then verify BG-20 can resume from GitHub alone |
-| 1 | Resolve/verify production booking/Brevo delivery | IN_PROGRESS | controlled production booking + expected notification evidence |
-| 2 | Resolve Dr. Farah GA4 access/property | READY | correct property/data stream + connection + runtime test |
-| 3 | Resolve Dr. Farah Search Console property/access | READY | production property + verification + connection |
-| 4 | Finalize measurement/privacy architecture | IN_PROGRESS | tag inventory + GA4 + source capture + privacy design |
-| 5 | Implement/test Google tag + GA4 + source/GCLID persistence | WAITING on P2 design/access | code + deployment + live validation |
-| 6 | Implement/test `visit_completed` business-outcome attribution | READY FOR DESIGN / implementation after linkage | appointment outcome linkage + import validation |
-| 7 | Complete Google Ads historical forensic audit | IN_PROGRESS | live Ads evidence; reconcile platform conversions to outcomes |
-| 8 | Complete GBP baseline and high-confidence corrections | IN_PROGRESS | baseline preserved; verify Friday hours before write |
-| 9 | Run Search Console/local competitor/organic baseline | WAITING on access | P2.3 |
-| 10 | Establish service/revenue/source baseline and BG70 matrix | READY in parallel | business records/data request |
-| 11 | Implement evidence-backed landing/local SEO changes | NOT_STARTED | findings from phases 3–6 |
-| 12 | Launch first controlled Ads relaunch | BLOCKED | G1 + G2 + applicable G4/G6 |
-| 13 | Establish review/reputation cycle | READY after GBP baseline | BG30-03 |
-| 14 | Traveler baseline / hotel-source map | READY in parallel when data available | BG40-01/02 + source taxonomy |
-| 15 | Pre-op baseline/economics | READY in parallel when data available | BG50-01/02 + business data |
-| 16 | First physician-led content architecture | PAUSED until near-term priorities clearer | use Ads/SC/GBP/service evidence |
-| 17 | Growth Intelligence MVP beyond core attribution | DEFERRED until source/outcome contract stable | EXP-GIP-001 gate |
+| 0 | Production measurement | Validate Data Manager auth/destination using current green `dev` artifact, then prepare one coherent `main` promotion | IN_PROGRESS |
+| 1 | Production measurement | Production attribution/GA4/booking smoke validation after promotion | READY after P0 |
+| 2 | Google Ads | Extract legacy Smart-campaign forensic value before cleanup | IN_PROGRESS |
+| 3 | Google Ads | Build new Search campaign architecture, keyword/negative/geo/ad/landing/budget spec | READY NOW |
+| 4 | Search/website | Build Search Console opportunity + landing-page map | READY NOW |
+| 5 | GBP/local | Audit/correct core GBP + service/reputation/local strategy | READY NOW |
+| 6 | GA4 | Confirm live receipt/settings and close behavioral baseline gap | IN_PROGRESS |
+| 7 | Economics | Create provisional service/economics model; replace assumptions as clinic figures arrive | READY NOW |
+| 8 | Paid pilot | Create paused/ready campaign and launch spec; spend only after relevant gates | READY for design |
+| 9 | Real conversion | First legitimate click→booking→completed visit→Google Ads import | WAITING for eligible real event after campaign traffic exists |
+| 10 | Conversion operations | Add durable import ledger/scheduler/retry/monitoring after controlled real import | READY for design; recording activation waits on #9 |
+| 11 | AI Ads | Verify current eligibility/policy and design channel pilot | READY NOW |
+| 12 | Local/reputation | Establish recurring review/GBP/Maps cycle | READY NOW |
+| 13 | Traveler/pre-op/content | Advance independent research/baselines in parallel | READY where inputs exist |
+| 14 | Growth Intelligence | Cross-channel dashboard/weekly decision loop | follows stable source/outcome data but design may proceed |
 
 ---
 
-## 8. Safe parallel work matrix
+## 8. What must not block progress
 
-While booking/Brevo is unresolved, the following may safely proceed:
+Do not stop all growth work because:
 
-- Google Ads read-only forensic analysis;
-- GBP baseline/reputation analysis;
-- GA4/Search Console access work;
-- measurement design;
-- Search/local competitor research;
-- source taxonomy;
-- service/revenue baseline request;
-- traveler/pre-op historical baseline reconstruction;
-- content research/briefing that does not publish unsupported claims.
+- one API validation is waiting;
+- exact clinic margin is not yet available;
+- the first real paid conversion has not happened yet;
+- one Google tool has an access/reporting gap;
+- an AI ad channel is awaiting eligibility review.
 
-Do **not** start meaningful paid traffic while booking/measurement hard gates remain red.
+Instead, document the blocker, preserve the restart condition and continue the highest-value independent lane.
 
 ---
 
-## 9. Roadmap maintenance rules
+## 9. What must still block spend/scale
 
-1. This is the only master sequencing document.
-2. A detailed runbook/specification may describe *how* to perform work but may not silently become a competing roadmap.
-3. New work enters this roadmap only when it is material, durable and not already represented by a workstream item.
-4. Do not duplicate OpenProject children merely to mirror every checklist line.
-5. When an OpenProject identifier is unknown, do not invent it.
-6. When a workstream plan changes, preserve the old intent/history in Git rather than deleting evidence without explanation.
-7. `PROJECT_HANDOFF.md` always contains the exact current resume point; this roadmap contains the durable order/gates.
-8. A future ChatGPT session should be able to resume by reading GitHub without reading old chats.
+Do not materially scale paid traffic when any of these are true:
+
+- production booking is unhealthy;
+- attribution is known broken;
+- landing intent is materially mismatched;
+- conversion recording is duplicating/corrupting outcomes;
+- campaign economics are clearly unacceptable;
+- policy/eligibility forbids the planned targeting/creative;
+- clinic capacity cannot absorb the expected demand.
+
+A small controlled learning experiment may proceed once its own minimum safety/measurement dependencies are satisfied; scale requires stronger evidence.
 
 ---
 
-## 10. Minimum resume protocol for any future session
+## 10. Resume protocol
 
-Read in this order:
+Every substantive session:
 
-1. `README.md`;
-2. `PROJECT_HANDOFF.md`;
-3. this `ROADMAP.md` current-priority and relevant phase;
-4. `docs/DECISIONS.md` if approval/strategy is involved;
-5. the relevant dated baseline/spec/runbook;
-6. current live account/system when state may have changed;
-7. OpenProject only when current work-package execution metadata matters.
+1. read `PROJECT_HANDOFF.md`;
+2. read this current priority queue and relevant lane;
+3. check live systems for facts that may have changed;
+4. re-check HARD blockers;
+5. execute the highest-value eligible work in parallel lanes;
+6. batch related code changes before CI/build;
+7. record material evidence/results in GitHub;
+8. update `PROJECT_HANDOFF.md` before ending.
 
-Then:
-
-- re-check blockers;
-- select highest eligible task;
-- execute/validate;
-- update GitHub before ending.
-
-This protocol is mandatory for continuity across chat context resets, future tabs, future operators and long gaps between sessions.
+No material project result should exist only in chat.
