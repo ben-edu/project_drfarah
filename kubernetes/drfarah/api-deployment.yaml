@@ -43,11 +43,18 @@ spec:
           ports:
             - name: http
               containerPort: 8000
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/run/secrets/google-data-manager/credentials.json
           envFrom:
             - configMapRef:
                 name: drfarah-api-config
             - secretRef:
                 name: drfarah-api-secret
+          volumeMounts:
+            - name: google-data-manager-credentials
+              mountPath: /var/run/secrets/google-data-manager
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /api/v1/health/ready
@@ -67,3 +74,14 @@ spec:
             limits:
               cpu: 500m
               memory: 768Mi
+      volumes:
+        - name: google-data-manager-credentials
+          secret:
+            secretName: drfarah-google-data-manager-credentials
+            # This Secret volume is mounted only into the non-root API container.
+            # 0444 keeps the file readable by appuser while the mount remains
+            # read-only and isolated from the migration init container.
+            defaultMode: 0444
+            items:
+              - key: credentials.json
+                path: credentials.json
