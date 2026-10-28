@@ -20,13 +20,25 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **DECISION:** no material project decision, blocker or next-step dependency should exist only in chat.
 - **DECISION:** ChatGPT Project Source `.md` files should be minimal bootstrap/router documents; they must not become a parallel source of business/project truth. GitHub and current live systems supersede them according to the authority hierarchy.
 
-## Google marketing control — updated 2026-10-24
+## Growth Acceleration operating model — approved 2026-10-28
+
+- **DECISION:** the project objective is an integrated growth/marketing system across Google Ads, Search Console, Google Business Profile, GA4, first-party attribution, the website/landing paths, completed-visit measurement, service economics, AI/ChatGPT Ads, partner/referral channels and Growth Intelligence.
+- **DECISION:** execution is parallel by default. A blocker in one lane must not stall safe independent work in another lane.
+- **DECISION:** production is the destination for validated growth infrastructure. Coherent changes should be promoted from `dev` to `main` promptly after normal quality/staging gates rather than left indefinitely in development.
+- **DECISION:** related changes should be batched before CI/build to reduce unnecessary build cycles; quality/correctness is not to be sacrificed to reduce build count.
+- **DECISION:** historical Google Ads campaigns/settings must be mined for useful evidence before cleanup or deletion. Obsolete objects may then be archived/removed when safe.
+- **DECISION:** the paused legacy Smart campaign is not the default relaunch vehicle. The first new paid experiment should use a more controllable architecture, expected to be Search unless current evidence demonstrates a better alternative.
+- **DECISION:** missing exact clinic economics must not block campaign research/design. Explicit provisional assumptions may be used from live market/account evidence and must be replaced when authoritative revenue/margin/capacity figures become available.
+- **DECISION:** AI/ChatGPT advertising is a serious paid-channel workstream. Current eligibility/policy must be verified before spend, and any pilot must use finite budget, measurement and stop/scale rules.
+- **DECISION:** `PROJECT_HANDOFF.md` must be updated after material sessions so a new tab/operator can resume without reconstructing the project from chat history.
+
+## Google marketing control — updated 2026-10-28
 
 - **DECISION:** Behnam has administrative access to Google Ads and Google Business Profile and will directly coordinate their operational work from the unified project workspace.
-- **DECISION:** Google Ads and Google Business / Local SEO / Reputation are operated from the same active workspace because measurement, landing-page, local-search and conversion dependencies overlap.
+- **DECISION:** Google Ads, Google Business / Local SEO / Reputation, Search Console, GA4 and the website are operated as one integrated acquisition system because their measurement, landing-page, local-search and conversion dependencies overlap.
 - **DECISION:** live Google Ads is authoritative for current Ads configuration/performance; live verified GBP is authoritative for current profile configuration; Search Console is authoritative for organic Google Search data it reports; GA4 is authoritative for its configured analytics reporting.
-- **DECISION:** the prior assumption that Google Ads had never run is superseded by live account evidence. BG20-01 is a **historical forensic audit + relaunch-readiness audit**.
-- **DECISION:** do not launch or materially scale paid traffic until booking and measurement hard gates are validated.
+- **DECISION:** the prior assumption that Google Ads had never run is superseded by live account evidence. BG20-01 is a historical forensic audit + relaunch-readiness audit.
+- **DECISION:** do not materially scale paid traffic until booking and completed-visit measurement hard gates are validated. Small controlled learning spend may begin only when the experiment-specific minimum booking/landing/measurement dependencies are satisfied.
 - **DECISION:** default connected-account operating mode is `read → analyze → recommend/act within authorization → validate → measure → record evidence`.
 - **DECISION:** platform-reported conversions are not assumed to equal completed patient visits.
 - **DECISION:** `visit_completed` is the intended primary business-outcome conversion once reliable source/appointment linkage and Google Ads import are validated; `booking_request_created` remains a lead/secondary signal rather than a completed visit.
