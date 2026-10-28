@@ -78,7 +78,10 @@ spec:
         - name: google-data-manager-credentials
           secret:
             secretName: drfarah-google-data-manager-credentials
-            defaultMode: 0400
+            # This Secret volume is mounted only into the non-root API container.
+            # 0444 keeps the file readable by appuser while the mount remains
+            # read-only and isolated from the migration init container.
+            defaultMode: 0444
             items:
               - key: credentials.json
                 path: credentials.json
