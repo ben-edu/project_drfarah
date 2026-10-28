@@ -43,10 +43,17 @@ def _set_env(key: str, value: str | None):
 def cleanup_env():
     """Ensure clean environment after each test."""
     saved = {}
-    for k in ("DATABASE_URL", "ENVIRONMENT", "APP_NAME", "CORS_ORIGINS"):
+    for k in (
+        "DATABASE_URL",
+        "ENVIRONMENT",
+        "APP_NAME",
+        "CORS_ORIGINS",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+    ):
         saved[k] = os.environ.get(k)
     os.environ.pop("DATABASE_URL", None)
     os.environ.pop("CORS_ORIGINS", None)
+    os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
     os.environ["ENVIRONMENT"] = "test"
     from app.core.config import get_settings
 
@@ -121,6 +128,34 @@ class TestReadiness:
         with TestClient(app) as client:
             resp = client.get("/api/v1/health/ready")
             assert resp.status_code == 503
+
+    def test_returns_503_when_configured_runtime_credential_is_missing(self):
+        """A configured but unreadable ADC path must fail readiness closed."""
+        os.environ["DATABASE_URL"] = "sqlite:////tmp/test_drfarah.db"
+        os.environ["ENVIRONMENT"] = "test"
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/definitely-missing-google-adc.json"
+        app = _clear_and_reload()
+        with TestClient(app) as client:
+            resp = client.get("/api/v1/health/ready")
+            assert resp.status_code == 503
+            assert resp.json() == {
+                "status": "not ready",
+                "reason": "runtime dependency unavailable",
+            }
+
+    def test_returns_200_when_configured_runtime_credential_is_readable(self, tmp_path):
+        """A readable configured ADC file preserves readiness."""
+        credential = tmp_path / "credentials.json"
+        credential.write_text("{}", encoding="utf-8")
+        credential.chmod(0o400)
+
+        os.environ["DATABASE_URL"] = "sqlite:////tmp/test_drfarah.db"
+        os.environ["ENVIRONMENT"] = "test"
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credential)
+        app = _clear_and_reload()
+        with TestClient(app) as client:
+            resp = client.get("/api/v1/health/ready")
+            assert resp.status_code == 200
 
     def test_503_payload_is_safe(self):
         """Failed readiness must not expose internals or secrets."""
