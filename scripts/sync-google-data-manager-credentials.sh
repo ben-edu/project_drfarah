@@ -85,7 +85,7 @@ for namespace in "$@"; do
   key_present="$(
     kubectl -n "$namespace" \
       get secret "$secret_name" \
-      -o "jsonpath={.data.${secret_key//./\\.}}" \
+      -o 'jsonpath={.data.credentials\.json}' \
       2>/dev/null \
       || true
   )"
