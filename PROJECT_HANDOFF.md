@@ -1,6 +1,6 @@
 # PROJECT HANDOFF — Dr. Farah VIP Urgent Care
 
-> **Live unified resume document.** A new ChatGPT context/operator must be able to continue from this file + `ROADMAP.md` without reading old chats.
+> **Live unified resume document.** A new ChatGPT context/operator must be able to continue from this file + `ROADMAP.md` without reconstructing prior chat history.
 
 **Last updated:** 2026-10-28  
 **Repository:** `ben-edu/project_drfarah`  
@@ -10,335 +10,468 @@
 
 ---
 
-## 1. Control-plane rule
+## 1. Operating model
 
-- GitHub is durable project memory for roadmap, handoff, decisions, code, runbooks and evidence.
-- `ROADMAP.md` is the single master sequencing document.
-- OpenProject remains authoritative for live work-package metadata.
-- Live accounts/systems are authoritative for their current state.
-- `PROJECT_HANDOFF.md` is the exact resume point and must be updated after every material session.
-- Execution mode is now **Growth Acceleration / parallel execution**: do not let a blocked lane stop safe, independent high-value work.
-- Batch related development before CI/build. Quality remains the gate; build count is minimized, not correctness.
+The project is now in **Growth Acceleration / parallel execution** mode.
 
----
+Objective: operate one integrated growth system across Google Ads, Search Console, Google Business Profile, GA4, first-party attribution, the public website/landing paths, completed-visit conversion feedback, service economics, AI/ChatGPT Ads, referral/partner channels and Growth Intelligence.
 
-## 2. Strategic objective now
+Rules:
 
-Build and operate one integrated growth system across:
-
-`Google Ads + Search Console + Google Business Profile + GA4 + first-party attribution + website/landing paths + completed-visit feedback + economics + AI/ChatGPT Ads + partner/content channels`.
-
-Immediate goal is not merely “finish measurement.” It is to:
-
-1. finish/promote the current measurement stack to production;
-2. extract value from the old Ads account before cleanup;
-3. design the best controllable new Google Search campaign now;
-4. optimize Search Console/SEO, GBP/Maps/reputation and GA4 in parallel;
-5. build a defensible pilot budget from live market/account data plus provisional economics;
-6. launch a small measured paid experiment;
-7. prove one real click → booking → completed visit → Google Ads conversion;
-8. make that conversion path operationally stable;
-9. evaluate ChatGPT/OpenAI Ads as a serious paid channel where currently eligible.
+- work independent lanes in parallel;
+- production is the destination for validated growth work;
+- batch related development before CI/build;
+- minimize build count without sacrificing correctness;
+- preserve useful legacy evidence before deleting/archiving old marketing objects;
+- use explicit provisional assumptions when exact clinic economics are not yet available;
+- optimize toward completed visits and defensible economics, not superficial platform events;
+- no unnecessary patient PII/PHI/clinical context in advertising/analytics payloads;
+- update this handoff after material sessions.
 
 ---
 
-## 3. Verified current technical state
-
-### Production / branches
+## 2. Branch / deployment state
 
 Production `main` remains:
 
 `1e630b9e663b9f0ba3e3eaa1bb58c4dd714db702`
 
-Current `dev` head:
+Current control-plane `dev` head after PR #99:
 
-`c976a56836ca4160684be2b190d6aa29e7244032`
+`039d0d29e1edb27af1b1d416d43256367c314db2`
 
-`dev` is ahead of `main` by the current Google Data Manager measurement/import batch. Jenkins status for `c976a56...` is **SUCCESS**, target `dev/24`.
+PR #99 `Update roadmap for parallel growth acceleration` was squash-merged to `dev` on 2026-10-28.
 
-Do not claim the Data Manager transport/auth stack is production until `main` is promoted/deployed.
+At the last check, Jenkins status for `039d0d29...` / `dev/25` was still pending. **Do not merge the next code/docs batch to `dev` until this status is confirmed green.**
+
+Current working branch for the next integrated batch:
+
+`growth/google-acquisition-blueprint-20261028`
+
+This branch is being prepared as one coherent package containing the urgent-care paid/organic landing path plus Ads/audit documentation and this handoff update.
+
+---
+
+## 3. Booking / first-party attribution / completed outcome
 
 ### Booking
 
 Booking/Brevo incident is owner-confirmed resolved.
 
-- `G1-BOOKING-HEALTHY`: GREEN unless a new regression appears.
+`G1-BOOKING-HEALTHY`: GREEN unless a new regression appears.
 
 ### First-party attribution
 
-Implemented and merged previously:
+Production code already supports:
 
-- canonical source/UTM values;
-- GCLID/GBRAID/WBRAID capture;
+- canonical source + UTM values;
+- GCLID / GBRAID / WBRAID capture;
 - opaque marketing session ID;
-- first/last-touch context;
+- first-touch and useful last-touch context;
 - partner/traveler markers;
 - `appointment_attributions` 1:1 record;
-- booking persists attribution atomically;
-- no unnecessary clinical data in the attribution object.
+- atomic persistence with booking;
+- no page path, service, reason-for-visit, PII or clinical content in the marketing attribution record.
 
-Production frontend/booking code already accepts click identifiers and passes the attribution snapshot to appointment creation. Production API stores the structured attribution record.
+The public site `app.js` handles first-party attribution. `booking.js` sends the snapshot with appointment creation. The production API persists it.
 
 ### `visit_completed`
 
-Business outcome contract exists:
+Business outcome contract:
 
 - authoritative condition: appointment status `completed`;
 - deterministic key: `visit_completed:<appointment_id>`;
 - occurrence time: appointment `starts_at`;
-- joins non-clinical click/source attribution only;
-- excludes name/email/phone/reason/service/clinical/registration payload from marketing outcome.
+- source selection uses non-clinical attribution;
+- excludes patient name/email/phone/reason/service/registration/clinical payload.
 
-### Google Data Manager implementation on `dev`
+---
 
-PR #93 / commit `6936020375ca5a03d08a6f16cff2ab6c87cbe069`:
+## 4. Google Data Manager / completed-visit import
 
-- privacy-safe Google Ads offline payload preparation;
-- `POST https://datamanager.googleapis.com/v1/events:ingest` intent;
-- Data Manager OAuth scope;
-- Google Ads customer + conversion action destination;
-- one click ID with preference GCLID → WBRAID → GBRAID;
+### Google Ads conversion action
+
+Customer: `652-510-3588`.
+
+Conversion action created 2026-10-28:
+
+- name `Visit Completed`;
+- goal/category `Converted leads`;
+- Secondary action;
+- no conversion value currently;
+- source `Import from clicks`;
+- count `One`;
+- click-through window 30 days;
+- attribution Data-driven;
+- UI Conversion type ID shown: `7879009165`.
+
+Important: the API/runtime still must establish that `7879009165` is accepted as the Data Manager `productDestinationId`. Do not treat this mapping as proven only from the UI label.
+
+Issue #94 remains open until runtime validation + controlled import pass.
+
+### Cloud/auth
+
+- Data Manager API enabled in the user-owned Cloud project.
+- Service account `drfarah-data-manager` exists.
+- role includes `Service Usage Consumer`.
+- service account is a Standard user in Google Ads customer `652-510-3588`.
+- Jenkins Secret File credential ID: `drfarah-google-data-manager-sa-json`.
+- Kubernetes secret `drfarah-google-data-manager-credentials` synchronized successfully to `drfarah-staging` and `drfarah` namespaces.
+- **No Google Cloud billing/card is to be added.** Stop if a setup path requires enabling billing/linking a billing account.
+- never request/paste/upload the JSON key in chat or commit it.
+
+### Code on `dev`
+
+PR #93 / `6936020375ca5a03d08a6f16cff2ab6c87cbe069`:
+
+- privacy-safe Data Manager payload preparation;
+- endpoint `https://datamanager.googleapis.com/v1/events:ingest`;
+- OAuth scope `https://www.googleapis.com/auth/datamanager`;
+- Google Ads customer + product destination;
+- one click identifier, preference GCLID → WBRAID → GBRAID;
 - transaction ID `visit_completed:<appointment_id>`;
-- timezone-aware timestamp;
-- default `validateOnly=true`;
-- no PII/PHI/clinical payload.
+- RFC3339/timezone-aware timestamp;
+- `validateOnly=true` by default;
+- no PII/PHI/clinical data.
 
 PR #95 / `8c3776aa132d835324f18d858bc1bfbe9ee5fc1b`:
 
-- guarded Google Data Manager client;
-- ADC auth via `google.auth.default`;
-- explicit `allow_recording=true` required for non-validate requests;
+- guarded client using ADC;
+- explicit `allow_recording=true` required for a non-validation request;
 - errors intentionally avoid payload/response-body leakage.
 
 PR #96 / `d84fb0ed2cdb2898ca72b1412c856c68564b46d8`:
 
-- Kubernetes credential mount and safe Jenkins secret synchronization tooling.
+- Kubernetes ADC credential mount + safe Jenkins sync script.
 
 PR #97 / `c976a56836ca4160684be2b190d6aa29e7244032`:
 
-- fail-closed readiness on unreadable ADC credential;
-- credential mount readability corrected for the non-root API user;
+- fail-closed readiness when configured ADC credential is unreadable;
+- mounted credential made readable by non-root API user;
 - Jenkins `dev/24` SUCCESS.
 
-### Google credential/runtime setup
+### Validation history
 
-- Data Manager API enabled in the user-owned Google Cloud project.
-- Service account `drfarah-data-manager` exists and is a Standard user in Google Ads account `652-510-3588`.
-- Jenkins Secret File credential ID: `drfarah-google-data-manager-sa-json`.
-- Kubernetes secret `drfarah-google-data-manager-credentials` was synchronized to `drfarah-staging` and `drfarah` namespaces successfully.
-- No Google Cloud billing/card should be added. Stop if a future setup path asks to enable billing/link a billing account.
-- Never request/paste/upload the JSON key in chat or commit it to Git.
+Attempt 1 failed before Google because Jenkins K8s identity lacks `pods/exec`. Do not broaden `pods/exec` RBAC merely for this validation unless no safer alternative exists.
 
-### Validation attempt status
+Attempt 2 ran the exact application image and reached `google.auth.default(...)` but failed before Google because the Jenkins Secret File bind mount was unreadable by container UID 10001.
 
-A one-off Jenkins validation using `kubectl exec` failed **before Google was contacted** because Jenkins service account `system:serviceaccount:fastapi-platform:jenkins-project` cannot create `pods/exec` in namespace `drfarah-staging`.
+PR #97 fixed the runtime readability contract. Preferred next validation is a one-off exact-artifact execution using the known green `c976a568...` application image and a private temporary credential copy readable by the container user, while keeping `validateOnly=true`. Do not log a real click ID.
 
-Do not broaden Kubernetes `pods/exec` RBAC merely for this one-off validation unless no safer option exists.
+`G2-MEASUREMENT-READY` remains RED until controlled end-to-end acceptance.
 
-Preferred next validation route: use the already-built green application artifact from Jenkins/runtime context or another exact-artifact execution method that does not widen Kubernetes permissions. Verify exact registry tag/credential/tool assumptions before asking the owner to run another job.
+---
 
-### Google Ads live account
+## 5. Google Ads — live current state
 
-Customer: `652-510-3588`.
+Customer `652-510-3588`, USD, America/Los_Angeles. Auto-tagging is enabled.
 
-Legacy paid evidence:
+### Legacy Smart campaign
 
-- campaign `Urgent Care Medical Center`;
-- Smart campaign;
-- paused;
-- historical activity June 2025–February 2026;
+- ID `22552983079`;
+- `Urgent Care Medical Center`;
+- type SMART;
+- PAUSED;
+- activity June 2025–February 2026;
 - ~258,541 impressions;
 - ~5,590 clicks;
 - ~$4,494.86 spend;
 - 16 platform-reported conversions.
 
-Do not assume the 16 conversions equal completed visits.
+Live forensic finding: the old conversion signal is effectively `Calls from Smart Campaign Ads`, not completed visits. Mobile dominated old activity/conversions. Geography also showed real leakage outside the intended area, including spend in Brentwood in Northern California without conversion value.
 
-Current strategy: extract forensic value before cleanup; do not simply relaunch the old Smart campaign. Design a new controllable Search architecture using historical Ads + Search Console + current market planning data + landing/economics evidence.
+Do not relaunch this Smart campaign as the primary growth vehicle. Preserve evidence, then archive/remove obsolete objects only when safe.
 
-Auto-tagging is enabled. Google Ads destination/tag identity previously captured as `AW-17076731177`.
+### System Local Services campaign
 
-### New Google Ads conversion action
+- ID `23637947414`;
+- `LocalServicesCampaign:SystemGenerated:00064c99af1b40d4`;
+- account status ENABLED / primary status ELIGIBLE;
+- bidding-system status PAUSED;
+- no impressions/clicks/spend in the inspected recent 90-day window.
 
-Created 2026-10-28:
+Leave unchanged until its Google-managed role is understood.
 
-- name: `Visit Completed`;
-- customer: `652-510-3588`;
-- category/goal: Converted leads;
-- Secondary action;
-- no value currently;
-- source: Import from clicks;
-- count: One;
-- click-through window: 30 days;
-- attribution: Data-driven;
-- UI Conversion type ID shown: `7879009165`.
+### New Search pilot — CREATED, NO SPEND
 
-Important: validate through the API/runtime that `7879009165` is accepted as the Data Manager `productDestinationId`; do not treat that mapping as proven merely because the UI displays the ID.
+Campaign ID:
 
-Issue #94 remains open until runtime validation and controlled import are accepted.
+`24414014329`
 
-### GA4
+Name:
 
-Production property:
+`Search | Urgent Care | Beverly Hills | Pilot | 2026-10-28`
 
-- Property ID `489069776`;
-- Web Stream `11211773871`;
-- Measurement ID `G-D58FTMF05S`.
+Current state:
 
-Selected-page production implementation exists for approved low-risk public pages. Sensitive booking/registration/treatment/admin surfaces are excluded under the current architecture.
+- Search;
+- PAUSED;
+- Manual CPC;
+- Enhanced CPC off;
+- provisional budget $40/day;
+- English;
+- five-mile proximity around clinic lat/long 34.067 / -118.3934;
+- ad schedule matches current clinic hours;
+- no spend has begun.
 
-Current live connector read on 2026-10-28 returned no 30-day GA4 rows. Treat live receipt/settings confirmation as still open; do not infer that the implementation is broken solely from the connector result.
+Ad groups created, all paused:
 
-### Search Console
+1. `Urgent Care | Beverly Hills` — ID `196894367450`, default CPC $4.50.
+2. `Urgent Care | Near Me` — ID `204328258769`, default CPC $4.50.
+3. `Walk-In | Same-Day` — ID `199388744537`, default CPC $4.00.
 
-Property: `sc-domain:drfarahvipurgentcare.com`.
+18 initial positive keywords are Exact/Phrase only. Broad Match intentionally excluded while reliable completed-visit conversion volume is absent.
 
-Live 90-day read on 2026-10-28 returned approximately:
+Initial campaign negatives include 24-hour/24-7, emergency-room-specific, hospital-emergency, free-clinic, job/career/training, veterinary and dental intent.
 
-- 32,325 impressions;
-- 308 clicks;
-- 0.95% CTR;
-- average position 11.80.
+Assets linked:
 
-Useful current query evidence includes branded strength plus opportunities around urgent-care/Beverly Hills/near-me and selected service themes. `/book` and `/patient-registration` remain `noindex` and excluded from sitemap.
+- call asset `310-467-0101`;
+- callouts `Physician-Led Care`, `Beverly Hills Clinic`, `Same-Day When Available`;
+- sitelinks to `/about` and `/services`.
 
-### Google Business Profile
+Responsive Search Ads are intentionally not created yet because the new final landing page must be live first.
 
-Live connected profile is operational. Baseline captured earlier:
+### Critical geo blocker before enable
 
-- Dr Farah VIP Urgent Care;
-- primary category `Urgent care center`;
-- 5.0 rating / 109 reviews at captured baseline.
+Read-back after setting the five-mile proximity shows Google Ads positive geo option is still default:
 
-Live 90-day performance read on 2026-10-28 returned approximately:
+`PRESENCE_OR_INTEREST`
 
-- 120 website clicks;
-- 123 call clicks.
+This is unacceptable for launch because people outside the service area can qualify by showing interest in the area, and the old campaign already demonstrated geographic leakage.
 
-Do not bulk-delete the service catalogue. Optimize factual details/categories/services/links/content/reputation based on evidence and policy.
+Before enable, change the campaign target-location option to **Presence: people in or regularly in the targeted locations**. The connected Windsor write action can set the radius but does not expose this positive-geo-type switch, so use a supported Google Ads UI/API path before spend.
 
-### AI / ChatGPT Ads
+### Keyword Planner live account evidence
 
-This is now an active growth lane, not a future side note. Before spend, re-check current healthcare advertiser eligibility/policy and account availability. If eligible, design a finite-budget pilot with dedicated source attribution and completed-visit measurement where supported.
+Examples captured 2026-10-28:
+
+- `urgent care beverly hills`: ~590 avg monthly, top-of-page roughly $1.47–$6.37;
+- `urgent care near me`: ~49,500 avg monthly in the selected planner geography, roughly $1.51–$7.06;
+- `private urgent care`: ~10, competition 69, roughly $3.01–$8.39;
+- `private urgent care near me`: ~10, competition 79, roughly $1.49–$7.65;
+- medical-clearance/pre-op variants in this planning slice are much lower volume.
+
+First pilot therefore prioritizes core urgent-care/local intent. Pre-op/private/VIP can be separate hypotheses rather than diluting the first search campaign.
+
+Detailed pilot spec: `docs/GOOGLE_ADS_PILOT_2026-10-28.md`.
 
 ---
 
-## 4. Current blockers
+## 6. New paid + organic landing path
+
+Current working branch adds:
+
+`frontend/urgent-care-beverly-hills.html`
+
+Canonical production URL:
+
+`https://drfarahvipurgentcare.com/urgent-care-beverly-hills`
+
+Design intent:
+
+- indexable public page;
+- aligned to Beverly Hills urgent-care search intent;
+- actual phone/address/hours;
+- same-day wording only `when available`;
+- urgent visit starting price from current service content;
+- book + call CTAs;
+- explicit 911 / not-an-emergency-department language;
+- `MedicalClinic` structured data;
+- no 24/7 claim;
+- existing first-party attribution via `app.js`;
+- no GA4 injection under current health/privacy allowlist.
+
+Prepared routing/SEO updates:
+
+- add page to `sitemap.xml`;
+- `/urgent-care-near-you` → new canonical page;
+- `/vip-urgent-care` → new canonical page.
+
+Do not create/enable responsive ads against this URL until it is deployed and smoke-tested on production.
+
+---
+
+## 7. Search Console
+
+Property:
+
+`sc-domain:drfarahvipurgentcare.com`
+
+Recent live 90-day read on 2026-10-28:
+
+- ~32,325 impressions;
+- 308 clicks;
+- CTR ~0.95%;
+- average position ~11.8.
+
+Useful local opportunity examples:
+
+- `urgent care near me`: meaningful impressions around position ~15;
+- `urgent care beverly hills`: meaningful impressions around ~10.5;
+- `beverly hills urgent care`: meaningful impressions around ~15.8;
+- branded terms generally rank much stronger.
+
+Old WordPress URLs still appear historically. Production Apache already has several 301 redirects. Verify live redirect/canonical behavior rather than recreating obsolete pages.
+
+`/book` and `/patient-registration` remain noindex and excluded from sitemap.
+
+---
+
+## 8. Google Business Profile
+
+Connected location:
+
+`locations/6719840585856592244`
+
+Baseline:
+
+- Dr Farah VIP Urgent Care;
+- primary category `Urgent care center`;
+- captured baseline rating 5.0 / 109 reviews.
+
+Recent 90-day live actions:
+
+- ~120 website clicks;
+- ~123 call clicks.
+
+Live coordinates:
+
+- 34.067, -118.3934.
+
+Live regular hours:
+
+- Mon–Thu 08:30–17:30;
+- Fri 08:30–16:30;
+- weekends closed.
+
+Audit findings:
+
+- `has_google_updated=true` — inspect Google update(s);
+- stale special-hours entries from 2025 need review;
+- service catalogue has duplicates and some overly aggressive wording; clean item-by-item, not bulk-delete;
+- Ads schedule/copy must match actual hours.
+
+---
+
+## 9. GA4
+
+Production property `489069776`.
+Web Stream `11211773871`.
+Measurement ID `G-D58FTMF05S`.
+
+Selected-page production architecture remains intentionally limited to approved low-risk public pages. Sensitive booking/registration/service/treatment/admin surfaces are excluded under the current design.
+
+Recent Windsor reads returned no rows. Treat live receipt/settings as still open; do not conclude the implementation is broken solely from the connector result.
+
+Pending:
+
+- safe Realtime/DebugView test on an allowlisted page;
+- timezone/currency;
+- Enhanced Measurement state;
+- consent behavior;
+- excluded-page verification.
+
+The new urgent-care landing page remains outside the GA4 allowlist. Paid attribution is first-party + completed-visit feedback.
+
+---
+
+## 10. AI / ChatGPT Ads
+
+This is an active growth lane.
+
+Current policy research indicates US hospitals/urgent-care advertising is limited to a small set of approved advertisers; outside the US it is not broadly allowed. Verify current account eligibility before spend.
+
+The connected ChatGPT Ads Manager currently returned no accessible ad accounts. Do not claim the clinic is eligible or onboarded yet.
+
+Issue #92 remains the durable evaluation thread. Continue eligibility/onboarding investigation in parallel; any pilot must have finite budget, dedicated source attribution and explicit stop/scale rules.
+
+---
+
+## 11. Current blockers
 
 ### B-001 Booking/Brevo
 CLOSED.
 
-### B-002 End-to-end completed-visit measurement
-**State:** IN_PROGRESS / HARD for material scale.
+### B-002 Data Manager completed-visit path
+IN_PROGRESS / HARD for meaningful paid scale.
 
-Remaining:
+Need:
 
-- safe runtime `validateOnly` call to Google Data Manager using the actual current implementation;
-- verify destination/customer/conversion-action acceptance;
-- promote coherent Data Manager batch to `main` after validation;
-- production smoke test;
-- first legitimate paid click→booking→completed visit→recorded conversion;
-- dedupe/reconciliation evidence.
+1. `validateOnly` runtime request using current green application artifact;
+2. destination/customer/productDestinationId acceptance;
+3. coherent Data Manager batch promotion to `main`;
+4. production smoke validation;
+5. first legitimate paid click → booking → completed visit → recorded conversion;
+6. dedupe/reconciliation evidence.
 
-### B-003 GA4 live receipt/settings
-**State:** IN_PROGRESS / SOFT for most parallel growth research, HARD only where a specific decision depends on GA4 behavioral data.
+### B-003 New Search pilot destination
+IN_PROGRESS.
 
-### B-004 Exact clinic economics
-**State:** SOFT.
+Need production deploy + smoke of `/urgent-care-beverly-hills`, then create/approve RSAs.
 
-Do not block strategy. Use explicit provisional assumptions from market/account evidence until authoritative revenue/margin/capacity values are supplied.
+### B-004 Google Ads geo location option
+HARD for campaign enable.
 
-### B-005 ChatGPT/OpenAI Ads eligibility
-**State:** WAITING_EXTERNAL / SOFT.
+Need positive geo target type = `PRESENCE`, not `PRESENCE_OR_INTEREST`.
 
-Verify current eligibility/policy; continue campaign hypothesis/measurement planning in parallel.
+### B-005 GA4 live receipt/settings
+SOFT for most growth work; open validation.
 
----
+### B-006 Exact clinic economics
+SOFT.
 
-## 5. Exact next actions — parallel queue
+Use explicit provisional assumptions; replace with authoritative economics later.
 
-### Lane 1 — Production measurement
-
-1. inspect exact current Jenkins/registry/deployment behavior before another validation run;
-2. choose the lowest-risk exact-artifact validation route that avoids broad `pods/exec` RBAC;
-3. send one `validateOnly=true` Data Manager request without logging click IDs/patient data;
-4. if accepted, prepare one coherent `dev`→`main` promotion of the current Google Data Manager batch;
-5. deploy through Jenkins and run production smoke validation;
-6. keep real recording guarded until one legitimate eligible event exists.
-
-### Lane 2 — Google Ads campaign rebuild
-
-1. preserve/extract legacy Smart campaign evidence;
-2. inventory old conversion goals/assets/landing destinations/settings;
-3. build keyword/query opportunity set from Ads history + Search Console + current planning data;
-4. create negative-keyword taxonomy;
-5. design new Search campaign/ad-group/geo/schedule/bidding/ad/asset structure;
-6. map each intent cluster to the correct landing path;
-7. produce provisional learning-budget model and stop/scale rules;
-8. build the new campaign paused/ready before spend where account tooling permits.
-
-Do not delete useful legacy evidence until extraction is complete.
-
-### Lane 3 — Search Console / website
-
-1. prioritize position 4–20 high-intent local/commercial queries;
-2. identify page/query mismatches;
-3. map pages to paid/organic intent;
-4. implement high-confidence SEO/landing corrections in batched website changes;
-5. promote qualified website changes to production promptly after normal validation.
-
-### Lane 4 — GBP / Maps / reputation
-
-1. re-verify hours/contact/location/categories/links;
-2. optimize service catalogue based on factual availability + demand + economics + clarity + policy;
-3. establish review request/response workflow;
-4. perform Beverly Hills local competitor baseline;
-5. feed findings back into Ads/site/content.
-
-### Lane 5 — GA4
-
-1. verify production Realtime/DebugView safe event;
-2. confirm timezone/currency/Enhanced Measurement;
-3. confirm allowlist/consent/exclusion behavior;
-4. close or document connector/data gap.
-
-### Lane 6 — Economics/budget
-
-Build provisional service priority and pilot budget without waiting for owner input. Clearly label assumptions; replace with clinic facts later.
-
-### Lane 7 — AI Ads
-
-Verify current ChatGPT/OpenAI Ads eligibility/policy/account path and design the first measurable pilot if eligible.
-
-### Lane 8 — Operations automation
-
-After the first controlled real import succeeds, implement durable import ledger/scheduler/retry/monitoring so clinic staff only need to maintain correct appointment outcome status.
+### B-007 ChatGPT Ads eligibility
+SOFT / WAITING_EXTERNAL.
 
 ---
 
-## 6. Production rule
+## 12. Exact next actions
 
-The owner explicitly wants growth work moved forward on the real site rather than left indefinitely on `dev`.
+### Repository / production
 
-Operational interpretation:
+1. finish current integrated landing/audit/handoff branch;
+2. re-check Jenkins `dev/25` and merge only after green;
+3. run one Jenkins build for the integrated website batch;
+4. if staging acceptance is clean, promote promptly to `main` and deploy production;
+5. smoke-test new canonical URL, redirects, book/call CTAs and first-party attribution.
 
-- do not bypass staging/CI/Jenkins quality controls;
-- do not accumulate validated growth code on `dev` without a production plan;
-- batch coherent changes;
-- promote to `main` promptly once the relevant acceptance evidence is green;
-- production is the environment where final measurement/business behavior must be verified.
+### Google Ads
+
+1. keep campaign `24414014329` PAUSED;
+2. set positive location option to Presence-only through supported UI/API;
+3. after landing page is live, create at least one RSA per ad group using the production URL;
+4. read back policy/eligibility/status;
+5. do not enable until measurement/landing/geo blockers are green;
+6. once enabled, review search terms early and add negatives aggressively.
+
+### Data Manager
+
+1. use the known green `c976a568...` app artifact for one-off `validateOnly` auth/destination testing rather than waiting on docs-only builds;
+2. do not log real click IDs;
+3. if accepted, promote the four Data Manager commits to production as one coherent batch;
+4. use the first legitimate paid completed visit for the controlled real recording.
+
+### GBP/Search/GA4
+
+- inspect GBP Google updates and stale special hours;
+- clean service duplicates/claims selectively;
+- verify live Search Console redirects/canonicals after deployment;
+- verify GA4 Realtime/settings on allowlisted pages.
 
 ---
 
-## 7. Resume protocol
+## 13. Resume protocol
 
 A future chat/operator should:
 
 1. read this file;
-2. read the current parallel priority queue in `ROADMAP.md`;
-3. check `dev` and `main` heads + Jenkins status;
-4. re-check B-002 first;
-5. continue Lane 1 and at least one independent growth lane in parallel;
-6. never ask again for information already recorded here unless live state changed;
-7. record material evidence/results in GitHub;
-8. update this handoff before ending.
+2. read current parallel queue in `ROADMAP.md`;
+3. check `dev`, `main` and Jenkins status;
+4. check campaign `24414014329` remains PAUSED before doing anything else in Ads;
+5. re-check B-002, B-003 and B-004;
+6. continue production measurement + at least one independent growth lane in parallel;
+7. never ask for information already recorded here unless live state changed;
+8. record material live changes/evidence in GitHub and update this handoff before ending.
