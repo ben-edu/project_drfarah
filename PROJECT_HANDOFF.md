@@ -24,11 +24,11 @@ Git/release control follows `docs/GIT_RELEASE_STRATEGY.md`: normal flow is `feat
 
 ## 2. Branch / deployment state
 
-FACT — production `main` is `9cb6b0def117a9f1863a37216fd8460b47a220be`; Jenkins `main/1` SUCCESS. This production release includes the policy-safe traveler landing at `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`.
+FACT — `main` and `dev` were aligned after the validated SEO/control-plane production release and both pointed to `19caa85e11b2f992d6588b93dd6049d6ac81cedc`; production Jenkins `main/2` SUCCESS and reconciled staging Jenkins `dev/33` SUCCESS.
 
-FACT — current `dev` is reconciliation commit `085df28a6488587bae94bd1400553b8750091555`; Jenkins `dev/31` SUCCESS.
+FACT — release `19caa85e…` promotes the exact green `dev/32` SEO/control-plane batch and contains the earlier traveler production history. The normal branch invariant was restored after release by fast-forwarding `dev` to the production merge commit; no content diff remained between the branches at that point.
 
-FACT — branch reconciliation is complete: current `main` is an ancestor of `dev` (`behind_by=0`). PR #112 and PR #113 were closed/superseded; stale `pr-head` pending statuses from those closed PRs are not valid active branch builds.
+FACT — the evidence-led urgent-care + Pre-Op SEO batch is therefore production-deployed and CI-validated.
 
 DECISION — do not return to selective production reconstruction as the normal release method. Normal release path is coherent validated `dev -> main`.
 
@@ -89,7 +89,7 @@ FACT — three PAUSED traveler RSAs created against the dedicated production lan
 - `829861321812`
 - `829991120837`
 
-Landing: `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`; production `main/1` green.
+Landing: `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`; production release lineage is now included in green `main/2` / `dev/33` history.
 
 Keyword Planner: ultra-specific traveler+Beverly Hills seeds had no reportable volume. Broader evidence: `hotel doctor` / `doctor at hotel` ~140 US searches each and historical CPC ~$2.44; `doctor beverly hills` ~260 but ~$27 historical CPC; `concierge doctor beverly hills` ~590 and ~$10.72. DECISION — do not broaden blindly; start precise and use actual search-term/completed-visit evidence.
 
@@ -140,7 +140,7 @@ High-priority 28-day evidence:
 - `medical clearance near me`: 9 impressions, avg position 1.56, 0 clicks;
 - `vip urgent care`: 95 impressions, avg position 1.16, CTR 2.11%.
 
-DECISION — prioritize evidence-led urgent-care and Pre-Op title/meta/on-page improvements before lower-ranking IV/PRP/weight-loss SEO work.
+FACT — the first evidence-led urgent-care + Pre-Op title/meta/on-page improvement batch is production-deployed in `19caa85e…` and production CI passed.
 
 Production indexing architecture is intentional: source/staging pages may contain `noindex`; `scripts/prepare-production-frontend.sh` removes it for production and installs `robots.production.txt` with crawl allow + sitemap. Do not remove staging noindex as an SEO fix.
 
@@ -168,7 +168,7 @@ After originals arrive: generate responsive derivatives, use correct intrinsic d
 
 GBP location `locations/6719840585856592244`; primary category Urgent care center; captured baseline 5.0 / 109 reviews. Core cleanup/reputation cadence remains open.
 
-GA4 property `489069776`, stream `11211773871`, measurement `G-D58FTMF05S`. Safe public-page allowlist remains intentional; sensitive health-intent landings remain outside current GA4 allowlist. Soft live receipt/settings validation remains.
+GA4 property `489069776`, stream `11211773871`, measurement `G-D58FTMF05S`. Safe public-page allowlist remains intentional; sensitive health-intent landings remain outside current GA4 allowlist. Soft live receipt/settings validation remains. A same-day Windsor read on 2026-10-29 returned zero GA4 event rows; this is a soft data gap, not proof of a tracking failure.
 
 ChatGPT Ads remains a later paid-growth lane. Ads Manager installed; prior discovery found no accessible clinic ad account; Windsor `openai_ads` has no connected account. Begin eligibility/account work after final Google launch configuration is stable; no spend without policy/measurement/budget gates.
 
@@ -180,13 +180,13 @@ ChatGPT Ads remains a later paid-growth lane. Ads Manager installed; prior disco
 - B-002 Data Manager — SCALE GATE only: first legitimate live completed-visit import + replay/dedupe + reconciliation.
 - B-003 Local paid destination — CLOSED.
 - B-004 Local campaign geo — CLOSED; live readback `PRESENCE`.
-- B-005 GA4 live receipt/settings — SOFT.
+- B-005 GA4 live receipt/settings — SOFT; same-day connector read returned zero event rows on 2026-10-29, so no receipt conclusion yet.
 - B-006 authoritative clinic economics/capacity — SOFT.
 - B-007 ChatGPT Ads eligibility/account access — SOFT / WAITING_EXTERNAL.
 - B-008 LegitScript + Google healthcare certification — WAITING_EXTERNAL / HIGH PRIORITY; issue #106; independent work continues.
-- B-009 Traveler landing production readiness — CLOSED; `main/1` SUCCESS.
+- B-009 Traveler landing production readiness — CLOSED; included in green production history.
 - B-010 Call asset compliance/post-cert review — OPEN; issue #110.
-- B-011 Git branch reconciliation — CLOSED; `main` contained in `dev`; `dev/31` SUCCESS.
+- B-011 Git branch reconciliation — CLOSED; `main` and `dev` aligned at `19caa85e…` before this documentation update; production `main/2` and staging `dev/33` SUCCESS.
 - B-012 Image quality — OPEN; issue #114; high-resolution approved source files required for material sharpness improvement.
 - B-013 Ad/asset policy readback — DATA_GAP; current connector returns zero ad/asset rows; do not infer approval.
 
@@ -194,16 +194,15 @@ ChatGPT Ads remains a later paid-growth lane. Ads Manager installed; prior disco
 
 ## 12. Exact next actions
 
-1. Complete one evidence-led SEO batch for urgent-care + Pre-Op pages; keep claims/facts/prices unchanged except wording alignment; validate exact candidate SHA in Jenkins before integration.
-2. Restore the durable long-term phases accidentally omitted from the shortened roadmap; preserve service economics, traveler/hotel partnerships, pre-op referral engine, content engine, Growth Intelligence and verified OpenProject IDs.
-3. Recheck all six RSA and relevant asset policy/review statuses when a fresh ad-level source becomes available; do not block independent work on the current Windsor read gap.
-4. Resolve issue #110 call-asset path after clinic legal/HIPAA determination and Google Support handling; full post-cert review remains mandatory.
-5. Dr. Farah continues LegitScript issue #106. After approval, complete Google healthcare certification and re-read affected policy objects.
-6. Obtain clinic-approved high-resolution image originals for issue #114, beginning with IV, homepage hero and clinic exterior; then implement responsive delivery/visual QA.
-7. Continue GBP factual cleanup/reputation and GA4 soft validation in parallel.
-8. First legitimate paid completed visit → Data Manager live import + replay/dedupe + reconciliation; keep `Visit Completed` Secondary until passed.
-9. Once policy/readiness is acceptable, present a controlled launch decision for the local and/or traveler pilot. Do not enable or incur spend without explicit authorization.
-10. Begin ChatGPT Ads eligibility/account lane after final Google launch configuration is stable.
+1. Restore the durable long-term phases accidentally omitted from the shortened roadmap; preserve service economics, traveler/hotel partnerships, pre-op referral engine, content engine, Growth Intelligence and verified OpenProject IDs.
+2. Recheck all six RSA and relevant asset policy/review statuses when a fresh ad-level source becomes available; do not block independent work on the current Windsor read gap.
+3. Resolve issue #110 call-asset path after clinic legal/HIPAA determination and Google Support handling; full post-cert review remains mandatory.
+4. Dr. Farah continues LegitScript issue #106. After approval, complete Google healthcare certification and re-read affected policy objects.
+5. Obtain clinic-approved high-resolution image originals for issue #114, beginning with IV, homepage hero and clinic exterior; then implement responsive delivery/visual QA.
+6. Continue GBP factual cleanup/reputation and GA4 soft validation in parallel; the 2026-10-29 same-day GA4 connector read returned zero event rows and should not be treated as a hard gate.
+7. First legitimate paid completed visit → Data Manager live import + replay/dedupe + reconciliation; keep `Visit Completed` Secondary until passed.
+8. Once policy/readiness is acceptable, present a controlled launch decision for the local and/or traveler pilot. Do not enable or incur spend without explicit authorization.
+9. Begin ChatGPT Ads eligibility/account lane after final Google launch configuration is stable.
 
 ---
 
