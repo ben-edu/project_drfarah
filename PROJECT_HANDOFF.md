@@ -16,15 +16,25 @@ Growth Acceleration / parallel execution. Independent safe lanes continue in par
 
 User-facing project explanations should default to Persian script. Use clear Persian equivalents first; include exact English UI labels only when they help the user find a setting.
 
+Git/release control follows `docs/GIT_RELEASE_STRATEGY.md`: normal flow is `feature/fix/docs -> dev -> main`; current `main` must be contained in `dev` before normal production promotion; any production-only hotfix/selective release must be immediately reconciled back into `dev`.
+
 ---
 
 ## 2. Branch / deployment state
 
-FACT — `dev/28` SUCCESS on `d31807e929f725e6ab35b432c8cdbed03bc52047`.
+FACT — PR #109 (`Add traveler pre-arrival landing for second Search campaign`) passed exact-head CI and merged to `dev`; current pre-reconciliation `dev` SHA is `04c97249e6c793824f3659cbdf5170c425682356`.
 
-FACT — PR #108 (`Prioritize traveler campaign and healthcare certification lane`) passed Jenkins PR-head CI and was merged to `dev`; resulting merge SHA `46ebf6fb697cb270cce99bef1723c0879860d1e1`. Jenkins `dev/29` is pending at this handoff update.
+FACT — Jenkins `dev/30` SUCCESS on `04c97249e6c793824f3659cbdf5170c425682356`.
 
-FACT — production `main` remains `5e34eea5ca5c1b78a0aeceb2a4fa287b7b15e1ae`; Jenkins `main/4` SUCCESS. Production includes the urgent-care Beverly Hills landing path and Data Manager runtime work.
+FACT — PR #111 (`Promote traveler medical-care landing to production`) passed exact-head CI on `f67ca1b0045c6fc10459765e6da29cfda289f019` and merged to `main`; current `main` SHA is `9cb6b0def117a9f1863a37216fd8460b47a220be`.
+
+FACT — PR #111 was a narrow production promotion because `dev` and `main` had accumulated divergent history after production-only recovery work. The user approved correcting that process permanently.
+
+DECISION — normal releases are now `dev -> main`. Before such a release, `dev` must contain current `main`. A direct production hotfix/selective release is exceptional and is not complete until `main` has been reconciled/back-merged into `dev` and the reconciled `dev` state passes CI.
+
+IN PROGRESS — controlled reconciliation branch `chore/git-release-strategy-reconcile-20261029` will create a two-parent merge of current `dev` + current `main`, preserve validated `dev` content, import the production Jenkins redirect-smoke correction, and add the approved Git strategy documentation. Direct raw PR #112 (`main -> dev`) is superseded by this controlled reconciliation because its merge-base diff is misleading for files already present on both heads.
+
+DATA_GAP — after PR #111 merge, production `main` Jenkins result for `9cb6b0d...` had not yet posted a distinct `main` branch status at this handoff update. Do not infer production success from the PR-head success alone; verify the actual `main` build/smoke result.
 
 ---
 
@@ -48,7 +58,7 @@ Campaign `24414014329` — `Search | Urgent Care | Beverly Hills | Pilot | 2026-
 
 FACT — on 2026-10-29 the user changed the positive location option in the Google Ads UI to Presence-only (`people in or regularly in the targeted locations`).
 
-DATA_GAP — Windsor currently returns cached pre-change `PRESENCE_OR_INTEREST` and the connected plan cannot force-refresh. Require fresh system read-back before enable. Do not interpret the stale connector value as proof the UI save failed.
+DATA_GAP — Windsor previously returned cached pre-change `PRESENCE_OR_INTEREST`; require fresh system read-back before enable. Do not interpret stale connector data as proof the UI save failed.
 
 DECISION — keep the local urgent-care campaign Presence-only. Pre-arrival traveler demand is handled separately.
 
@@ -62,9 +72,9 @@ FACT — second Search campaign created in Google Ads on 2026-10-29:
 - Name: `Search | Traveler Care | Beverly Hills | Pre-Arrival | Pilot | 2026-10-29`
 - Status: PAUSED
 - Bidding: Manual CPC
-- Configured daily budget: $20/day; this is configuration only while PAUSED and is **not authorization to launch/spend**
+- Configured daily budget: $20/day; configuration only while PAUSED and **not authorization to launch/spend**
 - EU political ads declaration: No
-- Geography: United States geo target configured
+- Geography: United States
 - Language: English
 - Schedule: 06:00–22:00 daily in the Google Ads account time zone
 
@@ -73,17 +83,21 @@ PAUSED ad groups:
 2. `Hotel Medical Care | Beverly Hills` — `203251601244` — default CPC $3.50.
 3. `Visitor Urgent Care | Beverly Hills` — `200882859839` — default CPC $4.00.
 
-FACT — 36 positive keywords created PAUSED, using Exact/Phrase only across the three intent groups.
+FACT — 36 positive keywords created PAUSED, Exact/Phrase only.
 
-FACT — 32 campaign-level negatives added to control waste/cannibalization and keep certification-sensitive intent out of this campaign for now. Negatives include `near me` to route immediate local intent toward the local campaign, plus emergency/hospital, jobs/training, dental/vet, free/cheap, prescription/refill/pharmacy/medication, telehealth/telemedicine/virtual/online doctor, and unrelated treatment terms.
+FACT — 32 campaign-level negatives added for waste/cannibalization/policy control, including local `near me`, emergency/hospital, jobs/training, dental/vet, free/cheap, prescription/refill/pharmacy/medication, telehealth/telemedicine/virtual/online doctor, and unrelated treatment terms.
 
-DECISION — do not point this campaign at the existing `/hotel-traveler-care` page for the paid pilot because that page contains virtual-care/prescription-refill language that can trigger the same Google healthcare certification policy. Build a dedicated in-person/pre-arrival traveler landing page without prescription/telemedicine claims.
+FACT — user changed traveler campaign `24404901753` positive location option in the Google Ads UI to Presence-only.
 
-IN PROGRESS — branch `growth/traveler-prearrival-landing-20261029` creates `frontend/traveler-medical-care-beverly-hills.html` and adds it to the sitemap. Intended production URL: `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`.
+FACT — policy-safe campaign assets created while PAUSED: four callouts, one structured snippet and four sitelinks. Attempted call asset for `310-467-0101` was rejected because the account has not completed the Call Ads Supplemental Terms/compliance flow.
 
-Landing policy boundary: clinic + approved hotel/mobile visit messaging only; no telemedicine prescribing/refill claims; same-day only `when available`; 911/not-emergency-care language; booking + call CTA; first-party `app.js`; no intentional GA4 injection on this health-intent landing.
+BLOCKER/FOLLOW-UP — issue #110 tracks healthcare/HIPAA-safe call-asset resolution and a mandatory post-certification review of all ads/assets/policies across both Search campaigns. Do not silently skip this after LegitScript/Google healthcare certification.
 
-NEXT for traveler campaign after the new landing is green in production: create PAUSED RSAs + safe campaign assets pointing only to the new landing/other policy-safe URLs; perform geo/policy read-back; keep the campaign PAUSED until a separate launch/budget authorization and all launch gates pass.
+DECISION — do not point this campaign at the existing `/hotel-traveler-care` page for the paid pilot because that page contains virtual-care/prescription-refill language. Dedicated policy-safe production landing is `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`.
+
+FACT — traveler landing is integrated on `dev`, PR #109 CI is green, and the narrow production promotion PR #111 merged to `main`. Actual production `main` build/smoke still requires read-back before the URL is treated as production-validated.
+
+NEXT for traveler campaign after production landing is confirmed green: create three PAUSED RSAs against the production traveler landing, read back geo/policy/serving status, and keep the campaign PAUSED until separate launch/spend authorization and all launch gates pass.
 
 ---
 
@@ -105,7 +119,9 @@ Certification does not remove Google's separate health-sensitive personalization
 
 ## 7. Landing / SEO / local / analytics
 
-Production urgent-care landing: `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`; `main/4` production smoke GREEN.
+Production urgent-care landing: `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`; prior production `main/4` smoke GREEN.
+
+Traveler landing intended/current production path after PR #111: `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`; require new `main` build/smoke evidence before declaring production validation complete.
 
 Search Console property: `sc-domain:drfarahvipurgentcare.com`. Traveler/tourist/hotel query filter returned no rows in the recent connected Search Console pull; treat traveler demand as a paid hypothesis to test, not proven organic volume.
 
@@ -131,18 +147,20 @@ Later paid-growth lane. ChatGPT Ads Manager is installed but prior account disco
 - B-006 exact clinic economics — SOFT.
 - B-007 ChatGPT Ads eligibility/account access — SOFT / WAITING_EXTERNAL.
 - B-008 LegitScript + Google healthcare certification — WAITING_EXTERNAL / HIGH PRIORITY; independent work continues.
-- B-009 Traveler landing production readiness — ACTIVE. New policy-safe landing must pass CI and production promotion before traveler RSAs are created against it.
+- B-009 Traveler landing production readiness — PR #111 MERGED; actual `main` production CI/smoke read-back still required.
+- B-010 Call asset compliance — OPEN / issue #110. Resolve through Google healthcare/HIPAA-safe Communication Features path; do not blindly accept call-recording terms.
+- B-011 Git branch reconciliation — ACTIVE. Complete controlled current `main -> dev` reconciliation and validate reconciled `dev`; after closure, enforce `main`-contained-in-`dev` invariant before normal releases.
 
 ---
 
 ## 10. Exact next actions
 
-1. Require Jenkins `dev/29` green for PR #108 merge SHA; diagnose if it fails.
-2. Finish branch `growth/traveler-prearrival-landing-20261029`: policy-safe traveler landing + sitemap + this handoff; open PR to `dev`, require exact-head CI green, merge.
-3. Promote validated traveler landing to `main` when normal production gates permit; require production CI/smoke evidence before using it as an ad destination.
-4. Then create traveler campaign RSAs and policy-safe assets PAUSED against the new production landing; do not enable campaign or incur spend yet.
-5. Obtain fresh Google Ads read-back for local campaign Presence-only; final policy/readiness review before any local pilot enable.
-6. Dr. Farah continues LegitScript external lane. After approval, complete Google healthcare certification and re-read affected assets.
+1. Complete controlled Git reconciliation branch `chore/git-release-strategy-reconcile-20261029`: preserve validated `dev`, import production Jenkins redirect-smoke fix/history, add `docs/GIT_RELEASE_STRATEGY.md`, update decisions/operating model, and create a two-parent merge with current `main`.
+2. Require exact-head CI green on the reconciliation PR; merge to `dev`; verify branch lineage shows current `main` contained in `dev`; close/supersede raw PR #112.
+3. Verify actual production Jenkins `main` build/smoke for `9cb6b0def117a9f1863a37216fd8460b47a220be`; do not substitute PR #111 success for production success.
+4. Once traveler landing is production-green, create three traveler campaign RSAs PAUSED against the new landing; read back geo/policy/serving state.
+5. Obtain fresh Google Ads read-back for both campaigns' Presence-only setting and final core policy/readiness status.
+6. Dr. Farah continues LegitScript external lane. After approval, complete Google healthcare certification and execute issue #110 post-certification review/call-asset resolution.
 7. Continue GBP, Search Console and GA4 soft lanes in parallel.
 8. First legitimate paid completed visit → Data Manager live import + replay/dedupe + reconciliation; keep `Visit Completed` Secondary until passed.
 9. Start ChatGPT Ads eligibility/account work after final Google launch configuration is stable.
@@ -151,4 +169,4 @@ Later paid-growth lane. ChatGPT Ads Manager is installed but prior account disco
 
 ## 11. Resume protocol
 
-Read this file, then `ROADMAP.md`; check `dev`, `main`, exact Jenkins statuses and live Ads state. Preserve hard spend/privacy/data gates. Continue safe independent lanes instead of waiting on external certification or campaign-data-dependent tests. Never recreate existing campaign/ad objects without live read-back. Update this handoff after every material session and put durable deferred work/blockers in `ROADMAP.md`.
+Read this file, then `ROADMAP.md`; check `dev`, `main`, exact Jenkins statuses, branch lineage and live Ads state. Before any production promotion, enforce `docs/GIT_RELEASE_STRATEGY.md`: if current `main` is not contained in `dev`, reconcile first. Preserve hard spend/privacy/data gates. Continue safe independent lanes instead of waiting on external certification or campaign-data-dependent tests. Never recreate existing campaign/ad objects without live read-back. Update this handoff after every material session and put durable deferred work/blockers in `ROADMAP.md`.

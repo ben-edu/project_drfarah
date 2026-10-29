@@ -32,6 +32,18 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **DECISION:** AI/ChatGPT advertising is a serious paid-channel workstream. Current eligibility/policy must be verified before spend, and any pilot must use finite budget, measurement and stop/scale rules.
 - **DECISION:** `PROJECT_HANDOFF.md` must be updated after material sessions so a new tab/operator can resume without reconstructing the project from chat history.
 
+## Git branch and release strategy — approved 2026-10-29
+
+- **DECISION:** normal repository flow is `feature/fix/docs branch -> dev -> main`. `dev` is the integration/staging branch and `main` is production.
+- **DECISION:** before a normal production promotion, current `main` history must already be contained in `dev`; if `main` has commits absent from `dev`, reconciliation/back-merge takes priority over a new release.
+- **DECISION:** normal production releases should promote the coherent validated `dev` state rather than reconstructing a subset of `dev` on a branch based on `main`.
+- **DECISION:** a direct `main` hotfix is an exception reserved for production recovery/urgent production-only needs. Every such hotfix must be immediately reconciled/back-merged into `dev` and validated there before the exception is considered complete.
+- **DECISION:** selective production promotion/cherry-picking is an exception only when the rest of `dev` is intentionally not production-ready and the selected change is demonstrably independent. Omitted `dev` work must be documented and the resulting `main` must be immediately reconciled back into `dev`.
+- **DECISION:** before any production promotion, inspect exact branch heads, CI status and complete `main...dev` diff; never assume a file tested on `dev` is safe to copy alone without checking dependencies.
+- **DECISION:** `PROJECT_HANDOFF.md` records material branch/release state and any required reconciliation. Deferred production work or unresolved reconciliation belongs in `ROADMAP.md`.
+- **DECISION:** autonomous execution must check branch lineage before production promotion and must repair `main`/`dev` drift before unrelated production releases.
+- **DECISION:** `docs/GIT_RELEASE_STRATEGY.md` is the detailed operating procedure for these rules.
+
 ## Google marketing control — updated 2026-10-28
 
 - **DECISION:** Behnam has administrative access to Google Ads and Google Business Profile and will directly coordinate their operational work from the unified project workspace.
@@ -85,6 +97,8 @@ Current email transport and production evidence are maintained in the live techn
 - Jenkins-only deployment.
 - No secrets in Git — safe examples/references only.
 - Proposed changes use separate branches/PRs; `dev` integrates/stages and `main` represents production.
+- Normal promotion is `dev -> main` after validated integration/staging gates.
+- Production-only hotfixes must be back-merged/reconciled into `dev` immediately.
 
 ## Environment isolation
 

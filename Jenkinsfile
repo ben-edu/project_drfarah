@@ -2601,6 +2601,7 @@ PY
               /
               /about
               /services
+              /urgent-care-beverly-hills
               /book
               /patient-registration
               /privacy
@@ -2698,15 +2699,15 @@ PY
               'about-us/|about' \
               'contact-us/|contact' \
               'prp-prf-exosomes-center/|prp-treatments' \
-              'urgent-care-near-you/|services' \
-              'vip-urgent-care/|services' \
+              'urgent-care-near-you/|urgent-care-beverly-hills' \
+              'vip-urgent-care/|urgent-care-beverly-hills' \
               'faq/|services'; do
               source_path="${mapping%%|*}"
               target_path="${mapping#*|}"
               headers="$(curl -fsS -D - -o /dev/null \
                 "https://${PRODUCTION_FRONTEND_HOST}/${source_path}")"
               response_code="$(printf '%s\n' "$headers" | awk '$1 ~ /^HTTP/ {code=$2} END {print code}')"
-              location="$(printf '%s\n' "$headers" | tr -d '\\r' | awk 'tolower($1)=="location:" {print $2; exit}')"
+              location="$(printf '%s\n' "$headers" | tr -d '\r' | awk 'tolower($1)=="location:" {print $2; exit}')"
               expected="https://${PRODUCTION_FRONTEND_HOST}/${target_path}"
               if [ "$response_code" != '301' ] || [ "$location" != "$expected" ]; then
                 echo "FAIL: ${source_path} -> ${response_code} ${location} (expected 301 ${expected})"
