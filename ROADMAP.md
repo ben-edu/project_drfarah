@@ -6,28 +6,19 @@
 > **Production branch:** `main`  
 > **GitHub:** durable project memory, code, roadmap, handoff, decisions and evidence  
 > **OpenProject:** authoritative for live work-package status, assignee, dates, dependencies and milestones  
-> **Live systems:** authoritative for their own current state
+> **Live systems:** authoritative for their own current state  
+> **Exact resume point:** `PROJECT_HANDOFF.md`
 
-**Operating mode updated 2026-10-28:** Growth Acceleration / parallel execution.
+**Operating mode:** Growth Acceleration / parallel execution.  
+**Roadmap refreshed:** 2026-10-29.
 
 ---
 
 ## 1. Mission
 
-The project is not only a website or measurement implementation. The operating objective is to build and run an integrated growth system that coordinates:
+Build and operate one integrated growth system across Google Ads, Search Console, Google Business Profile, GA4, first-party attribution, completed-visit feedback, conversion-focused website/landing paths, service economics, ChatGPT Ads, traveler/hotel growth, pre-op referrals, physician-led content and Growth Intelligence.
 
-- Google Ads and paid acquisition;
-- Google Search Console / organic search;
-- Google Business Profile / Maps / reputation;
-- GA4 and privacy-safe measurement;
-- first-party attribution and completed-visit conversion feedback;
-- conversion-focused website and landing paths;
-- service economics, capacity and budget decisions;
-- AI/ChatGPT advertising where eligible and economically justified;
-- traveler/hotel, pre-op referral and physician-led content channels;
-- Growth Intelligence, reporting and recurring optimization.
-
-The system must optimize toward business outcomes, especially completed visits and defensible economics, rather than clicks, views or platform-reported conversions alone.
+The business outcome is completed visits and defensible economics, not clicks, impressions or superficial platform conversions alone.
 
 ---
 
@@ -36,7 +27,7 @@ The system must optimize toward business outcomes, especially completed visits a
 When sources disagree, use this order:
 
 1. current verified clinic/business fact from Dr. Farah or authoritative clinic record;
-2. live production/account system for its own state;
+2. live production/account system for its own current state;
 3. approved `docs/DECISIONS.md`;
 4. current `PROJECT_HANDOFF.md` + this roadmap;
 5. stable repository specifications/runbooks/code;
@@ -44,7 +35,6 @@ When sources disagree, use this order:
 7. historical reports/old project sources/chats.
 
 Special authorities:
-
 - website/deployment → GitHub + Jenkins + live environment;
 - Google Ads → live Google Ads account;
 - GBP → live verified profile;
@@ -53,349 +43,320 @@ Special authorities:
 - completed visit → booking/admin platform;
 - work-package metadata → OpenProject.
 
-`PROJECT_HANDOFF.md` is the exact live resume point and must be updated after every material session.
+`PROJECT_HANDOFF.md` is the exact live resume point and must be updated after material sessions.
 
 ---
 
 ## 3. Execution rules — Growth Acceleration mode
 
-1. **Parallel by default.** Independent workstreams proceed simultaneously; a blocker in one lane does not stop safe work in another.
-2. **Production is the destination.** Growth infrastructure that passes staging/quality gates must not remain indefinitely on `dev`. Promote coherent batches through normal Jenkins controls.
-3. **Develop more, build less.** Batch related changes, tests and docs before CI/build. Do not trigger redundant builds, but never trade away correctness or safety.
-4. **One integrated measurement model.** Google Ads, Search Console, GBP, GA4, first-party attribution and the website must be designed as one acquisition system.
-5. **Legacy evidence before cleanup.** Historical campaigns/settings may be archived or removed only after extracting useful performance/configuration evidence. Do not destroy forensic value first.
-6. **Do not relaunch the legacy Smart campaign by default.** The first new paid experiment should use a controllable campaign architecture unless live evidence demonstrates a better alternative.
-7. **Working assumptions are allowed.** Missing exact clinic economics must not stall research/design. Use clearly labeled provisional assumptions derived from market/account evidence, then replace them when authoritative business figures become available.
-8. **Completed visit is the primary business outcome.** Booking/call signals may remain secondary/diagnostic.
-9. **Privacy boundary.** Do not send unnecessary patient PII/PHI, reason for visit, service/clinical context or registration data to marketing platforms.
-10. **AI paid acquisition is a real workstream.** ChatGPT/OpenAI Ads eligibility, policy, targeting, measurement and economics are to be evaluated as a potential paid channel, not left as a side note.
+1. **Parallel by default.** An external blocker in one lane does not stop safe independent work elsewhere.
+2. **Production is the destination.** Validated work should move through normal release controls rather than remain indefinitely on `dev`.
+3. **Develop more, build less.** Batch related changes before CI. Avoid redundant Jenkins jobs.
+4. **Git discipline is mandatory.** Follow `docs/GIT_RELEASE_STRATEGY.md`: normal flow is `feature/fix/docs -> dev -> main`; current `main` must be contained in `dev` before normal promotion; production-only hotfixes/selective releases must be reconciled back into `dev` immediately.
+5. **One measurement model.** Ads, Search Console, GBP, GA4, first-party attribution and website behavior are one acquisition system.
+6. **Legacy evidence before cleanup.** Preserve useful historical evidence before archive/removal.
+7. **Working assumptions are allowed.** Missing exact economics must not stall safe research/design; label provisional assumptions and replace them later.
+8. **Completed visit is the primary business outcome.** Booking/call signals remain secondary/diagnostic.
+9. **Privacy boundary.** Never send unnecessary patient PII/PHI, reason-for-visit or clinical context to marketing platforms.
+10. **Real-data acceptance belongs in the pilot.** Tests that inherently require real traffic/events should not block all setup; hard-gate only production breakage, privacy/security, data integrity, policy prohibition or unauthorized spend.
+11. **No silent defects.** Newly discovered issues must be fixed or durably tracked in roadmap/issues; do not simply work around and forget them.
 
 ---
 
-## 4. Master gates
+## 4. Master gates — current state
 
-| Gate | Meaning | Minimum evidence |
+| Gate | State | Current evidence / next requirement |
 |---|---|---|
-| `G0-CONTROL-PLANE-LIVE` | GitHub can carry continuity | roadmap + handoff + decisions + resume protocol |
-| `G1-BOOKING-HEALTHY` | production booking is operationally safe | booking persists + notification behavior verified |
-| `G2-MEASUREMENT-READY` | acquisition can be measured to business outcome | production attribution + completed-visit import path tested without duplicate/bad data |
-| `G3-GOOGLE-BASELINES-CAPTURED` | current Ads/GBP/SC/GA4 state is known | dated live evidence |
-| `G4-FOUNDATION-CORRECTED` | verified high-confidence issues corrected | before/after evidence |
-| `G5-ECONOMICS-AND-PRIORITIES-READY` | services/budget can be judged economically | service/source baseline or defensible provisional model |
-| `G6-LANDING-PATHS-READY` | paid intent lands on appropriate page/CTA | page + message + tracking acceptance |
-| `G7-FIRST-PAID-EXPERIMENT-LIVE` | controlled paid experiment is spending | campaign spec + budget + measurement + stop/scale rules |
-| `G8-LOCAL-GROWTH-CYCLE-LIVE` | GBP/reputation/local SEO has recurring operating cycle | workflow + baseline + cadence |
-| `G9-AI-PAID-EXPERIMENT-READY` | AI advertising can be tested responsibly | eligibility + campaign hypothesis + measurement + budget/stop rules |
-| `G10-PARTNERSHIP-EXPERIMENTS-LIVE` | traveler/pre-op pilots running | operational/compliance + attribution + pilot spec |
-| `G11-CONTENT-ENGINE-LIVE` | reusable physician-led content system live | first batch published/measured |
-| `G12-GROWTH-INTELLIGENCE-LIVE` | source→completed-visit reporting operational | joins + quality checks + reporting |
-| `G13-REPEATABLE-GROWTH-CYCLE` | scale/modify/stop cadence is routine | recurring reviews tied to outcomes/economics |
-
-Current gate state on 2026-10-28:
-
-- `G1-BOOKING-HEALTHY`: GREEN unless new regression appears.
-- `G2-MEASUREMENT-READY`: RED / IN_PROGRESS.
-- `G3-GOOGLE-BASELINES-CAPTURED`: PARTIAL; Ads/GBP/Search Console baselines exist, GA4 live receipt still needs confirmation.
-- downstream paid-scale gates remain unearned.
+| G0 CONTROL PLANE | GREEN | GitHub roadmap + handoff + decisions + Git release strategy operational |
+| G1 BOOKING HEALTHY | GREEN | booking incident resolved; no new regression |
+| G2 MEASUREMENT READY | PARTIAL / PILOT-READY | Data Manager validate-only HTTP 200; first legitimate completed-visit live import/dedupe/reconciliation remains scale gate |
+| G3 GOOGLE BASELINES | PARTIAL | Ads/GBP/Search Console captured; GA4 live receipt/settings soft validation remains |
+| G4 FOUNDATION CORRECTED | PARTIAL | production landing/deployment path healthy; GBP/GA4/SEO improvement cycle continues |
+| G5 ECONOMICS/PRIORITIES | PROVISIONAL | documented provisional pilot economics; authoritative clinic economics still desired |
+| G6 LANDING PATHS | GREEN for current paid pilots | urgent-care + traveler paid landings production-deployed; traveler production `main/1` green |
+| G7 LOCAL PAID EXPERIMENT | READY EXCEPT POLICY/LAUNCH AUTHORIZATION | local campaign PAUSED; geo live-readback = `PRESENCE`; final ad/asset policy readback + spend authorization before enable |
+| G8 TRAVELER PAID EXPERIMENT | BUILT / PAUSED | campaign, 3 ad groups, 36 positives, 32 negatives, safe assets and 3 RSAs created; geo live-readback = `PRESENCE`; policy readback + spend authorization remain |
+| G9 LOCAL GROWTH CYCLE | IN PROGRESS | GBP baseline exists; cleanup/reputation cadence remains |
+| G10 AI PAID READY | WAITING_EXTERNAL | ChatGPT Ads account/eligibility not yet established |
+| G11 PARTNERSHIP EXPERIMENTS | PLANNED / PARTIAL PREP | traveler/hotel and pre-op referral engines remain roadmap lanes |
+| G12 CONTENT ENGINE | PLANNED | physician-led content system follows query/partner evidence |
+| G13 GROWTH INTELLIGENCE / REPEATABLE CYCLE | PLANNED / PARTIAL FOUNDATION | source→appointment exists; completed-visit/cost/economics loop still maturing |
 
 ---
 
-# Phase A — Immediate Production Measurement Completion
+# Phase A — Measurement completion
 
-**Objective:** move the already-built measurement stack from development to verified production as one coherent batch.
+### A1 — Data Manager technical acceptance
 
-### A1 — Validate current `dev` runtime
+**DONE.** Real Google Data Manager `validateOnly=true` request returned HTTP 200 after API/auth/runtime ADC remediation. Do not fabricate a click ID or conversion.
 
-Current `dev` head: `c976a56836ca4160684be2b190d6aa29e7244032`; Jenkins `dev/24` is green.
+### A2 — Production measurement promotion
 
-Validate, without unnecessary new application builds where possible:
+**DONE.** Compatible Data Manager/attribution runtime batch was promoted to production through PR #104; subsequent production smoke recovery was completed through PR #105.
 
-- service-account credential readability and ADC auth;
-- Google Data Manager API reachability;
-- destination/customer/conversion-action acceptance in `validateOnly` mode;
-- no click-ID or patient-data leakage to logs/errors;
-- attribution persistence and `visit_completed` construction.
+### A3 — First legitimate completed-visit acceptance
 
-### A2 — Promote coherent measurement batch to `main`
+**IN PILOT / SCALE GATE.** On the first legitimate completed appointment carrying GCLID/WBRAID/GBRAID:
+1. validate exact eligible row;
+2. send one controlled `visit_completed` with explicit recording authorization;
+3. replay the same deterministic transaction ID to verify dedupe/idempotency;
+4. reconcile Google Ads to the internal completed appointment;
+5. keep `Visit Completed` Secondary until trusted.
 
-After A1 passes, promote the complete compatible batch rather than leaving it on `dev`:
-
-- Google Data Manager payload preparation;
-- guarded Data Manager client;
-- credential mount/readiness behavior;
-- any required documentation/runbook changes.
-
-Production deployment must remain Jenkins-controlled.
-
-### A3 — Production smoke validation
-
-Verify on production:
-
-- real landing URL with safe test campaign parameters preserves attribution to booking;
-- production booking remains healthy;
-- selected-page GA4 behavior matches approved privacy architecture;
-- excluded sensitive pages do not receive unintended analytics measurement;
-- conversion import remains guarded until controlled recording approval.
-
-### A4 — First controlled completed-visit import
-
-When one legitimate completed appointment has an eligible real Google click ID:
-
-1. validate the exact real row with recording disabled;
-2. send one controlled `visit_completed` conversion with explicit recording authorization;
-3. verify dedupe/idempotency by replaying the same transaction ID safely;
-4. reconcile Google Ads against the internal completed appointment;
-5. keep the conversion action Secondary until the end-to-end path is trusted.
-
-**Gate:** `G2-MEASUREMENT-READY`.
+This does not block a small controlled pilot once its own launch gates are satisfied.
 
 ---
 
-# Phase B — Google Ads Forensics, Cleanup and New Campaign Architecture
+# Phase B — Google Ads growth system
 
-This phase proceeds in parallel with Phase A.
+## B1 — Legacy evidence / cleanup
 
-### B1 — Preserve/extract legacy campaign evidence before deletion
+- Legacy Smart campaign `22552983079` remains PAUSED; preserve forensic value and do not relaunch as primary acquisition.
+- Google-managed Local Services campaign `23637947414` must not be altered without a specific decision; live system state is authoritative.
 
-Historical Smart campaign: `Urgent Care Medical Center`, paused, June 2025–February 2026, approximately 258,541 impressions, 5,590 clicks, $4,494.86 spend and 16 platform-reported conversions.
+## B2 — Local urgent-care Search pilot
 
-Extract all useful recoverable evidence before archive/deletion decisions:
+Campaign `24414014329` — `Search | Urgent Care | Beverly Hills | Pilot | 2026-10-28`.
 
-- search/query themes where available;
-- geography;
-- device;
-- day/hour;
-- landing destinations;
-- ad/creative/message history;
-- conversion actions and goal configuration;
-- location assets/GBP linkage;
-- automated settings/rules;
-- spend and outcome trends;
-- policy/disapproval history where available.
+Current state:
+- PAUSED; no authorized spend;
+- Manual CPC;
+- provisional configured budget $40/day;
+- five-mile Beverly Hills targeting and clinic-hours schedule;
+- Exact/Phrase positive keywords + negatives; no Broad;
+- three PAUSED ad groups and three PAUSED RSAs;
+- production landing `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`;
+- live Windsor campaign read on 2026-10-29 confirms positive geo mode `PRESENCE`.
 
-Do not assume platform conversions equal completed visits.
+Ad groups:
+1. `Urgent Care | Beverly Hills` — `196894367450` — $4.50 default CPC.
+2. `Urgent Care | Near Me` — `204328258769` — $4.50 default CPC.
+3. `Walk-In | Same-Day` — `199388744537` — $4.00 default CPC.
 
-### B2 — Decide legacy cleanup
+RSAs:
+- `829832740743`
+- `829881874987`
+- `829963008380`
 
-After B1:
+Keyword Planner evidence on 2026-10-29:
+- `urgent care beverly hills`: ~1,000 average monthly searches, MEDIUM competition, historical average CPC ~$3.56, top-of-page range roughly $1.54–$7.58;
+- this supports the current $4–$4.50 initial Manual CPC range directionally; do not change bids from planner data alone.
 
-- keep only objects that still provide useful history/reference or are needed for account integrity;
-- pause/archive/remove obsolete assets/settings when safe;
-- do not reactivate the old Smart campaign as the primary relaunch vehicle by default.
+Next: obtain fresh ad/asset policy readback when the connector surfaces it; then controlled launch only with explicit spend authorization and existing finite guardrails. Review search terms early and optimize against completed visits/economics rather than CTR alone.
 
-### B3 — Build the new first Google Ads campaign architecture
+## B3 — Traveler / pre-arrival Search pilot
 
-Default hypothesis: tightly controlled Search campaign(s), not Smart, subject to live account/policy evidence.
+Campaign `24404901753` — `Search | Traveler Care | Beverly Hills | Pre-Arrival | Pilot | 2026-10-29`.
 
-Before launch define:
+Current state:
+- PAUSED; no authorized spend;
+- Manual CPC;
+- configured $20/day while PAUSED; configuration is not spend authorization;
+- United States geo; English; 06:00–22:00 daily account-time schedule;
+- EU political-ad declaration: No;
+- live Windsor campaign read confirms `PRESENCE`;
+- 36 Exact/Phrase positives;
+- 32 campaign negatives for overlap/waste/policy control;
+- dedicated production landing `https://drfarahvipurgentcare.com/traveler-medical-care-beverly-hills`;
+- production `main/1` for traveler release is green.
 
-- high-intent service/query clusters;
-- campaign/ad-group structure;
-- exact/phrase/broad-match role based on data and bidding maturity;
-- comprehensive negative-keyword system;
-- Beverly Hills / relevant service-area geography and location option settings;
-- device/day-hour logic;
-- ad copy and assets;
-- landing page per intent cluster;
-- primary/secondary conversion roles;
-- bidding strategy appropriate to conversion-volume maturity;
-- learning budget;
-- stop / modify / scale thresholds.
+PAUSED ad groups:
+1. `Traveler Doctor | Beverly Hills` — `200882856919` — $3.50 default CPC.
+2. `Hotel Medical Care | Beverly Hills` — `203251601244` — $3.50 default CPC.
+3. `Visitor Urgent Care | Beverly Hills` — `200882859839` — $4.00 default CPC.
 
-### B4 — Keyword and demand research
+PAUSED RSAs:
+- `829861283229`
+- `829861321812`
+- `829991120837`
 
-Use together:
+Policy-safe campaign assets already created: four callouts, one structured snippet and four sitelinks. Call asset remains unresolved under issue #110.
 
-- historical Google Ads evidence;
-- Google Search Console query data;
-- current Keyword Planner/live Google Ads planning data where available;
-- local competitor/query evidence;
-- service economics and capacity;
-- landing-page relevance.
+Keyword Planner evidence:
+- the ultra-specific traveler + Beverly Hills seeds returned no reportable monthly volume/CPC;
+- `hotel doctor` and `doctor at hotel`: ~140 average monthly searches each across the US, LOW competition, historical average CPC ~$2.44;
+- `doctor beverly hills`: ~260 searches but historical average CPC ~$27.01;
+- `concierge doctor beverly hills`: ~590 searches and average CPC ~$10.72;
+- `medical clinic beverly hills`: ~170 searches, LOW competition, average CPC ~$4.23.
 
-The objective is not the largest keyword list. It is maximum useful intent coverage with controlled waste.
+DECISION — do not immediately broaden the traveler pilot into expensive generic `doctor beverly hills` / concierge traffic. Whole-US Presence targeting plus generic `hotel doctor` could also create nationwide waste without explicit Beverly Hills intent. Start precise; use real search-term/completed-visit evidence to decide controlled expansion.
 
-### B5 — Pilot budget model
+## B4 — Google healthcare certification / policy remediation
 
-Until exact clinic economics are supplied, use provisional assumptions clearly labeled as such. Build the pilot budget from:
+FACT — `Clinic Services` sitelink asset `434419668405` pointing to `/services` is disapproved for `PRESCRIPTION_DRUG_SALE` with missing US certification and limited under `HEALTH_IN_PERSONALIZED_ADS`.
 
-- forecast CPC/query volume;
-- expected click→booking rate range;
-- expected booking→completed-visit rate range;
-- plausible completed-visit contribution range;
-- minimum sample needed to make a decision;
-- hard spend ceiling and early-stop triggers.
+DECISION — do not delete/hide the legitimate telemedicine/prescription-refill service merely to bypass policy.
 
-Replace assumptions with authoritative clinic revenue/cost/capacity data when available; do not block campaign design waiting for perfect figures.
+Required sequence:
+1. Dr. Farah completes LegitScript Healthcare Merchant Certification for `drfarahvipurgentcare.com`.
+2. After approval, complete Google Ads healthcare certification for child account `652-510-3588`, United States, telemedicine/prescription-drug services.
+3. Re-read affected asset plus all ads/assets across both Search campaigns.
+4. Preserve separate health-sensitive personalization restrictions; certification is not permission for prohibited health remarketing/Customer Match workarounds.
 
-**Gate:** `G5` + `G6` → `G7-FIRST-PAID-EXPERIMENT-LIVE`.
+Current standard LegitScript pricing verified 2026-10-29: $975 non-refundable application fee + $2,150 annual certification after approval; standard first-year total $3,125.
 
----
+Issue #106 tracks this external lane. Do not request/store portal passwords, payment details, PHI or patient records.
 
-# Phase C — Google Search Console, SEO and Landing-Page Growth
+Site-readiness remains: replace draft `frontend/terms.html` and placeholder `frontend/notice-of-privacy-practices.html` with clinic/legal-approved content before final certification readiness.
 
-Proceed in parallel with A/B.
+## B5 — Call asset / mandatory post-certification review
 
-Current Search Console property: `sc-domain:drfarahvipurgentcare.com`.
+Issue #110 tracks:
+- healthcare/HIPAA-safe resolution of Google Call Ads Supplemental Terms / Communication Features;
+- Google Support exclusion from monitoring/recording if the clinic/legal determination requires it;
+- retry of the call asset only after that path is resolved;
+- mandatory full post-certification review of both campaigns, ads, assets, policies and landing destinations.
 
-Recent live 90-day baseline captured on 2026-10-28: approximately 32.3K impressions, 308 clicks, CTR ~0.95%, average position ~11.8.
+Do not blindly accept recording terms. Call recording stays off unless clinic/legal explicitly approves.
 
-### C1 — Query opportunity map
-
-Prioritize:
-
-- high-intent local urgent-care queries near positions 4–20;
-- brand queries needing protection/clarity;
-- Beverly Hills / near-me themes;
-- commercially relevant service queries;
-- pre-op/traveler/VIP opportunities;
-- weak or irrelevant query clusters that should not drive paid spend.
-
-### C2 — Technical/indexing review
-
-Continue verified fixes for:
-
-- sitemap/indexing;
-- canonical/redirect behavior;
-- title/meta/content alignment;
-- schema/structured data where justified;
-- mobile/performance/accessibility issues with acquisition impact.
-
-`/book` and `/patient-registration` remain `noindex` and excluded from sitemap unless strategy changes explicitly.
-
-### C3 — Paid/organic landing map
-
-For each priority intent, decide whether to:
-
-- improve an existing page;
-- create a dedicated landing page;
-- route to a current service page;
-- avoid targeting until content/operational readiness exists.
-
-Each page must have one intended audience, primary CTA, tracking plan and acceptance metric.
-
-**Gate:** `G6-LANDING-PATHS-READY`.
+Current connector limitation: campaign-level reads work, but current ad/asset policy reads may return zero rows even with `include_inactive`; forced refresh is unavailable on the connected TRIAL plan. Zero rows are a DATA_GAP, not approval.
 
 ---
 
-# Phase D — Google Business Profile, Maps and Reputation Optimization
+# Phase C — Search Console / SEO / landing growth
 
-Current profile: Dr Farah VIP Urgent Care; primary category `Urgent care center`; baseline rating 5.0 / 109 reviews at captured baseline.
+Search Console property: `sc-domain:drfarahvipurgentcare.com`.
 
-Recent 90-day live data captured 2026-10-28: approximately 120 website clicks and 123 call clicks.
+## C1 — Current 28-day opportunities
 
-### D1 — Core factual accuracy
+Recent first-party Search Console evidence on 2026-10-29:
+- `dr farah vip urgent care`: 8 clicks / 57 impressions / CTR 14.04% / avg position 2.86;
+- `dr farah clinic`: 4 / 5 / 80% / 1.2;
+- `vip urgent care`: 2 / 95 / 2.11% / 1.16 — notable CTR opportunity despite top position;
+- `beverly hills urgent care`: 25 impressions / position 11.68 / 0 clicks;
+- `urgent care beverly hills`: 40 impressions / position 11.1 / 0 clicks;
+- `urgent care near me`: 120 impressions / position 9.73 / 0 clicks;
+- `urgent care`: 40 impressions / position 12.38 / 0 clicks;
+- `urgent care beverly hills wilshire`: 39 impressions / position 21.26 / 0 clicks;
+- `medical clearance for surgery near me`: 30 impressions / position 3.43 / 0 clicks;
+- `medical clearance near me`: 9 impressions / position 1.56 / 0 clicks;
+- `private urgent care`: 17 impressions / position 1.0 / 0 clicks;
+- `fast uti care`: 27 impressions / position 6.93 / 0 clicks;
+- `best executive physical in beverly hills`: 9 impressions / position 6.33 / 0 clicks.
 
-Validate and correct:
+Priority order:
+1. improve urgent-care title/meta/on-page alignment and internal linking for near-page-one Beverly Hills/near-me intent;
+2. improve Pre-Op snippet/on-page alignment for `medical clearance for surgery` because ranking is already strong but CTR is zero in the current sample;
+3. inspect brand/VIP snippets where rank is high but CTR is weak;
+4. use search data to inform later service/content work rather than optimizing every noisy one-impression query.
 
-- regular/special hours;
-- address/map pin;
-- phone;
-- website/booking links;
-- primary/secondary categories;
-- service-area representation.
+## C2 — Production indexing model
 
-### D2 — Service-catalog optimization
+Source HTML intentionally uses `noindex,nofollow,noarchive` on general static pages for staging safety. `scripts/prepare-production-frontend.sh` removes noindex in production and swaps in `robots.production.txt`:
 
-Do not bulk-delete merely because the catalogue is large. Evaluate each relevant service for:
+- `User-agent: *`
+- `Allow: /`
+- production sitemap declared.
 
-- factual availability;
-- demand;
-- economics;
-- clarity/duplication;
-- strategic priority;
-- website/landing alignment;
-- claims/pricing accuracy;
-- Google policy.
+Do not remove the staging noindex pattern from source as an SEO “fix”; production crawlability is assembled and tested during deployment.
 
-### D3 — Reputation operating system
+`/book` and `/patient-registration` remain noindex and excluded from sitemap unless strategy changes explicitly.
 
-Establish privacy-safe workflow for:
+## C3 — Current SEO implementation batch
 
-- genuine neutral review requests;
-- response cadence;
-- response templates/guardrails;
-- issue escalation;
-- review-theme analysis feeding website/Ads/content.
+Planned/active batch from 2026-10-29 evidence:
+- tighten urgent-care title/meta and H1/lead toward Beverly Hills urgent-care intent without unsupported claims;
+- tighten Pre-Op title/meta/H1 toward medical clearance for surgery;
+- preserve current factual hours/prices/medical disclaimers;
+- after release, monitor 28-day Search Console movement rather than expecting immediate ranking changes.
 
-### D4 — Maps/local competitor loop
+## C4 — IV / regenerative / weight-management search lanes
 
-Track relevant Beverly Hills competitors by visibility, category, reviews, hours, messaging and booking experience; use the evidence to improve GBP/site/Ads, not to copy blindly.
+IV local terms currently rank poorly (~positions 45–70+), e.g. `iv therapy beverly hills`, `iv drip(s) beverly hills`. PRP local service terms also rank poorly while informational cost/comparison content performs materially better. Weight-management terms currently rank poorly (~48–62).
 
-**Gate:** `G8-LOCAL-GROWTH-CYCLE-LIVE`.
+These are longer-term content/landing opportunities, not faster wins than urgent care and Pre-Op. Any healthcare/prescription-related paid use remains subject to policy/certification.
 
 ---
 
-# Phase E — GA4 and Cross-Channel Measurement Quality
+# Phase D — Website image quality / performance
 
-GA4 production property: `489069776`; Web Stream `11211773871`; Measurement ID `G-D58FTMF05S`.
+Issue #114 is the durable image-quality work item.
 
-### E1 — Confirm live data receipt/settings
+Current approved native dimensions:
+- `home-hero-doctor.webp`: 800×450 — limited for full-screen/retina desktop hero;
+- `dr-farah-portrait.webp`: 520×650 — potentially adequate at moderate width; verify visually;
+- `dr-farah-clinic.webp`: 800×533;
+- `clinic-exterior.webp`: 480×320 — low for large feature use;
+- `service-iv-treatment.webp`: 500×281 — known P0 quality defect on Services/IV large hero;
+- traveler/pre-op/virtual service assets: 800×450.
 
-Verify:
+Rules:
+- do not fabricate Dr. Farah/clinic imagery;
+- do not restore retired generic assets merely because they are larger;
+- do not claim naive upscaling restores lost detail;
+- obtain clinic-approved high-resolution originals, with IV first, then homepage hero and clinic exterior;
+- after originals arrive, produce responsive derivatives, correct intrinsic dimensions, `srcset`/`sizes` where useful, high-priority LCP behavior for hero, lazy/deferred loading below fold, and desktop/mobile visual QA.
 
-- Realtime/DebugView safe controlled event;
+This work is independent of LegitScript. Source-image replacement waits only on the real high-resolution originals.
+
+---
+
+# Phase E — Google Business Profile / Maps / reputation
+
+Current GBP location `locations/6719840585856592244`; primary category `Urgent care center`; captured baseline 5.0 / 109 reviews.
+
+E1 validate regular/special hours, address/map pin, phone, website/booking links and categories.
+
+E2 evaluate service catalogue selectively for factual availability, duplication, strategic priority, claims/pricing and website alignment; do not bulk-delete merely because the list is large.
+
+E3 establish privacy-safe neutral review request/response cadence and issue escalation.
+
+E4 maintain factual local competitor loop based on visibility, category, reviews, hours, messaging and booking experience.
+
+---
+
+# Phase F — GA4 / cross-channel measurement quality
+
+GA4 production property `489069776`; Web Stream `11211773871`; Measurement ID `G-D58FTMF05S`.
+
+Soft validation remains:
+- safe Realtime/DebugView controlled event on allowlisted low-risk page;
 - timezone/currency;
-- Enhanced Measurement settings;
-- selected-page allowlist behavior;
+- Enhanced Measurement;
 - consent behavior;
-- no unintended page/query/title/referrer/clinical leakage.
+- selected-page allowlist;
+- excluded health-intent/sensitive-page verification.
 
-### E2 — Keep roles clear
-
+Roles stay distinct:
 - GA4 = behavioral/diagnostic analysis on approved low-risk surfaces;
 - first-party database = source/click→appointment linkage;
-- Google Ads offline conversion = advertising optimization feedback;
-- Search Console = organic Google search truth;
+- Google Ads offline conversion = optimization feedback;
+- Search Console = organic search truth;
 - GBP = Maps/profile truth.
-
-Do not duplicate measurement simply because multiple Google tools can collect something similar.
 
 ---
 
-# Phase F — First Paid Experiment and Optimization Cycle
+# Phase G — Controlled paid experiment / optimization cycle
 
-Launch only when booking is healthy, the relevant landing path is ready and the completed-visit feedback path is sufficiently trusted.
+Launch only when the campaign-specific minimum gates are satisfied.
 
-### F1 — Controlled launch
-
-The first experiment must have:
-
+Each pilot needs:
 - named hypothesis;
-- exact target intent/geography;
-- finite learning budget;
+- exact intent/geography;
+- finite learning budget and hard spend ceiling;
 - controlled keywords/match types/negatives;
-- relevant landing page;
-- `Visit Completed` business-outcome linkage;
+- relevant production landing page;
+- completed-visit linkage;
 - secondary booking/call diagnostics;
 - stop/modify/scale thresholds;
 - review date.
 
-### F2 — Search-term waste control
+Search-term waste control begins early. Scale only on completed visits, defensible CAC/contribution, capacity and measurement confidence.
 
-Early review cadence must aggressively identify irrelevant intent and add negatives before scaling.
-
-### F3 — Scale only on business evidence
-
-No channel is scaled only because CTR, clicks, leads or platform conversions increased. Prefer completed visits, defensible CAC/contribution, capacity and measurement confidence.
-
-**Gate:** `G7-FIRST-PAID-EXPERIMENT-LIVE`.
+Do not enable either current Search campaign until explicit launch/spend authorization is present and final core policy/readiness review is acceptable.
 
 ---
 
-# Phase G — Stable Offline Conversion Operations
+# Phase H — Stable offline conversion operations
 
-After the first controlled real conversion succeeds, convert the manual path into a durable background process.
-
-Required behavior:
-
+After the first controlled real conversion succeeds:
 - identify eligible new `visit_completed` rows with click IDs;
 - record import state/idempotency;
 - batch safely;
 - retry transient failures with bounded backoff;
 - quarantine permanent/schema/auth failures;
 - never print click IDs or patient data in routine logs;
-- expose health/metrics without sensitive payloads;
+- expose non-sensitive health/metrics;
 - alert on sustained failures;
 - reconcile imports to Google Ads periodically.
 
@@ -403,41 +364,27 @@ This is operational automation, not autonomous marketing spend.
 
 ---
 
-# Phase H — AI / ChatGPT Ads Paid Channel
+# Phase I — AI / ChatGPT Ads paid channel
 
-Treat this as a current growth workstream.
+Treat as a real future paid-acquisition workstream.
 
-### H1 — Eligibility and policy verification
+I1 verify current healthcare eligibility, policy and account access before spend.
 
-Verify current account/healthcare eligibility and applicable policy before spend. Do not assume access or approval.
+I2 if eligible, define incremental hypothesis versus Google Search, including local care discovery, traveler/VIP use cases and other policy-permitted intents.
 
-### H2 — Channel hypothesis
+I3 use dedicated source/UTM/first-party attribution and completed-visit outcome where technically/policy-compliantly possible.
 
-If eligible, determine where ChatGPT Ads can add incremental value versus Google Search, including:
+I4 create only a finite-budget pilot with explicit stop/scale rules.
 
-- high-intent local care discovery;
-- traveler/VIP use cases;
-- pre-op/referral-adjacent discovery where policy permits;
-- brand/context discovery.
-
-### H3 — Measurement and landing path
-
-Use dedicated source/UTM/partner-style attribution and the same completed-visit business outcome where technically and policy-compliantly possible.
-
-### H4 — Controlled pilot
-
-Create a finite-budget pilot with explicit stop/scale rules. Do not treat AI advertising as profitable merely because it is new.
-
-**Gate:** `G9-AI-PAID-EXPERIMENT-READY`.
+Current facts: ChatGPT Ads Manager is installed; prior account discovery found no accessible clinic ad account; Windsor exposes `openai_ads` but no account is connected. This lane may proceed once final Google launch configuration is stable and need not wait for long-term Google learning where independent.
 
 ---
 
-# Phase I — Service Economics and Capacity
+# Phase J — Service economics and capacity
 
 Work in parallel; do not wait for perfect accounting.
 
 For each priority service estimate/collect:
-
 - completed visit count;
 - collected revenue;
 - variable/consumable cost;
@@ -450,18 +397,15 @@ For each priority service estimate/collect:
 
 Rank services by demand × contribution × capacity × differentiation × acquisition efficiency × strategic value.
 
-**Gate:** `G5-ECONOMICS-AND-PRIORITIES-READY`.
-
 ---
 
-# Phase J — Traveler / Hotel / VIP Growth
+# Phase K — Traveler / hotel / VIP partnership growth
 
 Preserve sequence:
-
 - traveler baseline;
 - existing hotel/concierge sources;
 - target list;
-- service scope/response model;
+- accurate service scope/response model;
 - partner interviews;
 - partner kit;
 - attribution;
@@ -470,12 +414,13 @@ Preserve sequence:
 
 No unsupported 24/7, mobile or response-time promise.
 
+The paid traveler Search pilot in Phase B is a separate acquisition experiment and can inform this partnership lane, but does not replace it.
+
 ---
 
-# Phase K — Pre-Op Referral Engine
+# Phase L — Pre-Op referral engine
 
 Preserve sequence:
-
 - current baseline;
 - economics/capacity;
 - value proposition;
@@ -488,9 +433,11 @@ Preserve sequence:
 
 No per-patient/referral compensation arrangement without appropriate compliance review.
 
+Search Console already shows high organic visibility for medical-clearance queries; use this evidence to improve the patient-facing page while the B2B referral engine is developed separately.
+
 ---
 
-# Phase L — Physician-Led Content / Creative
+# Phase M — Physician-led content / creative
 
 Content priorities must be fed by Search Console, Ads search terms, GBP/reviews, traveler/pre-op questions, website friction and service economics.
 
@@ -498,10 +445,9 @@ Build reusable long-form + short-form + website + paid creative derivatives. Mea
 
 ---
 
-# Phase M — Growth Intelligence and Recurring Operating Cycle
+# Phase N — Growth Intelligence and recurring operating cycle
 
-Technical/business sequence:
-
+Sequence:
 1. stable source taxonomy;
 2. source/session capture;
 3. booking linkage;
@@ -517,11 +463,9 @@ Technical/business sequence:
 
 The Growth Intelligence layer is not an EHR and must not become one.
 
-**Gate:** `G12-GROWTH-INTELLIGENCE-LIVE` → `G13-REPEATABLE-GROWTH-CYCLE`.
-
 ---
 
-## 6. Preserved OpenProject work-package identifiers
+## 5. Preserved OpenProject work-package identifiers
 
 ### BG-00
 `BG00-01`, `BG00-02`, `BG00-03`, `BG00-04`, `BG00-05`, `BG00-06`, `M0`, `M1`, `M2`, `M3`, `M4`.
@@ -554,69 +498,86 @@ BG-10 exact child identifiers must be verified from OpenProject when needed; rep
 
 ---
 
-## 7. Current parallel priority queue — 2026-10-28
+## 6. Durable blockers / tracked issues
+
+- B-001 Booking/Brevo — CLOSED.
+- B-002 Data Manager — SCALE GATE only: first legitimate live completed-visit import + replay/dedupe + reconciliation.
+- B-003 Local paid destination — CLOSED.
+- B-004 Local campaign geo — CLOSED with live connector readback `PRESENCE`.
+- B-005 GA4 live receipt/settings — SOFT.
+- B-006 authoritative clinic economics/capacity — SOFT.
+- B-007 ChatGPT Ads eligibility/account access — SOFT / WAITING_EXTERNAL.
+- B-008 LegitScript + Google healthcare certification — WAITING_EXTERNAL / HIGH PRIORITY; issue #106; independent work continues.
+- B-009 Traveler landing production readiness — CLOSED; production `main/1` green.
+- B-010 Call asset compliance + post-certification campaign review — OPEN; issue #110.
+- B-011 Git branch reconciliation — CLOSED; `main` is ancestor of current `dev`; `dev/31` SUCCESS on `085df28a6488587bae94bd1400553b8750091555`.
+- B-012 Image-quality remediation — OPEN; issue #114; real high-resolution clinic originals required for material sharpness gains on IV/hero/exterior.
+- B-013 Ad/asset policy readback — DATA_GAP; current Windsor ad/asset-level reads return zero rows while campaign-level reads work; do not treat as approval.
+
+---
+
+## 7. Current parallel priority queue — 2026-10-29
 
 | Priority | Lane | Item | State / next evidence |
 |---:|---|---|---|
-| 0 | Production measurement | Validate Data Manager auth/destination using current green `dev` artifact, then prepare one coherent `main` promotion | IN_PROGRESS |
-| 1 | Production measurement | Production attribution/GA4/booking smoke validation after promotion | READY after P0 |
-| 2 | Google Ads | Extract legacy Smart-campaign forensic value before cleanup | IN_PROGRESS |
-| 3 | Google Ads | Build new Search campaign architecture, keyword/negative/geo/ad/landing/budget spec | READY NOW |
-| 4 | Search/website | Build Search Console opportunity + landing-page map | READY NOW |
-| 5 | GBP/local | Audit/correct core GBP + service/reputation/local strategy | READY NOW |
-| 6 | GA4 | Confirm live receipt/settings and close behavioral baseline gap | IN_PROGRESS |
-| 7 | Economics | Create provisional service/economics model; replace assumptions as clinic figures arrive | READY NOW |
-| 8 | Paid pilot | Create paused/ready campaign and launch spec; spend only after relevant gates | READY for design |
-| 9 | Real conversion | First legitimate click→booking→completed visit→Google Ads import | WAITING for eligible real event after campaign traffic exists |
-| 10 | Conversion operations | Add durable import ledger/scheduler/retry/monitoring after controlled real import | READY for design; recording activation waits on #9 |
-| 11 | AI Ads | Verify current eligibility/policy and design channel pilot | READY NOW |
-| 12 | Local/reputation | Establish recurring review/GBP/Maps cycle | READY NOW |
-| 13 | Traveler/pre-op/content | Advance independent research/baselines in parallel | READY where inputs exist |
-| 14 | Growth Intelligence | Cross-channel dashboard/weekly decision loop | follows stable source/outcome data but design may proceed |
+| 0 | Website/Search | Ship evidence-led urgent-care + Pre-Op SEO snippet/on-page improvements as one CI batch | READY / ACTIVE |
+| 1 | Google Ads | Re-read policy/review status of all six RSAs + campaign assets when live reporting surfaces them | DATA_GAP / RETRY WITHOUT BLOCKING OTHER LANES |
+| 2 | Google Ads | Resolve healthcare-safe call asset path under issue #110 | WAITING for clinic legal/HIPAA determination + Google Support path |
+| 3 | Healthcare certification | Dr. Farah completes LegitScript; then Google healthcare certification | WAITING_EXTERNAL / issue #106 |
+| 4 | Image quality | Obtain high-resolution approved IV, homepage hero and clinic exterior originals; then responsive optimization | WAITING for source files / issue #114 |
+| 5 | Search/SEO | Monitor urgent-care + Pre-Op query movement and continue high-intent opportunity map | READY NOW |
+| 6 | GBP/local | Audit factual profile/service/reputation opportunities | READY NOW |
+| 7 | GA4 | Close safe live receipt/settings baseline gaps | READY NOW |
+| 8 | Economics | Replace provisional assumptions with clinic economics/capacity as available | READY where inputs exist |
+| 9 | Paid pilot | Final readiness review + explicit spend decision for local and/or traveler campaign | AFTER policy readback; no automatic enable |
+| 10 | Real conversion | First legitimate click→booking→completed visit→Google Ads import | IN-PILOT acceptance after traffic exists |
+| 11 | AI Ads | Verify eligibility/account and design channel pilot | READY after final Google launch configuration stable |
+| 12 | Traveler/pre-op partnerships/content | Advance independent baselines, referral/partner materials and query-led content | READY where inputs exist |
+| 13 | Growth Intelligence | Cross-channel dashboard/weekly decision loop | design can continue; full loop follows stable outcome/cost data |
 
 ---
 
 ## 8. What must not block progress
 
 Do not stop all growth work because:
-
-- one API validation is waiting;
+- LegitScript is waiting on Dr. Farah;
+- one Google policy/reporting field is delayed;
 - exact clinic margin is not yet available;
-- the first real paid conversion has not happened yet;
-- one Google tool has an access/reporting gap;
-- an AI ad channel is awaiting eligibility review.
+- the first real paid conversion has not happened;
+- a high-resolution image source has not yet arrived;
+- an AI ad channel is awaiting eligibility/account access.
 
-Instead, document the blocker, preserve the restart condition and continue the highest-value independent lane.
+Document the dependency, preserve the restart condition and continue the highest-value safe independent lane.
 
 ---
 
-## 9. What must still block spend/scale
+## 9. What must still block launch/spend/scale
 
-Do not materially scale paid traffic when any of these are true:
-
+Do not enable or materially scale paid traffic when any of these are true:
 - production booking is unhealthy;
 - attribution is known broken;
 - landing intent is materially mismatched;
+- campaign/ad policy prohibits delivery;
 - conversion recording is duplicating/corrupting outcomes;
-- campaign economics are clearly unacceptable;
-- policy/eligibility forbids the planned targeting/creative;
-- clinic capacity cannot absorb the expected demand.
+- the exact paid launch/spend action is not authorized;
+- clinic capacity cannot absorb expected demand;
+- economics are clearly unacceptable.
 
-A small controlled learning experiment may proceed once its own minimum safety/measurement dependencies are satisfied; scale requires stronger evidence.
+A small controlled learning experiment can proceed once its own minimum safety/measurement/policy dependencies are satisfied; scale requires stronger completed-visit evidence.
 
 ---
 
 ## 10. Resume protocol
 
 Every substantive session:
-
 1. read `PROJECT_HANDOFF.md`;
-2. read this current priority queue and relevant lane;
-3. check live systems for facts that may have changed;
-4. re-check HARD blockers;
-5. execute the highest-value eligible work in parallel lanes;
-6. batch related code changes before CI/build;
-7. record material evidence/results in GitHub;
-8. update `PROJECT_HANDOFF.md` before ending.
+2. read this priority queue and relevant lane;
+3. check exact `dev`/`main` heads, lineage and Jenkins state before Git/release work;
+4. check live systems for facts that may have changed;
+5. re-check HARD blockers;
+6. execute the highest-value eligible work in parallel lanes;
+7. batch related code changes before CI/build;
+8. record material evidence/results in GitHub/issues;
+9. update `PROJECT_HANDOFF.md` before ending.
 
 No material project result should exist only in chat.

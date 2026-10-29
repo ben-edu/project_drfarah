@@ -82,6 +82,9 @@ Entry point and reading order.
 ### `docs/DECISIONS.md`
 Approved decisions only.
 
+### `docs/GIT_RELEASE_STRATEGY.md`
+Approved detailed branch/release procedure. Defines the normal `feature/fix/docs -> dev -> main` flow, production-hotfix exception, immediate back-merge requirement and branch-lineage checks.
+
 ### `docs/BUSINESS_GROWTH_SOURCE.md`
 Compact durable business/growth context; not a live-account substitute.
 
@@ -134,7 +137,8 @@ For a substantive session:
 4. read `docs/DECISIONS.md` if strategy/approval is involved;
 5. read only the relevant specification/runbook/baseline/code;
 6. verify live system state when it may have changed;
-7. query OpenProject when live execution metadata matters.
+7. query OpenProject when live execution metadata matters;
+8. before production/release work, inspect current `dev` and `main` heads and branch lineage per `docs/GIT_RELEASE_STRATEGY.md`.
 
 Do not reconstruct current state from old chat history when GitHub has newer evidence.
 
@@ -206,10 +210,24 @@ At the same time:
 
 ## 12. Branch/release discipline
 
-- feature/fix/docs branches for proposed work;
+Detailed procedure: `docs/GIT_RELEASE_STRATEGY.md`.
+
+Core rules:
+
+- feature/fix/docs branches are based on the current integration state and are proposed through PRs;
 - `dev` = integration/staging;
 - `main` = production;
-- Jenkins = deployment authority;
+- normal flow is `feature/fix/docs -> dev -> main`;
+- before a normal production promotion, current `main` must already be contained in `dev`; if not, reconcile `main -> dev` first;
+- normal production releases promote the coherent validated `dev` state, not a manually reconstructed subset;
+- direct `main` hotfixes are exceptional and only for urgent production recovery/production-only needs;
+- every direct `main` hotfix or selective production release requires immediate back-merge/reconciliation into `dev` and CI validation there;
+- selective promotion/cherry-picking from `dev` is an exception only when the rest of `dev` is intentionally not production-ready and independence/dependencies are explicitly verified;
+- do not treat a file tested on `dev` as independently production-safe without checking its code/config/runtime dependencies;
+- before production merge, inspect exact `dev`/`main` heads, complete diff and CI status;
+- `PROJECT_HANDOFF.md` records any material branch divergence/reconciliation state;
+- unresolved branch drift is a release-control issue and must not be silently carried forward;
+- Jenkins is deployment authority;
 - no routine direct commits to `main`;
 - no secrets in Git.
 
@@ -241,5 +259,6 @@ A new context/operator can answer without old chats:
 - which roadmap phase/workstream owns it?
 - what evidence proves completion?
 - which live system/OpenProject source must be checked?
+- are `dev` and `main` in a valid release relationship, or is reconciliation required first?
 
 If those answers cannot be found from `PROJECT_HANDOFF.md` + `ROADMAP.md` + targeted evidence, the control plane needs repair before more complexity is added.
