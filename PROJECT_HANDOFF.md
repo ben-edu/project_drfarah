@@ -14,11 +14,13 @@
 
 Growth Acceleration / parallel execution. Independent safe lanes continue in parallel. Production is the destination for validated work. Use risk-based gates: block only for production breakage, privacy/security, data integrity, or unauthorized spend; acceptance that requires real campaign data belongs inside the controlled pilot. Optimize toward completed visits, not superficial platform conversions. Never send unnecessary patient PII/PHI/clinical context to marketing systems.
 
+User-facing project explanations should default to Persian script. Use clear Persian equivalents first; include exact English UI labels only when they help the user find a setting.
+
 ---
 
 ## 2. Branch / deployment state
 
-FACT — `dev` head `c07b580b00adad3891d8924900700b52ccec1788`; Jenkins `dev/26` SUCCESS.
+FACT — current `dev` head is `d31807e929f725e6ab35b432c8cdbed03bc52047`; Jenkins `dev/28` SUCCESS.
 
 FACT — integrated growth/measurement batch was promoted through PR #104. Production initially reached `fcc8d855eff53e25f27673b53a2e94a0e37efd49`; `main/3` failed only on stale frontend redirect smoke expectations after the frontend had already published.
 
@@ -76,11 +78,54 @@ FACT — after production `main/4` turned green, three Responsive Search Ads wer
 
 All use `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`. One initial same-day RSA write was rejected because a description exceeded 90 characters; copy was shortened and the retry succeeded. No duplicate successful ad was created by that rejected attempt.
 
-BLOCKER B-004 — positive geo option remains `PRESENCE_OR_INTEREST` per last verified read-back. It must be changed to Presence-only (`people in or regularly in the targeted locations`) before campaign enable. Windsor's available geo write action controls locations/proximities but does not expose the positive-geo-type switch. Do not enable campaign/ad groups/ads until this is fixed and read back.
+FACT — on 2026-10-29 the user changed the campaign positive location option in the Google Ads UI to Presence-only (`people in or regularly in the targeted locations`).
+
+DATA_GAP — the connected Windsor read is currently cached and still reports the previous `PRESENCE_OR_INTEREST`; the current plan does not permit forced refresh. Treat the UI save as the latest direct evidence, but require a fresh Google/Windsor read-back before enable so B-004 can be closed with system evidence.
+
+DECISION — keep this first urgent-care campaign Presence-only. Do not use it to capture pre-arrival travelers outside the area. Traveler/pre-arrival demand gets a separate campaign so local urgent intent and travel-planning intent can be measured and controlled independently.
 
 ---
 
-## 6. Paid + organic landing path
+## 6. Google Ads healthcare policy / LegitScript
+
+FACT — the sitelink asset `Clinic Services` pointing to `https://drfarahvipurgentcare.com/services` is DISAPPROVED for `PRESCRIPTION_DRUG_SALE` with a missing-certification condition for the United States. It also carries `HEALTH_IN_PERSONALIZED_ADS` as a limited policy topic.
+
+FACT — the classification is plausible because `/services` legitimately describes virtual urgent care / travel prescription refills. Do not solve this by deleting the service or hiding the business model.
+
+DECISION — correct path is full certification: Dr. Farah completes LegitScript Healthcare Merchant Certification for `drfarahvipurgentcare.com`; after approval, complete Google Ads healthcare certification for child account `652-510-3588`, United States, telemedicine/prescription-drug services. Issue #106 is the durable certification work item.
+
+WAITING_EXTERNAL — Dr. Farah must decide whether to proceed with LegitScript and, if proceeding, complete the application/payment and provide the resulting approval/certificate/reference. Do not request portal passwords, payment details, PHI, patient records or other secrets in chat/repo.
+
+FACT — current standard LegitScript pricing verified 2026-10-29: $975 non-refundable application fee per website; $2,150 annual certification fee per website after approval; standard first-year total $3,125. Optional expedited review is separate and not required.
+
+SITE READINESS GAP — `frontend/terms.html` still states it is a draft pending legal review, and `frontend/notice-of-privacy-practices.html` is still a placeholder. Before certification submission/final review, replace both with clinic/legal-approved content. We can prepare implementation/drafts, but clinic facts and final approval must come from Dr. Farah/legal counsel.
+
+IMPORTANT — certification can resolve the prescription-drug-services certificate problem, but it does not remove Google's separate health-sensitive personalization restrictions. Do not use restricted health remarketing/Customer Match workarounds. Search keywords, location targeting and allowed Google-defined targeting remain available subject to policy.
+
+---
+
+## 7. Second Google Search campaign — traveler / pre-arrival growth
+
+DECISION — prioritize a separate paused Search campaign for travelers planning care in Beverly Hills before arrival. This is not a replacement for the local urgent-care pilot; it is a distinct acquisition hypothesis with separate budget, search terms, landing experience and measurement.
+
+Working name: `Search | Traveler Care | Beverly Hills | Pre-Arrival | Pilot`.
+
+Initial strategy:
+- objective: capture high-intent travelers/visitors who are outside Beverly Hills now but are explicitly planning medical access in Beverly Hills;
+- initial geography: United States Presence-only at the broader source-market level, not Beverly Hills `Presence or interest`; rely on explicit Beverly Hills + traveler/visitor/hotel intent in keywords rather than Google's broad interest inference;
+- match control: Exact/Phrase first; no broad match until completed-visit evidence supports expansion;
+- intent themes: Beverly Hills doctor for travelers/tourists/visitors, doctor near Beverly Hills hotel, traveler medical care Beverly Hills, urgent care for visitors in Beverly Hills, hotel physician/medical care where accurately supported;
+- landing: dedicated traveler/hotel care path with clear in-person/mobile availability, booking/call CTA, service-area/hours, no guarantee language, 911/not-ER language;
+- policy split: in-person/pre-arrival traveler care can be prepared independently; any ad copy/landing claims about telemedicine prescribing/refills remain gated by LegitScript + Google healthcare certification;
+- measurement: dedicated UTM/source naming, first-party click ID capture and completed-visit feedback exactly like the local pilot;
+- overlap control: use traveler-specific modifiers and search-term negatives so pre-arrival planning does not contaminate the local urgent-care campaign; refine source markets from actual query/completed-visit evidence rather than assumptions;
+- budget: create/configure PAUSED first. No new paid spend until the campaign budget is explicitly authorized under roadmap/spend rules.
+
+HIGH PRIORITY — build the campaign architecture/keyword/ad/landing specification while certification is pending, then create it PAUSED when the configuration is validated. Do not wait idle for LegitScript.
+
+---
+
+## 8. Paid + organic landing path
 
 Canonical production URL: `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`.
 
@@ -92,7 +137,7 @@ Landing design: Beverly Hills urgent-care intent, actual phone/address/hours, sa
 
 ---
 
-## 7. Search Console / GBP / GA4
+## 9. Search Console / GBP / GA4
 
 Search Console property `sc-domain:drfarahvipurgentcare.com`; captured 90-day baseline ~32,325 impressions, 308 clicks, CTR ~0.95%, average position ~11.8. Local query opportunities include urgent-care near-me/Beverly Hills terms around positions 10–16. Continue post-release indexing/canonical monitoring.
 
@@ -102,36 +147,39 @@ GA4 production property `489069776`, stream `11211773871`, measurement ID `G-D58
 
 ---
 
-## 8. AI / ChatGPT Ads
+## 10. AI / ChatGPT Ads
 
 Active later paid-growth lane. ChatGPT Ads Manager is installed but prior check returned no accessible clinic ad account. Windsor supports an `openai_ads` connector but it is not currently connected. Do not claim eligibility/onboarding yet. Issue #92 remains durable evaluation context. Start account/eligibility/onboarding work after the Google Search pilot's hard launch configuration is complete; do not wait for long-term Google scale learning to begin eligibility work.
 
 ---
 
-## 9. Current blockers
+## 11. Current blockers
 
 - B-001 Booking/Brevo — CLOSED.
 - B-002 Data Manager — PARTIAL / SCALE GATE. `validateOnly` HTTP 200 and production promotion complete; first legitimate paid completed-visit import + dedupe + reconciliation still required.
 - B-003 Search pilot destination — CLOSED. Production landing/redirect smoke is green and paused RSAs now exist.
-- B-004 Google Ads geo positive-location option — HARD LAUNCH GATE. Must become `PRESENCE`, not `PRESENCE_OR_INTEREST`.
+- B-004 Google Ads geo positive-location option — UI CHANGED TO PRESENCE; fresh system read-back still required before enable because current connector data is cached.
 - B-005 GA4 live receipt/settings — SOFT.
 - B-006 exact clinic economics — SOFT; use explicit provisional assumptions.
 - B-007 ChatGPT Ads eligibility/account access — SOFT / WAITING_EXTERNAL until eligibility/onboarding path is completed.
+- B-008 Google healthcare certification — WAITING_EXTERNAL / HIGH PRIORITY. Dr. Farah decision + LegitScript application/approval required; then complete Google Ads healthcare certification. Independent safe work continues in parallel.
 
 ---
 
-## 10. Exact next actions
+## 12. Exact next actions
 
-1. Keep campaign `24414014329`, all three ad groups and all three RSAs PAUSED.
-2. Fix B-004 through a supported Google Ads UI/API path and read back Presence-only before any enable action. Do not substitute radius targeting for this setting.
-3. After B-004 is verified, perform final campaign/ad/policy read-back and launch only within the already-approved controlled pilot budget/guardrails; do not materially increase spend without new authorization.
-4. During the pilot, use the first legitimate Google-click completed visit for the controlled Data Manager recording + replay/dedupe + reconciliation acceptance. Keep `Visit Completed` Secondary until passed.
-5. Review search terms early, add negatives aggressively, and judge toward completed visits/economics rather than clicks alone.
-6. In parallel, continue GBP cleanup, Search Console post-release monitoring and GA4 soft validation.
-7. Begin ChatGPT Ads eligibility/account-onboarding investigation once B-004/final Google launch configuration is complete; any ChatGPT pilot requires finite budget, dedicated source attribution and stop/scale rules.
+1. Keep campaign `24414014329`, all three ad groups and all three RSAs PAUSED until a fresh system read-back confirms Presence-only and final policy/ad review is acceptable.
+2. Ask Dr. Farah to complete/approve the LegitScript certification path; when approval is available, use it to complete Google Ads healthcare certification and re-read the affected asset. Do not delete the healthcare service to bypass certification.
+3. In parallel, prepare the second `Traveler Care | Beverly Hills | Pre-Arrival` Search campaign: demand/keyword map, overlap negatives, landing requirements, ad copy and measurement plan; create/configure PAUSED only, with no spend until authorized.
+4. Prepare replacement clinic/legal-ready Terms of Use and Notice of Privacy Practices requirements for Dr. Farah/legal approval; do not publish invented legal facts.
+5. After B-004 fresh read-back and acceptable core ad policy state, proceed with the already-authorized controlled local Search pilot under finite guardrails if no new hard blocker appears.
+6. During the pilot, use the first legitimate Google-click completed visit for the controlled Data Manager recording + replay/dedupe + reconciliation acceptance. Keep `Visit Completed` Secondary until passed.
+7. Review search terms early, add negatives aggressively, and judge toward completed visits/economics rather than clicks alone.
+8. Continue GBP cleanup, Search Console post-release monitoring and GA4 soft validation while certification is pending.
+9. Begin ChatGPT Ads eligibility/account-onboarding investigation once final Google launch configuration is complete; any ChatGPT pilot requires finite budget, dedicated source attribution and stop/scale rules.
 
 ---
 
-## 11. Resume protocol
+## 13. Resume protocol
 
-Read this file, then `ROADMAP.md`; check `dev`, `main`, exact Jenkins statuses and live Ads state. Preserve the hard spend/privacy/data gates above. Continue safe independent lanes instead of waiting on campaign-data-dependent tests. Update this handoff after every material session and put durable deferred work/blockers in `ROADMAP.md`.
+Read this file, then `ROADMAP.md`; check `dev`, `main`, exact Jenkins statuses and live Ads state. Preserve the hard spend/privacy/data gates above. Continue safe independent lanes instead of waiting on campaign-data-dependent tests or external certification. Update this handoff after every material session and put durable deferred work/blockers in `ROADMAP.md`.
