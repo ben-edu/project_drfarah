@@ -1,70 +1,70 @@
-/* Authentic clinic imagery refresh — October 2026. */
+/* Authentic service imagery refresh — 2026-10-31 v6 */
 
-/* Force fresh, user-supplied imagery without changing page copy or layout. */
-.hero__media{
-  background:url('assets/home-hero-doctor.webp?v=20261031-1') center 38% / cover no-repeat !important;
-}
-.hero__media > img{opacity:0!important}
+:root{--svc-photo-radius:20px}
 
-#traveler .feature-band__media{
-  background:url('assets/clinic-exterior.webp?v=20261031-1') center / cover no-repeat;
-  border-radius:var(--r-lg);
-  overflow:hidden;
-}
+.hero__media{background:url('assets/service-weight-loss.png?v=20261031-6') center 34%/cover no-repeat!important}
+.hero__media>img{opacity:0!important}
+#traveler .feature-band__media{background:url('assets/service-hotel-traveler.png?v=20261031-6') center 44%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.28)}
 #traveler .feature-band__media img{opacity:0!important}
-
-.about-lead__media{
-  background:url('assets/dr-farah-portrait.webp?v=20261031-1') center 32% / cover no-repeat;
-  border-radius:var(--r-lg);
-  overflow:hidden;
-}
+.about-lead__media{background:url('assets/dr-farah-portrait.webp?v=20261031-6') center 24%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.24)}
 .about-lead__media img{opacity:0!important}
-
-.doctor__media{
-  background:url('assets/dr-farah-clinic.webp?v=20261031-1') center 32% / cover no-repeat;
-}
+.doctor__media{background:url('assets/service-preop.png?v=20261031-6') center 35%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.22)}
 .doctor__media img{opacity:0!important}
-
-.services-hero__media{
-  background:url('assets/service-iv-treatment.webp?v=20261031-1') center 42% / cover no-repeat !important;
-}
+.services-hero__media{min-height:420px!important;background:url('assets/service-traveler-medical.png?v=20261031-6') center 44%/cover no-repeat!important;border-radius:var(--svc-photo-radius)!important;box-shadow:0 26px 70px rgba(0,0,0,.3)!important}
 .services-hero__media img{opacity:0!important}
-
-.specialty-hero__media{
-  background:url('assets/service-iv-treatment.webp?v=20261031-1') center 42% / cover no-repeat !important;
-}
+.specialty-hero__media{min-height:420px!important;background:url('assets/service-iv.png?v=20261031-6') center 44%/cover no-repeat!important;border-radius:var(--svc-photo-radius)!important;box-shadow:0 26px 70px rgba(0,0,0,.3)!important}
 .specialty-hero__media img{opacity:0!important}
+.service-choice-card--hotel{background-image:url('assets/service-hotel-traveler.png?v=20261031-6')!important;background-position:center 42%!important}
+.service-choice-card--virtual{background-image:url('assets/service-virtual.png?v=20261031-6')!important;background-position:center 48%!important}
 
-.service-choice-card--hotel{
-  background-image:url('assets/service-hotel-traveler.webp?v=20261031-1')!important;
+.landing-hero{
+  --landing-photo:url('assets/dr-farah-clinic.webp?v=20261031-6');
+  --landing-photo-position:center 36%;
+  --landing-photo-mobile-position:center 32%;
+  position:relative;isolation:isolate;overflow:hidden;min-height:clamp(560px,68vh,700px);display:flex;align-items:center;
+  padding-block:clamp(72px,8vw,108px);background:linear-gradient(135deg,#0c1518 0%,#10201f 56%,#0c1518 100%);border-bottom:1px solid var(--line-soft)
 }
-.service-choice-card--virtual{
-  background-image:url('assets/service-virtual-care.webp?v=20261031-1')!important;
+.landing-hero__inner{position:relative;z-index:2;width:100%;max-width:var(--wrap)}
+.landing-hero__inner>*{max-width:min(54vw,610px)}
+.landing-hero::before{content:"";position:absolute;z-index:0;top:50%;right:clamp(22px,5vw,72px);transform:translateY(-50%);width:min(40vw,540px);height:min(62vh,480px);min-height:360px;max-height:480px;background-image:var(--landing-photo);background-size:cover;background-position:var(--landing-photo-position);background-repeat:no-repeat;border-radius:22px;border:1px solid rgba(236,228,214,.14);box-shadow:0 34px 84px rgba(0,0,0,.38);pointer-events:none}
+.landing-hero::after{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,var(--noir) 0%,rgba(12,21,24,.99) 44%,rgba(12,21,24,.78) 57%,rgba(12,21,24,0) 72%)}
+.landing-hero h1{text-wrap:balance;max-width:13ch}.landing-hero__lead{max-width:53ch}.landing-hero__actions{max-width:none}.landing-hero__meta{max-width:610px}
+
+/* Explicit service-page mapping. Each service uses a different image. */
+body.page-prp .landing-hero{--landing-photo:url('assets/service-prp.png?v=20261031-6');--landing-photo-position:center 20%;--landing-photo-mobile-position:center 18%}
+body.page-weight-loss .landing-hero{--landing-photo:url('assets/service-weight-loss.png?v=20261031-6');--landing-photo-position:center 34%;--landing-photo-mobile-position:center 30%}
+body:has(.landing-hero__meta span:nth-child(3)) .landing-hero{--landing-photo:url('assets/service-urgent-care.png?v=20261031-6');--landing-photo-position:center 42%;--landing-photo-mobile-position:center 38%}
+body:has(.landing-hero__actions>a[href*="reason=Travel%20Prescription%20Refill"]) .landing-hero{--landing-photo:url('assets/service-virtual.png?v=20261031-6');--landing-photo-position:center 48%;--landing-photo-mobile-position:center 46%}
+body:has(.landing-hero__actions>a:only-child[href^="tel:+13104670101"]) .landing-hero{--landing-photo:url('assets/service-preop.png?v=20261031-6');--landing-photo-position:center 42%;--landing-photo-mobile-position:center 39%}
+body:has(.landing-hero__actions>a[href="/contact"]) .landing-hero{--landing-photo:url('assets/dr-farah-clinic.webp?v=20261031-6');--landing-photo-position:center 36%;--landing-photo-mobile-position:center 33%}
+body:has(.link-arrow[href="/virtual-urgent-care"]) .landing-hero{--landing-photo:url('assets/service-hotel-traveler.png?v=20261031-6');--landing-photo-position:center 42%;--landing-photo-mobile-position:center 38%}
+body:has(.landing-hero__actions>a[href="/book?service=traveler-care"]):not(:has(.link-arrow[href="/virtual-urgent-care"])) .landing-hero{--landing-photo:url('assets/service-traveler-medical.png?v=20261031-6');--landing-photo-position:center 46%;--landing-photo-mobile-position:center 44%}
+body:has(.traveler-choice-grid) .landing-hero{--landing-photo:url('assets/clinic-exterior.webp?v=20261031-6');--landing-photo-position:center 48%;--landing-photo-mobile-position:center 46%}
+
+.mini-card,.partner-callout,.svc-card,.iv-card{box-shadow:0 18px 50px rgba(0,0,0,.12)}
+.mini-card{background:linear-gradient(155deg,rgba(22,41,42,.76),rgba(12,21,24,.98));border-color:rgba(236,228,214,.11)}
+.content-section--alt{background:linear-gradient(180deg,var(--noir-2),#0d1b1b)}
+
+@media(max-width:1180px) and (min-width:981px){
+  .landing-hero__inner>*{max-width:50vw}.landing-hero::before{width:41vw;right:26px;height:430px}
 }
 
-/* Generic real clinic portrait for consultation/evaluation pages that do not
-   have a procedure-specific photo. Avoids implying an unpictured treatment. */
-body:has(.landing-hero__actions > a[href="/book"]) .landing-hero,
-body:has(.landing-hero__actions > a[href="/book?service=rejuvenation"]) .landing-hero,
-body:has(.landing-hero__actions > a[href="/contact"]) .landing-hero{
-  --landing-photo:url('assets/dr-farah-clinic.webp?v=20261031-1');
-  --landing-photo-position:center 34%;
+/* Tablet and mobile: image above content, no text overlap and safer crop. */
+@media(max-width:980px){
+  .landing-hero{display:flex;flex-direction:column;min-height:0;padding:0 0 60px;background:linear-gradient(180deg,#0c1518,#10201f)}
+  .landing-hero::before{position:relative;display:block;inset:auto;transform:none;order:0;width:calc(100% - 40px);height:clamp(330px,58vw,500px);min-height:0;max-height:none;margin:22px 20px 0;border-radius:18px;background-position:var(--landing-photo-mobile-position);background-size:cover;box-shadow:0 22px 54px rgba(0,0,0,.32);opacity:1}
+  .landing-hero::after{display:none}.landing-hero__inner{order:1;padding-top:36px}.landing-hero__inner>*{max-width:760px}.landing-hero h1{max-width:15ch}.landing-hero__lead{font-size:17px;line-height:1.65}
+  body.page-prp .landing-hero::before{height:clamp(420px,78vw,600px);background-position:center 18%}
+  body.page-weight-loss .landing-hero::before{height:clamp(330px,58vw,480px);background-position:center 30%}
+  .services-hero__media,.specialty-hero__media{min-height:360px!important}
+  .traveler-choice-grid{grid-template-columns:1fr!important}.service-choice-card{min-height:420px}
+  .content-section{padding-block:clamp(56px,8vw,80px)}.mini-cards{gap:16px}.mini-card,.partner-callout{padding:24px}
 }
 
-/* Specific service imagery wins over the generic rule. */
-body:has(.landing-hero__actions > a[href="/book?service=traveler-care"]) .landing-hero{
-  --landing-photo:url('assets/service-hotel-traveler.webp?v=20261031-1');
-  --landing-photo-position:center 45%;
-}
-body:has(.landing-hero__actions > a[href*="reason=Travel%20Prescription%20Refill"]) .landing-hero{
-  --landing-photo:url('assets/service-virtual-care.webp?v=20261031-1');
-  --landing-photo-position:center center;
-}
-body:has(.landing-hero__actions > a:only-child[href^="tel:+13104670101"]) .landing-hero{
-  --landing-photo:url('assets/service-preop-clearance.webp?v=20261031-1');
-  --landing-photo-position:center center;
-}
-
-@media(max-width:820px){
-  .about-lead__media,.doctor__media{background-position:center 28%}
+@media(max-width:600px){
+  .site-header__inner{min-height:68px;gap:12px}.brand{gap:9px}.brand__mark svg{width:34px;height:34px}.brand__name{font-size:21px}.header-actions{margin-left:auto}.header-actions .btn--gold{--py:11px;--px:17px;font-size:13px}
+  .landing-hero{padding-bottom:48px}.landing-hero::before{width:calc(100% - 24px);height:clamp(260px,72vw,350px);margin:12px 12px 0;border-radius:14px}.landing-hero__inner{padding-top:27px}.landing-hero .eyebrow{margin-bottom:14px;letter-spacing:.20em}.landing-hero h1{font-size:clamp(36px,10.5vw,48px);line-height:1.03;margin-bottom:18px;max-width:14ch}.landing-hero__lead{font-size:16px;line-height:1.62}.landing-hero__actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:24px}.landing-hero__actions .btn{width:100%;white-space:normal;text-align:center}.landing-hero__meta{display:grid;grid-template-columns:1fr;gap:8px;margin-top:20px}.landing-hero__meta span{padding-top:8px;border-top:1px solid var(--line-soft)}
+  body.page-prp .landing-hero::before{height:clamp(320px,94vw,460px);background-position:center 16%}
+  body.page-weight-loss .landing-hero::before{height:clamp(260px,72vw,350px);background-position:center 30%}
+  .section-head{margin-bottom:32px}.section-title{font-size:clamp(31px,9vw,42px)}.content-copy h2{font-size:clamp(30px,9vw,42px)}.content-copy p,.content-copy li{font-size:15.5px;line-height:1.7}.mini-card h3{font-size:24px}.mini-card p{font-size:14.5px;line-height:1.65}.services-hero__media,.specialty-hero__media{min-height:290px!important}.service-choice-card{min-height:350px}.service-choice-card>div{padding:24px}.service-choice-card h2{font-size:32px}.mobilebar{box-shadow:0 -12px 32px rgba(0,0,0,.22)}
 }
