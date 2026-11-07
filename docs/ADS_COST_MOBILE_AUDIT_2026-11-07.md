@@ -10,7 +10,7 @@ Account 652-510-3588.
 - Traveler Search 24404901753: PAUSED; daily budget changed from USD 20 to USD 5, subsequent live budget readback USD 5.
 - Legacy Smart 22552983079: PAUSED, no write.
 - Google-managed Local Services 23637947414: ENABLED with 0 reported cost in the examined time window, not modified. Validate its billing/delivery separately before assuming all account spend is capped by the two Search budgets.
-- Local Search in 2026-10-28..2026-11-07: 68 clicks, USD 281.67 cost, 3 primary campaign Conversions, all reported as "Calls from ads"; all-conversion event breakdown includes 8 directions, 15 other engagements, 1 website visit and 3 ad calls. No proof of patient visits.
+- Local Search in 2026-10-28..2026-11-07: 68 clicks, USD 281.67 cost, 3 primary campaign Conversions, all reported as "Calls from ads"; all-conversion event breakdown includes 8 directions, 15 other engagements, 1 website visit and 3 ad calls. Call reporting and call-conversion reporting are enabled at account level; campaign reports 9 phone_calls for 2026-11-01..07, of which 3 count in the primary Conversions column. Neither reported calls nor conversions prove an answered appointment or a completed patient visit.
 - Narrow negative keyword additions to local Search succeeded: [PHRASE] cedars urgent care, exer urgent care, excer urgent care, kaiser urgent care; [EXACT] 8767 wilshire blvd urgent care. Avoid broad exclusions that may remove legitimate urgent-care patients.
 - Search terms within period: "urgent care near me" 20 clicks / USD 78.34 / 0 platform Conversions; "cedars urgent care wilshire" 6 clicks / USD 26.80 / 1 platform Conversion. Because the latter is competitor-branded, it was excluded as a controlled budget-quality measure, not because its primary Conversion was proven fake.
 
@@ -24,7 +24,7 @@ The connected Ads write interface has no conversion-action editing action. Do no
 
 Before this change, CSS hid primary navigation at <=1040px and showed the bottom quick action bar only at <=680px. At <=600px it hid the header phone button. The website thereby lacked reliable responsive navigation and persistent visible number/Booking across paths.
 
-This change adds a keyboard-accessible JS menu toggle and mobile dropdown (escape/outside click closure, aria-expanded, scrollable overflow), readable tablet header phone, always accessible mobile bottom number + Book/phone-scheduling CTA, and a fallback mobilebar on pages that omitted it. Booking wizard receives an in-page booking anchor rather than a reload link.
+Tracked in GitHub issue #127 (issue #114 is mainly image quality). This change adds a keyboard-accessible JS menu toggle and mobile dropdown (escape/outside click closure, aria-expanded, scrollable overflow), readable tablet header phone, always accessible mobile bottom number + Book/phone-scheduling CTA, and a fallback mobilebar on pages that omitted it. Booking wizard receives an in-page booking anchor rather than a reload link.
 
 Validation required before production claim: JS runtime and click/keyboard checks; 320, 375, 680, 768, 1024 desktop/tablet/mobile widths; homepage + urgent-care + traveler + booking pages; no horizontal overflow; correct tel:+13104670101 and /book targets; correct pre-op phone-only exception; check sticky bottom bar safe area/cookie banner; branch CI -> dev staging -> main Jenkins -> production smoke.
 
