@@ -113,6 +113,90 @@
     topbar.insertBefore(link, topbar.querySelector('.topbar__phone'));
   });
 
+  // Responsive navigation is shared by every public page without duplicating HTML.
+  // Keep this separate from attribution so menus never produce ad conversions.
+  var responsiveHeader = document.getElementById('siteHeader');
+  var responsiveNav = responsiveHeader && responsiveHeader.querySelector('nav.nav[aria-label="Primary"]');
+  var responsiveInner = responsiveHeader && responsiveHeader.querySelector('.site-header__inner');
+  if (responsiveNav && responsiveInner && !responsiveHeader.querySelector('.nav-toggle')) {
+    responsiveNav.id = responsiveNav.id || 'primarySiteNav';
+    var menuToggle = document.createElement('button');
+    menuToggle.type = 'button';
+    menuToggle.className = 'nav-toggle';
+    menuToggle.setAttribute('aria-controls', responsiveNav.id);
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', 'Open site menu');
+    menuToggle.innerHTML = '<span class="nav-toggle__icon" aria-hidden="true">&#9776;</span><span class="nav-toggle__text">Menu</span>';
+    responsiveInner.insertBefore(menuToggle, responsiveInner.querySelector('.header-actions'));
+
+    function setResponsiveMenu(open) {
+      responsiveNav.classList.toggle('is-open', open);
+      menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      menuToggle.setAttribute('aria-label', open ? 'Close site menu' : 'Open site menu');
+      menuToggle.querySelector('.nav-toggle__icon').textContent = open ? '\u00D7' : '\u2630';
+      menuToggle.querySelector('.nav-toggle__text').textContent = open ? 'Close' : 'Menu';
+    }
+    menuToggle.addEventListener('click', function () {
+      setResponsiveMenu(!responsiveNav.classList.contains('is-open'));
+    });
+    responsiveNav.addEventListener('click', function (event) {
+      if (event.target.closest('a')) setResponsiveMenu(false);
+    });
+    document.addEventListener('click', function (event) {
+      if (!responsiveHeader.contains(event.target)) setResponsiveMenu(false);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && responsiveNav.classList.contains('is-open')) {
+        setResponsiveMenu(false);
+        menuToggle.focus();
+      }
+    });
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 1040 && responsiveNav.classList.contains('is-open')) setResponsiveMenu(false);
+    }, { passive: true });
+  }
+
+  // Display the actual clinic phone number on the persistent header/tablet
+  // call CTA, rather than a generic "Call" label.
+  document.querySelectorAll('.site-header .header-actions a[href^="tel:"]').forEach(function (link) {
+    if (link.textContent.trim().toLowerCase() === 'call') link.textContent = 'Call 310-467-0101';
+  });
+
+  // Existing landing pages supply a mobilebar. Supply the same persistent
+  // controls on other pages (including the booking wizard) when absent.
+  if (responsiveHeader && !document.querySelector('.mobilebar')) {
+    var headerBooking = responsiveHeader.querySelector('.header-actions .btn--gold[href]');
+    if (headerBooking) {
+      var bookingHref = headerBooking.getAttribute('href');
+      var bookingLabel = /^tel:/.test(bookingHref) ? 'Call to schedule' : 'Book';
+      if (pagePath === '/book') {
+        var bookingSection = document.querySelector('section.booking');
+        if (bookingSection) {
+          bookingSection.id = bookingSection.id || 'booking';
+          bookingHref = '#' + bookingSection.id;
+          bookingLabel = 'Book';
+        }
+      }
+      var quickBar = document.createElement('div');
+      quickBar.className = 'mobilebar';
+      quickBar.setAttribute('aria-label', 'Quick actions');
+      var quickCall = document.createElement('a');
+      quickCall.className = 'mobilebar__btn mobilebar__btn--call';
+      quickCall.href = 'tel:+13104670101';
+      quickBar.appendChild(quickCall);
+      var quickBook = document.createElement('a');
+      quickBook.className = 'mobilebar__btn mobilebar__btn--book';
+      quickBook.href = bookingHref;
+      quickBook.textContent = bookingLabel;
+      quickBar.appendChild(quickBook);
+      document.body.appendChild(quickBar);
+    }
+  }
+  document.querySelectorAll('.mobilebar__btn--call').forEach(function (link) {
+    link.textContent = 'Call 310-467-0101';
+    link.setAttribute('aria-label', 'Call Dr. Farah at 310-467-0101');
+  });
+
   var header = document.getElementById('siteHeader');
   if (header) {
     var onScroll = function () {

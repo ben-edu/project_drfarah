@@ -2,11 +2,27 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-10-31  
+**Last updated:** 2026-11-07  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0. 2026-11-07 — cost containment, attribution audit and mobile CTA fix
+
+FACT — Google Ads account 652-510-3588: local Search campaign 24414014329 and traveler Search campaign 24404901753 remain PAUSED; 2026-11-07 live readback confirms configured daily budgets were reduced from $40 to $10 and from $20 to $5 respectively. Both budget writes succeeded. No campaign was enabled. Historical 2026-10-28..2026-11-07 local Search spend $281.67 / 68 clicks / 3 reported Conversions. These 3 belong to \`Calls from ads\` (not verified patients); All Conversions also contains 8 Directions + 15 Other engagements + 1 Website visit. Call connection/duration, appointment, completed visit and realized CAC are not yet reconciled.
+
+FACT — 5 narrowly targeted competitor/location negative keywords were successfully added to local Search: PHRASE "cedars urgent care", "exer urgent care", "excer urgent care", "kaiser urgent care"; EXACT "8767 wilshire blvd urgent care". Do not negative broad legitimate "urgent care near me" without outcome evidence. Search term report revealed $78.34 for 20 clicks on "urgent care near me" and zero primary conversions in the observed period; this is directional, not proof of zero business outcomes.
+
+FACT — PR #126, the documented ads launch strategy/clinic policy decision branch, merged to dev on 2026-11-07 as ebfe2ce5e001ad02d4af62269ffb618f5ef32ce6. Before normal promotion, confirm its Jenkins dev/45 result, lineage main subset dev, and current integrated site state.
+
+IN DEVELOPMENT — this responsive-navigation change adds an accessible mobile/tablet menu for widths <=1040px, retains a visible Book CTA in header, labels call CTAs with 310-467-0101, and provides persistent two-button mobile quick actions at <=680px on pages lacking them. Existing pre-op phone-scheduling exception stays phone-first. The change is NOT production-verified merely because code is committed; require branch/staging CI, 320/375/680/768/1024px visual/functional checks, then normal dev -> main release and production smoke.
+
+DECISION/GATE — do not re-enable either paused Search campaign based only on these counts. Clinic-approved call-asset/recording compliance remains a hard gate where applicable; validate real connected calls and completed visits. \`Calls from ads\` is a reporting conversion (duration/qualification criteria), not an extra charge and not automatically an appointment. The connected write interface does not expose editing conversion-action goals; inspect actual UI settings before changing them.
+
+See \`docs/ADS_COST_MOBILE_AUDIT_2026-11-07.md\`.
 
 ---
 
