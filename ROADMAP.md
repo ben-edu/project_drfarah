@@ -242,6 +242,16 @@ Roles remain distinct:
 
 ---
 
+
+## 2026-11-07 audit-driven priority note
+
+Independent Google Ads/website audit now lives in \`docs/GOOGLE_ADS_INDEPENDENT_AUDIT_2026-11-07.md\` with verified search term, ad group, device, call, Quality Score and policy evidence. It is a detailed evaluation supporting this single master roadmap, **not** a competing roadmap.
+
+Current priority: **P0** verify main Jenkins+production smoke, audit call-goal definition and call-to-patient linkage, resolve ad $250 vs landing $240 discrepancy, approve Terms/NPP with clinic/legal, verify booking/attribution, keep paid Search paused unless spend explicitly authorized. **P1** possible bounded local Beverly Hills-only Search relaunch using Manual CPC and verified mobile call/booking outcomes; do not revive Near-Me group by default. Traveler zero impressions is no test result. **P2** GBP/SEO and measured pre-op/referral/traveler expansion when operations and unit economics confirm.
+
+Note current heads before the new audit docs PR: main \`0b7ddb6a31a831d6aa8843c3e42c9b240750a796\`; dev \`6931e147fe369b3b8407caa83cc7c174e2ba9e04\`; release history reconciled and zero code-file differences. Main and dev Jenkins runs were both pending during audit; no new ads delivery writes were made.
+
+
 # Phase G — Controlled paid experiment / optimization cycle
 
 Each pilot requires a named hypothesis, exact intent/geography, finite learning budget/hard spend ceiling, controlled keywords/negatives, relevant production landing, completed-visit linkage, stop/modify/scale thresholds and a review date.
