@@ -462,3 +462,60 @@ a:focus-visible, button:focus-visible{ outline:2px solid var(--gold); outline-of
 .booking-success__mark{ width:66px; height:66px; margin:0 auto 22px; border-radius:50%; background:var(--gold); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:30px }
 .booking-success h2{ font-family:var(--display); font-size:33px; margin:0 0 10px; color:var(--bone) }
 .booking-success .ref{ font-family:var(--display); font-size:22px; color:var(--gold-lite); margin:16px 0 }
+
+/* 2026-11-07: accessible responsive navigation + persistent patient CTAs.
+   Every page shares app.js; on small screens its nav-toggle opens this menu. */
+.nav-toggle { display:none; }
+@media (max-width:1040px) {
+  .site-header .site-header__inner { position:relative; gap:12px; }
+  .site-header .brand__sub { display:none; }
+  .site-header .nav-toggle {
+    display:inline-flex; justify-content:center; align-items:center; gap:7px;
+    margin-left:auto; min-width:44px; min-height:44px;
+    padding:9px 12px; border:1px solid var(--line); border-radius:var(--r);
+    background:var(--noir-2); color:var(--bone); cursor:pointer;
+    font-family:var(--body); font-size:13px; font-weight:600;
+  }
+  .site-header .nav-toggle__icon { font-size:20px; line-height:1; }
+  .site-header .nav-toggle:hover, .site-header .nav-toggle[aria-expanded="true"] {
+    background:var(--noir-3); border-color:var(--gold);
+  }
+  .site-header .nav-toggle:focus-visible, .site-header .nav a:focus-visible {
+    outline:2px solid var(--gold); outline-offset:3px;
+  }
+  .site-header .nav {
+    display:none; position:absolute; top:calc(100% - 1px); left:0; right:0;
+    z-index:110; margin:0; max-height:calc(100dvh - 100px); overflow-y:auto;
+    padding:10px; border:1px solid var(--line); border-radius:0 0 var(--r-lg) var(--r-lg);
+    background:rgba(7,13,15,.98); box-shadow:var(--shadow);
+  }
+  .site-header .nav.is-open { display:flex; flex-direction:column; gap:2px; }
+  .site-header .nav a {
+    display:block; white-space:normal; font-size:15px; line-height:1.4;
+    padding:12px 14px; border-radius:var(--r); color:var(--bone);
+  }
+  .site-header .nav a:hover, .site-header .nav a:focus-visible { background:var(--noir-3); }
+  .site-header .header-actions { margin-left:0; flex:none; }
+  .site-header .header-actions a[href^="tel:"] { white-space:nowrap; font-size:12px; }
+}
+@media (max-width:760px) {
+  .site-header .brand__name { font-size:21px; }
+  .site-header .brand { gap:8px; }
+}
+@media (max-width:680px) {
+  .site-header .header-actions a[href^="tel:"] { display:none; }
+  .site-header .nav-toggle { padding:9px 10px; }
+  .mobilebar .mobilebar__btn {
+    display:flex; align-items:center; justify-content:center;
+    min-height:48px; line-height:1.2; padding:12px 6px;
+  }
+  .mobilebar .mobilebar__btn--call {
+    white-space:nowrap; font-size:clamp(11px,3.35vw,14px); letter-spacing:0;
+  }
+  .mobilebar .mobilebar__btn--book { font-size:14px; }
+}
+@media (max-width:360px) {
+  .site-header .nav-toggle__text { display:none; }
+  .site-header .nav-toggle { min-width:44px; padding:8px; }
+  .site-header .header-actions .btn--gold { --px:11px; }
+}
