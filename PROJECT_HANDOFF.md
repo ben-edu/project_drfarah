@@ -10,6 +10,18 @@
 
 ---
 
+## 0A. 2026-11-07 — release reconciliation and independent Google Ads audit checkpoint
+
+**FACT — release:** User approved staging visuals for mobile/tablet navigation and Call/Book actions. PR #129 merged the tested `dev` state into production `main` as commit `0b7ddb6a31a831d6aa8843c3e42c9b240750a796`. PR #130 reconciled the production merge ancestry back to `dev` as `6931e147fe369b3b8407caa83cc7c174e2ba9e04`. GitHub source-branch auto-deletion briefly removed `main` during reconciliation; `main` was immediately restored to its exact prior production merge SHA. Verified `main...dev`: 1 commit ahead, 0 behind and 0 content-file changes. This is correct ancestry, not an outstanding code diff.
+
+**FACT — Jenkins at audit start:** `main/1` and `dev/47` exact-head statuses are still pending; `PR-130/1` successful. Avoid additional branch/CI writes during these builds. Production deployment/smoke are not declared green until verified.
+
+**FACT — Ads at last known live read:** Google Ads account `652-510-3588`; local Urgent Care Search campaign `24414014329` PAUSED at $10/day; Traveler Search `24404901753` PAUSED at $5/day. Prior data: local Search $281.67 / 68 clicks / 3 `Calls from ads` conversions (not patients), reported 9 phone_calls over Nov 1–7. Five targeted competitor/location negatives added. This is not proof of conversion to appointments or completed visits.
+
+**IN PROGRESS — independent account/site audit requested:** Revalidate current Google Ads conversion action settings, ad-call reporting, geo, campaign/search terms, bidding, creatives, assets, search partners, landing experience, privacy/consent, booking source persistence, and policy. Distinguish FACT/HYPOTHESIS/DATA_GAP; document prioritized interventions with verification and retain paused state until explicit operating decision. Any release readback updates and research conclusions must be recorded in canonical handoff on a safe GitHub branch once concurrent Jenkins runs finish.
+
+---
+
 ## 0. 2026-11-07 — cost containment, attribution audit and mobile CTA fix
 
 FACT — Google Ads account 652-510-3588: local Search campaign 24414014329 and traveler Search campaign 24404901753 remain PAUSED; 2026-11-07 live readback confirms configured daily budgets were reduced from $40 to $10 and from $20 to $5 respectively. Both budget writes succeeded. No campaign was enabled. Historical 2026-10-28..2026-11-07 local Search spend $281.67 / 68 clicks / 3 reported Conversions. These 3 belong to \`Calls from ads\` (not verified patients); All Conversions also contains 8 Directions + 15 Other engagements + 1 Website visit. Call connection/duration, appointment, completed visit and realized CAC are not yet reconciled.
