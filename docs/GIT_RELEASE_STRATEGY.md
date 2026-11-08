@@ -121,3 +121,14 @@ Historical production fixes caused `dev` and `main` to diverge. The traveler lan
 The approved corrective action is to create a controlled reconciliation merge whose parents include current `dev` and current `main`, preserve the valid `dev` integrated state, import the production Jenkins redirect-smoke correction, and then validate the reconciled state in CI.
 
 After that reconciliation, normal releases return to `feature/fix/docs -> dev -> main`; production-only hotfixes must be immediately back-merged.
+## 11. Branch retention, cleanup and Jenkins indexing (2026-11-08)
+
+Keep `dev` (default, integration/staging) and `main` (production) as permanent protected branches. Never force-update either ref and never squash away or rewrite release/merge history.
+
+A stale branch is safe to remove only if its exact, freshly fetched head commit is an ancestor of **both** current `dev` and `main`, its PR is not active and it is not needed as a release/diagnostic anchor. Before deleting, fetch/prune and check `git merge-base --is-ancestor origin/<candidate> origin/dev` and the equivalent against `origin/main`. Deleting only a fully merged branch ref does not erase the commits in the retained main/dev histories.
+
+Branches with unique/unmerged commits must be retained until their work is reviewed and those SHAs are preserved via an approved tag/archive ref or explicitly incorporated through a validated PR. Never treat a closed-but-unmerged PR as merged. Do not bulk-delete branches based only on their age or name. See `docs/repo/BRANCH_AUDIT_2026-11-08.md` and GitHub Issue #141 for the verified snapshot and outstanding operator-side removals.
+
+GitHub's `delete_branch_on_merge` setting is enabled. In Jenkins Multibranch Pipeline, consider branch discovery configured to **exclude branches that are also PR heads**, plus pruning of orphaned jobs after confirming the correct SCM source behavior. `disableConcurrentBuilds()` prevents overlap within one job, not simultaneous branch and PR jobs. Changes to Jenkins discovery and GitHub branch protection require direct administrator read-back; absence of connector access is not a license to guess settings.
+
+Release controls remain stronger than these maintenance tasks: exact-head CI, staging owner acceptance, production smoke and production browser acceptance, followed by immediate history reconciliation.

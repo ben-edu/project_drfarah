@@ -45,6 +45,8 @@ Execution rules:
 
 ---
 
+**Release checkpoint 2026-11-08:** Clinical Hero from owner-provided PNG was accepted on staging, promoted by PR #140 to production `main` commit `37794a7490ff338e1648fd788b0c38527fef838a`; Jenkins `main/4` **SUCCESS (Jenkins `main/4`, SHA `37794a74`)** at this note. Full real-device production visual acceptance remains open. Audit/cleanup of Git refs: `docs/repo/BRANCH_AUDIT_2026-11-08.md` + Issue #141; no remote branch deletions completed by the connector. Historical phases A–N and spending rules below are retained.
+
 ## 3. Master gates — current state
 
 | Gate | State | Current evidence / next requirement |
@@ -53,9 +55,9 @@ Execution rules:
 | G1 BOOKING HEALTHY | GREEN | booking incident resolved; no known regression |
 | G2 MEASUREMENT READY | PARTIAL / PILOT-READY | Google Data Manager validate-only HTTP 200; first legitimate live completed-visit import/replay/reconciliation remains scale gate |
 | G3 GOOGLE BASELINES | PARTIAL | Ads/GBP/Search Console captured; GA4 receipt/settings soft validation remains |
-| G4 WEBSITE / LANDING FOUNDATION | RELEASE VERIFICATION / ACTIVE | Mobile/tablet Call/Book/menu fix visually approved on staging and merged to `main`; user reports it absent on production. Resolve deployment/routing/cache/readback discrepancy before declaring production-ready. Other site polish continues. |
+| G4 WEBSITE / LANDING FOUNDATION | RELEASE OBSERVED BY OWNER / FOLLOW-UP QA | Owner-approved clinical Hero is on `main` through PR #140 at `37794a74`; `dev/2` and `PR-140/1` SUCCESS; production Jenkins `main/4` status **SUCCESS (Jenkins `main/4`, SHA `37794a74`)**. Owner reports Hero updates are present on public production; mobile Call/Book and phone previously confirmed working. Additional formal browser/viewport/cache QA remains tracked; optional image polish deferred. |
 | G5 ECONOMICS / PRIORITIES | PROVISIONAL | pilot economics documented; authoritative clinic economics still desired |
-| G6 LANDING PATHS | PARTIAL / RELEASE BLOCKER | Urgent/traveler page content and booking wiring exist; production mobile update not observed by user, plus price `$250` ad vs `$240` site and conditional Walk-In claim require correction before restart. |
+| G6 LANDING PATHS | PARTIAL / PAID LAUNCH BLOCKED | Landing/booking paths exist; user reports mobile Call/Book working. Paid restart remains blocked by verified ad `$250` vs site `$240` discrepancy, conditional walk-in claim, healthcare policy/measurement readiness and production device QA; do not assume green CI authorizes ads. |
 | G7 LOCAL PAID EXPERIMENT | PAUSED / POST-PILOT REVIEW | 68 clicks/$281.67, 9 reported calls, 3 ad-call conversions without proven completed visits; budget now $10/day; Near Me ad group paused; return only by new explicit clinic authorization after P0 gates. |
 | G8 TRAVELER PAID EXPERIMENT | BUILT / PAUSED / NOT PERFORMANCE-VALIDATED | 3 ad groups, 36 positives, 32 negatives and 3 RSAs; $5/day configured; no observed paid test traffic; policy/offer readiness and explicit spend authorization remain. |
 | G9 LOCAL GROWTH CYCLE | IN PROGRESS | GBP baseline exists; cleanup/reputation cycle remains |
@@ -74,7 +76,7 @@ Execution rules:
 
 | Order | Work package / source lane | Owner / status | Required action, dependency and completion evidence |
 |---:|---|---|---|
-| P0-01 | **Production mobile release incident** (D, G4/G6, B-012, Git) | Engineering; OPEN — user reports mismatch | Compare staging and production **actual served** `/app.js`, `/styles.css` and page HTML (both network and device browser, cache-disabled and query-busted), response headers, DNS/HAProxy route, Hestia docroot and Jenkins deploy stage; establish whether wrong origin, skipped deploy or stale cache. Fix source and redeploy only via normal CI, add deterministic content-hash/marker production smoke checks and cache-busted static URLs. Complete only after real production phone+Book/menu tested at 320/375/680/768/1024px, both apex and www, with no regression. Record true root cause and Jenkins SHA. |
+| P0-01 | **Production responsive/medical-Hero release acceptance** (D, G4/G6, B-012, Git) | Engineering + owner; VISUAL RELEASE CONFIRMED / TARGETED QA OPEN | Staging accepted clinical Hero, `dev/2` and exact `PR-140/1` green, merged as `main` SHA `37794a74`; `main/4` **SUCCESS (Jenkins `main/4`, SHA `37794a74`)**. Confirm actual production apex/www HTML/asset bytes where possible and owner phone/tablet visual evidence: clear Dr. Farah stethoscope/clinical monitor, mobile menu, Call 310-467-0101 and Book; verify image responsive crop, HTTP availability, no cache regression, and test 320/375/680/768/1024px where available. Owner independently confirmed visual change on public production. Keep Issue #134 for remaining viewport/apex/www/caching regression checks; do not treat success as full device coverage. |
 | P0-02 | **Non-sensitive call → appointment reconciliation** (A, B, F, H) | Clinic reception + data lead; DATA GAP | For nine reported Google calls (Nov 2–6) obtain answer/qualified/nonclinical outcome, unique lead, booking/confirmation, completed visit, cost and source confidence. No PHI, medical reasons or unauthorized recording. Separately reconcile GBP calls; don't sum unproven overlapping call metrics. |
 | P0-03 | **Conversion-goal audit/control** (B2/B5, A/F/G/H) | Ads operator; PARTIAL | In Google Ads UI verify `Calls from ads` duration, `MANY_PER_CLICK` vs appropriate `One`, value, Primary/Secondary, selected campaign goals and Google-hosted local actions. Keep diagnostic directions/visits secondary when applicable; don't delete historic data or assume a Primary flag alone drives Manual CPC. Document before/after screenshot and dates; existing Windsor connector cannot edit action-level conversion settings. |
 | P0-04 | **Offer/legal/policy truth** (B4/B5, D, J) | Dr. Farah + clinic/legal; EXTERNAL DEPENDENCY | Confirm urgent-visit price ($250 in RSA vs $240 page), true Walk-In/same-day/children/insurance/doctor availability; correct ads and landing consistently. Replace source Terms and HIPAA NPP placeholders with approved text only. Resolve Google call asset Supplemental Terms/privacy/recording issue #110; no unauthorized recording. |
@@ -412,8 +414,8 @@ BG-10 exact child identifiers must be verified from OpenProject when needed.
 - B-008 Healthcare certification — DEFERRED for current policy-isolated pilots by 2026-10-31 approved decision; #106 closed not_planned with reopen triggers. NEW research: NABP telemedicine alternative announced Nov 4; verify effective date/clinic suitability/cost vs LegitScript before any certification-sensitive ad.
 - B-009 Traveler landing production readiness — CLOSED.
 - B-010 Call asset compliance + post-certification campaign review — OPEN; issue #110.
-- B-011 Git branch reconciliation — CONTROLLED; enforce `main ⊆ dev` before/after production releases.
-- B-012 Website visual/responsive development — PRODUCTION RELEASE INCIDENT / OPEN; mobile/tablet nav fixed and staging accepted (#127/PR #128), merged to main (#129) with CI green but user reports production stale/missing; diagnose live served assets and deploy. Further visual polish/image QA remains under #114.
+- B-011 Git branch reconciliation — release #140 preserved both histories; lease-protected non-force fast-forward of `dev` to a documentation commit descending from main `37794a74` performed with readback pending in release note; verify new dev CI before declaring fully closed. Git branch pruning outstanding Issue #141.
+- B-012 Website visual/responsive development — clinical Hero accepted on staging and merged via PR #140; production real-device verification still OPEN under Issue #134. Lower-priority image replacement and responsive/LCP/accessibility polish remain under Issue #114 / Phase D.
 - B-013 Ad/asset policy readback — DATA_GAP; current connector can return zero rows while campaign-level reads work; do not infer approval.
 
 ---
