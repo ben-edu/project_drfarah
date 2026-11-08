@@ -10,9 +10,10 @@ ErrorDocument 404 /404.html
 # it must not be deleted during the stabilization window.
 
 <IfModule mod_headers.c>
-  # Unversioned HTML/CSS/JS should revalidate; images and fonts may be cached.
+  # Temporarily prevent stale HTML/CSS/JS while diagnosing mobile release mismatch.
+  # Images and fonts retain existing cache policy.
   <FilesMatch "\.(?:html|css|js)$">
-    Header set Cache-Control "no-cache, must-revalidate"
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
   </FilesMatch>
   <FilesMatch "\.(?:svg|webp|jpg|jpeg|png|gif|ico|woff2?)$">
     Header set Cache-Control "public, max-age=86400"
