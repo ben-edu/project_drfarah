@@ -2,11 +2,23 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-07  
+**Last updated:** 2026-11-08  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0C. 2026-11-08 — roadmap integration and production mobile mismatch
+
+**FACT:** On Nov 8, user personally verified new menu + Call/Book visual UX on staging but reported it **absent from the production site** despite PR #129 merge to `main`. The `main` source repository contains responsive menu JS/CSS. Jenkins exact-head `main/1` SUCCESS and `dev/47` SUCCESS. This does NOT prove that the public production origin is serving those exact bytes. Treat as user-observed P0 incident requiring real HTTP + browser verification, no assumption that previous green CI closed it. Production DNS/HAProxy/Hestia docroot, caching, correct file response, stage skip and Jenkins smoke coverage must be checked. Current Jenkins home smoke only asserts generic "Dr. Farah", not responsive asset markers; cache policy differs between staging (`no-store`) and production (`no-cache`). Suspect cache/stale endpoint is a hypothesis, not proven cause.
+
+**ACTION:** The original roadmap was stale about paused campaign budgets, certification approval path, child status and unfinished mobile code. `ROADMAP.md` section 3A is now the single cross-lane P0–P3 dependency/owner/gate/action queue, preserving all pre-existing A–N phases and BG work IDs. Separately resolve P0-01 deploy discrepancy; do not introduce unauthorized paid traffic.
+
+**RESEARCH (official notice 2026-11-04):** Google announced a future updated US/UK/Canada telemedicine qualification route using NABP Healthcare Merchant Accreditation in addition to LegitScript. Verify effective date, exact clinic eligibility and Google certification before claiming use. NABP official FAQ publicly lists $1,075 first-year application / $1,075 annual thereafter (may have extra domain charges); validate current total and requirements. The 2026-10-31 policy-isolated paid Search / defer LegitScript decision remains in force, and no services should be misrepresented to bypass certification.
+
+**NEXT:** Implement source and production smoke/asset-cache control fix through normal feature -> dev -> main only after user-ready staging acceptance/CI; verify actual production bytes and viewport. Route root-cause records to `docs/` and roadmap P0-01. No Ads enable, conversion edits or new spend in this update.
 
 ---
 
