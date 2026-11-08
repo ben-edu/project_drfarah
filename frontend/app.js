@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var REVISION = '20261026-3';
+  var REVISION = '20261108-visual-v7';
   var pagePath = window.location.pathname.replace(/\/+$/, '') || '/';
 
   if (!document.querySelector('link[data-drfarah-refinement]')) {

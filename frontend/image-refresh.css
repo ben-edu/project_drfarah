@@ -1,15 +1,19 @@
-/* Authentic service imagery refresh — 2026-10-31 v6 */
+/* Authentic service imagery refresh — 2026-11-08 v7: restore physician photography */
 
 :root{--svc-photo-radius:20px}
 
-.hero__media{background:url('assets/service-weight-loss.png?v=20261031-6') center 34%/cover no-repeat!important}
-.hero__media>img{opacity:0!important}
+/* The homepage hero contains the clinic image in actual HTML. Never replace it
+   with a weight-loss service image or hide the <img> behind a CSS background. */
+.hero__media{background:url('assets/home-hero-doctor.webp?v=20261108-v7') center 38%/cover no-repeat!important}
+.hero__media>img{opacity:1!important;visibility:visible!important;filter:none!important}
 #traveler .feature-band__media{background:url('assets/service-hotel-traveler.png?v=20261031-6') center 44%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.28)}
 #traveler .feature-band__media img{opacity:0!important}
 .about-lead__media{background:url('assets/dr-farah-portrait.webp?v=20261031-6') center 24%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.24)}
-.about-lead__media img{opacity:0!important}
-.doctor__media{background:url('assets/service-preop.png?v=20261031-6') center 35%/cover no-repeat;border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.22)}
-.doctor__media img{opacity:0!important}
+.about-lead__media img{opacity:1!important;visibility:visible!important;filter:none!important}
+/* The physician section must show the actual inline Dr. Farah photograph,
+   not a pre-op stock/service graphic stretched into the portrait container. */
+.doctor__media{background:var(--noir-2);border-radius:var(--svc-photo-radius);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.22)}
+.doctor__media img{opacity:1!important;visibility:visible!important;filter:none!important}
 .services-hero__media{min-height:420px!important;background:url('assets/service-traveler-medical.png?v=20261031-6') center 44%/cover no-repeat!important;border-radius:var(--svc-photo-radius)!important;box-shadow:0 26px 70px rgba(0,0,0,.3)!important}
 .services-hero__media img{opacity:0!important}
 .specialty-hero__media{min-height:420px!important;background:url('assets/service-iv.png?v=20261031-6') center 44%/cover no-repeat!important;border-radius:var(--svc-photo-radius)!important;box-shadow:0 26px 70px rgba(0,0,0,.3)!important}
@@ -67,4 +71,11 @@ body:has(.traveler-choice-grid) .landing-hero{--landing-photo:url('assets/clinic
   body.page-prp .landing-hero::before{height:clamp(320px,94vw,460px);background-position:center 16%}
   body.page-weight-loss .landing-hero::before{height:clamp(260px,72vw,350px);background-position:center 30%}
   .section-head{margin-bottom:32px}.section-title{font-size:clamp(31px,9vw,42px)}.content-copy h2{font-size:clamp(30px,9vw,42px)}.content-copy p,.content-copy li{font-size:15.5px;line-height:1.7}.mini-card h3{font-size:24px}.mini-card p{font-size:14.5px;line-height:1.65}.services-hero__media,.specialty-hero__media{min-height:290px!important}.service-choice-card{min-height:350px}.service-choice-card>div{padding:24px}.service-choice-card h2{font-size:32px}.mobilebar{box-shadow:0 -12px 32px rgba(0,0,0,.22)}
+}
+
+/* Keep the physician/clinic hero image identifiable on small screens while
+   maintaining a legible headline and CTA; don't alter booking or nav styles. */
+@media(max-width:680px){
+  .hero__media>img{object-position:center 25%}
+  .hero__scrim{background:linear-gradient(180deg,rgba(7,13,15,.27) 0%,rgba(7,13,15,.58) 42%,rgba(7,13,15,.92) 100%)}
 }
