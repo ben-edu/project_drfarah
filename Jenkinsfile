@@ -2636,10 +2636,14 @@ PY
             HOME_HTML="$(mktemp)"
             ROBOTS_FILE="$(mktemp)"
 
+            # Read the checkout itself; Jenkins main/2 does not provide
+            # GIT_COMMIT to this `set -eu` shell execution context.
+            RELEASE_COMMIT_SHA="$(git rev-parse --verify HEAD)"
+            test -n "$RELEASE_COMMIT_SHA"
             # Compare uncached public HTML from the actual production hostname.
             curl -fsS --max-time 30 \
               -H 'Cache-Control: no-cache' \
-              "https://${PRODUCTION_FRONTEND_HOST}/?drfarah_release=${GIT_COMMIT}" \
+              "https://${PRODUCTION_FRONTEND_HOST}/?drfarah_release=${RELEASE_COMMIT_SHA}" \
               > "$HOME_HTML"
 
             curl -fsS \
@@ -2666,7 +2670,7 @@ PY
               LIVE_ASSET="$(mktemp)"
               if ! curl -fsS --max-time 30 \
                 -H 'Cache-Control: no-cache' \
-                "https://${PRODUCTION_FRONTEND_HOST}/${asset}?v=20261108-mobile2&release=${GIT_COMMIT}" \
+                "https://${PRODUCTION_FRONTEND_HOST}/${asset}?v=20261108-mobile2&release=${RELEASE_COMMIT_SHA}" \
                 > "$LIVE_ASSET"; then
                 echo "FAIL: public production asset unavailable: ${asset}"
                 rm -f "$LIVE_ASSET" "$HOME_HTML" "$ROBOTS_FILE"
