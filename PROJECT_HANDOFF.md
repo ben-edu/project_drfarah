@@ -2,7 +2,7 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-07  
+**Last updated:** 2026-11-08  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
@@ -10,9 +10,53 @@
 
 ---
 
+## 0C. 2026-11-08 — roadmap integration and production mobile mismatch
+
+**FACT:** On Nov 8, user personally verified new menu + Call/Book visual UX on staging but reported it **absent from the production site** despite PR #129 merge to `main`. The `main` source repository contains responsive menu JS/CSS. Jenkins exact-head `main/1` SUCCESS and `dev/47` SUCCESS. This does NOT prove that the public production origin is serving those exact bytes. Treat as user-observed P0 incident requiring real HTTP + browser verification, no assumption that previous green CI closed it. Production DNS/HAProxy/Hestia docroot, caching, correct file response, stage skip and Jenkins smoke coverage must be checked. Current Jenkins home smoke only asserts generic "Dr. Farah", not responsive asset markers; cache policy differs between staging (`no-store`) and production (`no-cache`). Suspect cache/stale endpoint is a hypothesis, not proven cause.
+
+**ACTION:** The original roadmap was stale about paused campaign budgets, certification approval path, child status and unfinished mobile code. `ROADMAP.md` section 3A is now the single cross-lane P0–P3 dependency/owner/gate/action queue, preserving all pre-existing A–N phases and BG work IDs. Separately resolve P0-01 deploy discrepancy; do not introduce unauthorized paid traffic.
+
+**RESEARCH (official notice 2026-11-04):** Google announced a future updated US/UK/Canada telemedicine qualification route using NABP Healthcare Merchant Accreditation in addition to LegitScript. Verify effective date, exact clinic eligibility and Google certification before claiming use. NABP official FAQ publicly lists $1,075 first-year application / $1,075 annual thereafter (may have extra domain charges); validate current total and requirements. The 2026-10-31 policy-isolated paid Search / defer LegitScript decision remains in force, and no services should be misrepresented to bypass certification.
+
+**NEXT:** Implement source and production smoke/asset-cache control fix through normal feature -> dev -> main only after user-ready staging acceptance/CI; verify actual production bytes and viewport. Route root-cause records to `docs/` and roadmap P0-01. No Ads enable, conversion edits or new spend in this update.
+
+---
+
+## 0B. 2026-11-08 — independent Google Ads + site forensic audit
+
+**FACT — CI/release:** Jenkins `main/1` and `dev/47` both read SUCCESS on their exact heads `0b7ddb6a31a831d6aa8843c3e42c9b240750a796` and `6931e147fe369b3b8407caa83cc7c174e2ba9e04`. PR #129 production merge and #130 ancestry-only reconciliation are complete. Staging mobile UX received user visual acceptance. Independent real-device production smoke remains a verification task, not a proven failure.
+
+**FACT — Google Ads account** `652-510-3588`, Urgent Care Search pilot `24414014329`: PAUSED, configured $10/day; Traveler Search `24404901753`: PAUSED, $5/day. Historical urgent-care pilot (Nov 2–6) delivered 2,271 impressions, 68 clicks (2.99% CTR), $281.67 cost (~$4.14 CPC), 9 reported phone calls, 3 `Calls from ads` conversions (~$93.89 / platform conversion), 27 All Conversions including 8 directions/15 engagements/1 website visit + 3 calls. Neither reported calls nor conversions demonstrate booked/completed visits. No spend or campaign activation authorized by this audit.
+
+**FACT — key segmentation:** 61/68 clicks and $251.10 (~89% spend) from mobile. Beverly Hills ad group 23 clicks/$101.93/3 ad-call conversions; `Near Me` 40/$160.09/0 ad-call conversions (already PAUSED at ad-group level); Walk-In 5/$19.65/0. Search impression share ~24.95%; rank lost ~26.13%, budget lost ~48.92% — not a reason to scale without verified economics. Manual CPC, enhanced CPC disabled; positive and negative geo presence setting; Search Partners and Display targeted OFF as current configuration, although historical partner impressions without clicks exist.
+
+**FACT — conversion-action audit:** "Calls from ads" is enabled, Primary, type AD_CALL, counting MANY_PER_CLICK. Three Google-hosted Local actions (Directions, Other engagements, Website visits) are also marked Primary for their own goals, but appeared only in All Conversions for the sampled campaign. Primary label alone does not mean campaign bidding uses it; verify its selected account/campaign conversion goals in Google Ads UI. Manual CPC means it is not currently smart-bidding based on these 3 calls. Google auto-tagging true. Connected API currently supports observing but not editing conversion-action goal/count settings.
+
+**FACT — site/code:** Ad headline "Urgent Visit From $250" conflicts with the urgent-care landing page's "Starting From $240" (business source also approx $240). "Walk-In Urgent Care" claim must match actual walk-in acceptance: current online booking is a *request*, pending clinic confirmation. Main/traveler landings use dedicated phone/booking CTAs. Responsive navigation fix merged and staging accepted, but paid media remained 89% mobile before fix. GA4 implementation deliberately *excludes* health-intent paid landings, booking and registration: measured 3 direct GA4 sessions on Oct 15–Nov 7, not a reliable paid-funnel denominator. The code has first-party UTM/GCLID/GBRAID/WBRAID -> booking attribution; live completed-visit import and clinic call/appointment reconciliation remain unproven. `terms.html` and `notice-of-privacy-practices.html` source still state legal-review placeholders; obtain approved text rather than automatically changing it.
+
+**DATA_GAP — priority:** Official connected call dispositions/duration/answer rate and first Google-attributed completed visits; campaign-selected conversion goals and per-action counted lead semantics; approved clinical offers/prices and insurance coverage; search-term negative readback after write (write accepted but cached readback limited); performance of traveler pilot untested (zero actual traffic). Production live browser smoke not independently confirmed from this environment. Historical Google Ads call asset compliance and certification sensitivity remain open.
+
+**RECOMMENDATION — ordered:** (P0) reconcile 9 reported Google calls with answered/qualified/booking/completed outcomes without exposing PHI; correct ad/landing price and walk-in promises; finalize lawful clinic legal notices and call compliance; verify primary vs secondary goals and lead "One" counting; confirm mobile funnel. (P1) preserve PAUSED state until clinic explicit restart; if authorized test tightly controlled local Beverly Hills phrase/exact with $10/day average cap and only qualified services, while Near Me remains PAUSED; set precise stop rules, weekly Search Terms/negatives. (P2) fully validate `visit_completed` offline import/dedup and then evaluate appropriate Smart Bidding; separately pilot traveler/hotel and Pre-Op based on economics and policy; do not open unrestricted PMax/AI Max/remarketing without eligibility/evidence. Daily budget is *average* and can reach ~2x on a given day per Google official policy; review account-level and actual spending if a strict business cap is necessary.
+
+**Detailed evidence and recommendations:** `docs/INDEPENDENT_GOOGLE_ADS_SITE_AUDIT_2026-11-08.md`. This is an analysis and next-action proposal, NOT approval to spend, enable campaigns, change conversions, or modify clinical/legal content. `ROADMAP.md` remains the only master roadmap.
+
+---
+
+## 0A. 2026-11-07 — release reconciliation and independent Google Ads audit checkpoint
+
+**FACT — release:** User approved staging visuals for mobile/tablet navigation and Call/Book actions. PR #129 merged the tested `dev` state into production `main` as commit `0b7ddb6a31a831d6aa8843c3e42c9b240750a796`. PR #130 reconciled the production merge ancestry back to `dev` as `6931e147fe369b3b8407caa83cc7c174e2ba9e04`. GitHub source-branch auto-deletion briefly removed `main` during reconciliation; `main` was immediately restored to its exact prior production merge SHA. Verified `main...dev`: 1 commit ahead, 0 behind and 0 content-file changes. This is correct ancestry, not an outstanding code diff.
+
+**FACT — Jenkins at audit start:** `main/1` and `dev/47` exact-head statuses are still pending; `PR-130/1` successful. Avoid additional branch/CI writes during these builds. Production deployment/smoke are not declared green until verified.
+
+**FACT — Ads at last known live read:** Google Ads account `652-510-3588`; local Urgent Care Search campaign `24414014329` PAUSED at $10/day; Traveler Search `24404901753` PAUSED at $5/day. Prior data: local Search $281.67 / 68 clicks / 3 `Calls from ads` conversions (not patients), reported 9 phone_calls over Nov 1–7. Five targeted competitor/location negatives added. This is not proof of conversion to appointments or completed visits.
+
+**IN PROGRESS — independent account/site audit requested:** Revalidate current Google Ads conversion action settings, ad-call reporting, geo, campaign/search terms, bidding, creatives, assets, search partners, landing experience, privacy/consent, booking source persistence, and policy. Distinguish FACT/HYPOTHESIS/DATA_GAP; document prioritized interventions with verification and retain paused state until explicit operating decision. Any release readback updates and research conclusions must be recorded in canonical handoff on a safe GitHub branch once concurrent Jenkins runs finish.
+
+---
+
 ## 0. 2026-11-07 — cost containment, attribution audit and mobile CTA fix
 
-FACT — Google Ads account 652-510-3588: local Search campaign 24414014329 and traveler Search campaign 24404901753 remain PAUSED; 2026-11-07 live readback confirms configured daily budgets were reduced from $40 to $10 and from $20 to $5 respectively. Both budget writes succeeded. No campaign was enabled. Historical 2026-10-28..2026-11-07 local Search spend $281.67 / 68 clicks / 3 reported Conversions. These 3 belong to \`Calls from ads\` (not verified patients); All Conversions also contains 8 Directions + 15 Other engagements + 1 Website visit. Call connection/duration, appointment, completed visit and realized CAC are not yet reconciled.
+FACT — Google Ads account 652-510-3588: local Search campaign 24414014329 and traveler Search campaign 24404901753 remain PAUSED; 2026-11-07 live readback confirms configured daily budgets were reduced from $40 to $10 and from $20 to $5 respectively. Both budget writes succeeded. No campaign was enabled. Historical 2026-10-28..2026-11-07 local Search spend $281.67 / 68 clicks / 3 reported Conversions. These 3 belong to `Calls from ads` (not verified patients); All Conversions also contains 8 Directions + 15 Other engagements + 1 Website visit. Call connection/duration, appointment, completed visit and realized CAC are not yet reconciled.
 
 FACT — 5 narrowly targeted competitor/location negative keywords were successfully added to local Search: PHRASE "cedars urgent care", "exer urgent care", "excer urgent care", "kaiser urgent care"; EXACT "8767 wilshire blvd urgent care". Do not negative broad legitimate "urgent care near me" without outcome evidence. Search term report revealed $78.34 for 20 clicks on "urgent care near me" and zero primary conversions in the observed period; this is directional, not proof of zero business outcomes.
 
@@ -20,9 +64,9 @@ FACT — PR #126, the documented ads launch strategy/clinic policy decision bran
 
 IN DEVELOPMENT — dedicated responsive defect issue #127 tracks this change. This responsive-navigation change adds an accessible mobile/tablet menu for widths <=1040px, retains a visible Book CTA in header, labels call CTAs with 310-467-0101, and provides persistent two-button mobile quick actions at <=680px on pages lacking them. Existing pre-op phone-scheduling exception stays phone-first. The change is NOT production-verified merely because code is committed; require branch/staging CI, 320/375/680/768/1024px visual/functional checks, then normal dev -> main release and production smoke.
 
-DECISION/GATE — do not re-enable either paused Search campaign based only on these counts. Clinic-approved call-asset/recording compliance remains a hard gate where applicable; validate real connected calls and completed visits. \`Calls from ads\` is a reporting conversion (duration/qualification criteria), not an extra charge and not automatically an appointment. The connected write interface does not expose editing conversion-action goals; inspect actual UI settings before changing them.
+DECISION/GATE — do not re-enable either paused Search campaign based only on these counts. Clinic-approved call-asset/recording compliance remains a hard gate where applicable; validate real connected calls and completed visits. `Calls from ads` is a reporting conversion (duration/qualification criteria), not an extra charge and not automatically an appointment. The connected write interface does not expose editing conversion-action goals; inspect actual UI settings before changing them.
 
-See \`docs/ADS_COST_MOBILE_AUDIT_2026-11-07.md\`.
+See `docs/ADS_COST_MOBILE_AUDIT_2026-11-07.md`.
 
 ---
 

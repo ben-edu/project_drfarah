@@ -10,7 +10,7 @@
 > **Live systems:** authoritative for their own current state
 
 **Operating mode:** Growth Acceleration / parallel execution.  
-**Roadmap refreshed:** 2026-10-31.
+**Roadmap refreshed:** 2026-11-08. Historical phase descriptions and verified OpenProject IDs are retained; the integrated execution queue below is authoritative for priority/status, while live systems override cached observations.
 
 ---
 
@@ -53,16 +53,56 @@ Execution rules:
 | G1 BOOKING HEALTHY | GREEN | booking incident resolved; no known regression |
 | G2 MEASUREMENT READY | PARTIAL / PILOT-READY | Google Data Manager validate-only HTTP 200; first legitimate live completed-visit import/replay/reconciliation remains scale gate |
 | G3 GOOGLE BASELINES | PARTIAL | Ads/GBP/Search Console captured; GA4 receipt/settings soft validation remains |
-| G4 WEBSITE / LANDING FOUNDATION | PARTIAL / ACTIVE | paid landing paths healthy; real service imagery corrected; site still needs additional responsive/navigation and visual development |
+| G4 WEBSITE / LANDING FOUNDATION | RELEASE VERIFICATION / ACTIVE | Mobile/tablet Call/Book/menu fix visually approved on staging and merged to `main`; user reports it absent on production. Resolve deployment/routing/cache/readback discrepancy before declaring production-ready. Other site polish continues. |
 | G5 ECONOMICS / PRIORITIES | PROVISIONAL | pilot economics documented; authoritative clinic economics still desired |
-| G6 LANDING PATHS | GREEN for current paid pilots | urgent-care + traveler paid landings production-ready |
-| G7 LOCAL PAID EXPERIMENT | READY EXCEPT POLICY / LAUNCH AUTHORIZATION | local campaign PAUSED; geo `PRESENCE`; policy/readiness + explicit spend authorization before enable |
-| G8 TRAVELER PAID EXPERIMENT | BUILT / PAUSED | 3 ad groups, 36 positives, 32 negatives, assets and 3 RSAs; geo `PRESENCE`; policy/readiness + explicit spend authorization remain |
+| G6 LANDING PATHS | PARTIAL / RELEASE BLOCKER | Urgent/traveler page content and booking wiring exist; production mobile update not observed by user, plus price `$250` ad vs `$240` site and conditional Walk-In claim require correction before restart. |
+| G7 LOCAL PAID EXPERIMENT | PAUSED / POST-PILOT REVIEW | 68 clicks/$281.67, 9 reported calls, 3 ad-call conversions without proven completed visits; budget now $10/day; Near Me ad group paused; return only by new explicit clinic authorization after P0 gates. |
+| G8 TRAVELER PAID EXPERIMENT | BUILT / PAUSED / NOT PERFORMANCE-VALIDATED | 3 ad groups, 36 positives, 32 negatives and 3 RSAs; $5/day configured; no observed paid test traffic; policy/offer readiness and explicit spend authorization remain. |
 | G9 LOCAL GROWTH CYCLE | IN PROGRESS | GBP baseline exists; cleanup/reputation cycle remains |
 | G10 AI PAID READY | WAITING_EXTERNAL | ChatGPT Ads account/eligibility not established |
 | G11 PARTNERSHIP EXPERIMENTS | PLANNED / PARTIAL PREP | traveler/hotel + pre-op referral engines remain active roadmap lanes |
 | G12 CONTENT ENGINE | PLANNED | query/partner/economics-led physician content |
 | G13 GROWTH INTELLIGENCE | PLANNED / PARTIAL FOUNDATION | source→appointment exists; completed-visit/cost/economics loop still maturing |
+
+---
+
+## 3A. Integrated priority queue and dependency map — 2026-11-08
+
+**Purpose:** This ordered queue supersedes stale "Next" wording in historical phase sections **without deleting, renaming or retiring Phases A–N, their workstreams, or OpenProject codes**. Execute independent safe lanes in parallel; an external gate blocks only the dependent operation. Authority remains section 2; check live systems when resuming. The canonical handoff records verified live snapshots and exact release SHAs. No chat transcript is required.
+
+**Priority definitions:** P0 = immediate release/data-integrity/patient-facing or hard policy gate; P1 = measurement and restart-ready controlled acquisition; P2 = evidence-based expansion and parallel organic/economics work; P3 = scaled future channels and ongoing intelligence. Status terms are FACT DONE, VERIFIED PENDING, PROPOSED, EXTERNAL DEPENDENCY, DATA GAP. Green Jenkins alone is not sufficient evidence of live customer-facing content.
+
+| Order | Work package / source lane | Owner / status | Required action, dependency and completion evidence |
+|---:|---|---|---|
+| P0-01 | **Production mobile release incident** (D, G4/G6, B-012, Git) | Engineering; OPEN — user reports mismatch | Compare staging and production **actual served** `/app.js`, `/styles.css` and page HTML (both network and device browser, cache-disabled and query-busted), response headers, DNS/HAProxy route, Hestia docroot and Jenkins deploy stage; establish whether wrong origin, skipped deploy or stale cache. Fix source and redeploy only via normal CI, add deterministic content-hash/marker production smoke checks and cache-busted static URLs. Complete only after real production phone+Book/menu tested at 320/375/680/768/1024px, both apex and www, with no regression. Record true root cause and Jenkins SHA. |
+| P0-02 | **Non-sensitive call → appointment reconciliation** (A, B, F, H) | Clinic reception + data lead; DATA GAP | For nine reported Google calls (Nov 2–6) obtain answer/qualified/nonclinical outcome, unique lead, booking/confirmation, completed visit, cost and source confidence. No PHI, medical reasons or unauthorized recording. Separately reconcile GBP calls; don't sum unproven overlapping call metrics. |
+| P0-03 | **Conversion-goal audit/control** (B2/B5, A/F/G/H) | Ads operator; PARTIAL | In Google Ads UI verify `Calls from ads` duration, `MANY_PER_CLICK` vs appropriate `One`, value, Primary/Secondary, selected campaign goals and Google-hosted local actions. Keep diagnostic directions/visits secondary when applicable; don't delete historic data or assume a Primary flag alone drives Manual CPC. Document before/after screenshot and dates; existing Windsor connector cannot edit action-level conversion settings. |
+| P0-04 | **Offer/legal/policy truth** (B4/B5, D, J) | Dr. Farah + clinic/legal; EXTERNAL DEPENDENCY | Confirm urgent-visit price ($250 in RSA vs $240 page), true Walk-In/same-day/children/insurance/doctor availability; correct ads and landing consistently. Replace source Terms and HIPAA NPP placeholders with approved text only. Resolve Google call asset Supplemental Terms/privacy/recording issue #110; no unauthorized recording. |
+| P0-05 | **Paid funnel end-to-end verification** (A3, D, F/H) | Engineering + clinic; PARTIAL | Click ad-like URL carrying test-safe attribution on staging with no Ads event contamination; /urgent-care → preselected /book?service=urgent-care → availability → real authorized test appointment → confirmation; mobile/slow network/empty slot/error handling and telephone fallback. Confirm attribution persists into first-party booking, then first *legitimate* completed paid visit import/dedupe/reconciliation (A3 scale gate). |
+| P0-06 | **Current Google Ads policy/negative/delivery QA** (B) | Ads operator; PARTIAL | Read all actual ads/assets/policy statuses, Search Terms, verify five added competitor/location negatives, manual bids, 5-mile positive PRESENCE, weekday schedule, Google Search partners/Display off; check Google-managed Local Services separately for independent spend. Both Search campaigns remain PAUSED pending new explicit restart authorization. |
+| P1-01 | **Clinic-controlled, narrow local Search decision** (B2/G) | Dr. Farah decision; PROPOSED | Clinic decides remain paused or authorize finite-budget pilot. If approved and P0 ready: initially Beverly Hills high-intent Exact/Phrase group, $10/day *average* configured (Google may spend up to 2x on a day), `Near Me` ad group PAUSED, controlled max CPC, call coverage/hours, no claim of guaranteed performance; review search terms weekly and stop on invalid leads, broken booking, policy issue or unacceptable CAC. |
+| P1-02 | **Weekly experiment scorecard and source truth** (F/H/N/J) | Growth/data; PROPOSED | Per day/week capture spend, exact terms, clicks, reported calls, answered/qualified calls, request, confirmed/completed/no-show, collected revenue/variable cost, CAC, contribution and data confidence. Do not call 3 ad conversions "3 patients". Define SCALE/MODIFY/STOP thresholds and named owner/decision date before spend. |
+| P1-03 | **Landing/ad consistency experiments** (C/D/B/J) | Web + Ads + clinic; PROPOSED | After P0 release proof, remove duplicate booking service selection with `/book?service=urgent-care` if tested, improve accurate price/hours/non-ER distinction/call response and above-fold location; test speed, LCP, accessibility, mobile click targets. Use one hypothesis per experiment and preserve privacy. |
+| P1-04 | **Production compliance/policy separation** (B4/B5, D) | Clinic/legal + Ads; EXTERNAL DEPENDENCY | Keep in-person urgent/traveler paid landings isolated from certification-sensitive prescription/telemedicine ads/assets. Recheck disapproved assets #106 history and Google's current rules; obtain explicit clinic direction before any broader telemedicine launch. Certification is DEFERRED for present pilot (see approved 2026-10-31 strategy), NOT silently required for policy-safe in-person tests. |
+| P2-01 | **LegitScript vs NABP alternative investigation** (B4, virtual services) | Growth policy researcher + clinic; NEW RESEARCH | Google official 2026-11-04 policy notice: **NABP Healthcare Merchant Accreditation** is a newly announced alternative third-party accreditation for US/UK/Canada telemedicine advertising, in addition to LegitScript. Application to Google only after policy change is published; re-verify effective date and advertiser category, NABP clinic eligibility, cost, scope, required documents/domain, audit timeline, annual fees and whether this specific virtual/prescription service meets criteria. Obtain quotes and Google Ads policy support confirmation; present comparative decision memo. Do not treat NABP as an instant exemption or bypass. Official Google notice: https://support.google.com/adspolicy/answer/18794834 ; NABP price explainer: https://nabp.pharmacy/help/how-much-does-healthcare-merchant-accreditation-cost/ ; Google healthcare policy: https://support.google.com/adspolicy/answer/176031 ; existing LegitScript quote remains historical pending verification. |
+| P2-02 | **Service unit economics/capacity** (J) | Dr. Farah + operations; DATA GAP | Validate average collected receipts, allowed/published pricing, staff/physician hours, capacity, costs, no-shows, case suitability, cash vs insurance, referrals; rank Urgent, Pre-Op, Traveler/Hotel, IV/PRP/other lines. CAC targets come from contribution, not list price alone. |
+| P2-03 | **Traveler paid + partner pilots** (B3/K) | Growth + operations; BUILT/UNTESTED | Keep separate traveler Search at $5/day PAUSED until offer, remote/pre-arrival coverage, hotel/mobile availability, geo/intent economics and policy approved. In parallel existing traveler/hotel/concierge source inventory → partner kit/outreach → attributed modest pilot → completed outcome. |
+| P2-04 | **Pre-Op SEO, paid feasibility + referral engine** (C/L/J) | Growth + clinic; PARTIAL | Use GSC surgery-clearance opportunity; align landing and price/eligible age, prioritize referring surgeons/surgery centers with compliant no-compensation outreach, small experiments, measurable completed clearance. New Search pilot only after standalone economics, capacity and policy check. |
+| P2-05 | **GBP/local SEO/reputation** (C/E) | Marketing; READY | Verify NAP/phone/hours/location/website/booking, service truth, review cadence and search intent, Search Console near-page-one pages, canonical/legacy redirects and indexed paid landings; do not conflate GBP organic calls with Ads calls. |
+| P2-06 | **GA4 and measurement hardening** (A/F/H) | Engineering + data; PARTIAL | Keep healthcare-sensitive pages outside current GA4 allowlist, validate Realtime/consent/timezone; preserve first-party click IDs through booking and privacy-safe backend reporting, dedupe offline completed visits, reconcile to Ads. Only after outcome quality exists evaluate Smart Bidding vs manual CPC. |
+| P3-01 | **AI / ChatGPT advertising** (I) | Growth/policy; WAITING_EXTERNAL | Verify ChatGPT Ads clinic account access, current urgent care/telehealth healthcare eligibility, brand safety, landing policy, pricing/measurement; build approved, **finite** test only after compliant approval. Ads Manager installed but no accessible clinic account in last check. See https://ads.openai.com/ and official Help Center; no implicit spend authorization. |
+| P3-02 | **Physician-led AI-assisted content/video engine** (M/BG-60) | Creative + clinic; PRESERVED/PLANNED | Content pillars from real queries/patient education/GBP/traveler/pre-op; physician-reviewed scripts; original approved footage; pilot Google Flow/Veo for visual elements and DaVinci Resolve Studio for editing if clinically safe; permission/rights, medical claim review, never invent doctor/patients/testimonials; publish reusable site/GBP/short-form clips and evaluate qualified leads, not views. |
+| P3-03 | **Cross-channel Growth Intelligence** (N/BG-80/90) | Data/growth; FOUNDATION | Unified source/appointment/completed visit/cost/economics/partner dashboard; 7/28-day cohort comparisons, experiment register, weekly accountable decisions; separate GA4, GBP, Search Console, Google Ads platform metrics and first-party outcomes. |
+| P3-04 | **Subsequent website and service growth** (D/C/J/K/L/M) | Web + growth; PLANNED | Improve imagery sharpness/asset performance, richer service-specific landing pages, accessibility, physician trust, local SEO, new suitable services and approved creative based on experiment ROI; retain original issue #114 closure checks. |
+
+### Dependency graph and operational release decisions
+
+1. **Release incident:** P0-01 is a user-observed production defect, independent of ad activation; fix first, verify serving bytes and stable cache strategy. CI green without content-assertions or user-side production proof is not closure.
+2. **Spend hard gate:** P0-01/03/04/05/06 → clinic explicit P1-01 approval → limited pilot P1-02 measurement → further budget and automated bidding only upon completed outcomes and economics. If Dr. Farah elects continued PAUSE, continue P0 validation and P2 organic/partner work without spend.
+3. **Measurement scale gate:** A3 first legitimate `visit_completed` + dedupe/replay/reconciliation → H stable pipeline → qualified automated-bidding and scaling tests; do not fabricate visits.
+4. **Certification branch:** P2-01 LegitScript/NABP comparison does not block approved policy-isolated local urgent-care paid tests; it blocks only certification-sensitive telemedicine/prescription expansion, alongside real clinic/legal approval.
+5. **Parallel independent lanes:** E/GBP, C/SEO, J/economics, K/traveler partnerships, L/pre-op referrals, M/video content design, I/AI ads eligibility research, F/allowlisted GA4 receipt can proceed without waiting for P1 paid restart.
+6. **Evidence hygiene:** Every completed task needs source, actor, time, before/after, live readback, CI/deployment SHA when applicable, non-sensitive metrics, remaining blocker and next owner. Use `PROJECT_HANDOFF.md`, this roadmap, approved `docs/DECISIONS.md` and OpenProject; **never use a chat tab as operational memory**. Existing OpenProject IDs in section 4 below remain unchanged.
 
 ---
 
@@ -97,10 +137,10 @@ Campaign `24414014329` — `Search | Urgent Care | Beverly Hills | Pilot | 2026-
 
 Current state:
 - PAUSED; no authorized spend;
-- Manual CPC; provisional configured budget $40/day;
+- Manual CPC; latest observed configured budget **$10/day** (after 2026-11-07 cost reduction); historical launch budget $40/day;
 - five-mile Beverly Hills targeting and clinic-hours schedule;
 - Exact/Phrase positives + negatives; no Broad;
-- three PAUSED ad groups and three PAUSED RSAs;
+- Parent campaign PAUSED; latest child readback Beverly Hills / Walk-In ad groups enabled and Near Me ad group PAUSED; three RSA objects exist; when parent is PAUSED none serves;
 - landing: `https://drfarahvipurgentcare.com/urgent-care-beverly-hills`;
 - live campaign readback confirms positive geo `PRESENCE`.
 
@@ -113,14 +153,16 @@ RSAs: `829832740743`, `829881874987`, `829963008380`.
 
 Keyword Planner: `urgent care beverly hills` ~1,000 average monthly searches, MEDIUM competition, historical average CPC ~$3.56. Current Manual CPC range is directionally reasonable; do not change bids from planner data alone.
 
-Next: fresh ad/asset policy readback when available, final readiness review, then controlled launch only with explicit spend authorization.
+Observed five spending days Nov 2–6: 2,271 impressions, 68 clicks, $281.67 cost, 9 reported phone calls, 3 ad-call conversions (not verified patients). Beverly Hills 23 clicks/$101.93/3 calls-conversions; Near Me 40/$160.09/0 and already PAUSED; Walk-In 5/$19.65/0. $10 daily budget is an average, not a hard daily ceiling. Five targeted competitor/location negatives were added on Nov 7; verify UI persistence. Detailed interpretation: `docs/INDEPENDENT_GOOGLE_ADS_SITE_AUDIT_2026-11-08.md`.
+
+Next: P0 conversion-goal/call review, ad/site $250 vs $240 price discrepancy and Walk-In scope, mobile production verification, call asset policy and clinic approval. No automatic relaunch.
 
 ## B3 — Traveler / pre-arrival Search pilot
 Campaign `24404901753` — `Search | Traveler Care | Beverly Hills | Pre-Arrival | Pilot | 2026-10-29`.
 
 Current state:
 - PAUSED; no authorized spend;
-- Manual CPC; configured $20/day while paused;
+- Manual CPC; latest observed configured **$5/day** while PAUSED (previous $20/day);
 - US geography, English, 06:00–22:00 schedule;
 - EU political-ad declaration: No;
 - live campaign readback confirms `PRESENCE`;
@@ -139,6 +181,11 @@ Policy-safe assets already created: four callouts, one structured snippet, four 
 Keyword evidence: ultra-specific traveler+Beverly Hills seeds had no reportable volume; `hotel doctor` / `doctor at hotel` ~140 US searches each and historical CPC ~$2.44; `doctor beverly hills` ~260 but ~$27 historical CPC; `concierge doctor beverly hills` ~590 and ~$10.72. DECISION: start precise and do not broaden blindly.
 
 ## B4 — Healthcare certification / policy remediation
+
+**Current approved operating decision (2026-10-31, docs/GOOGLE_ADS_LAUNCH_STRATEGY_2026-10-31.md):** LegitScript and Google telemedicine/prescription certification were **deferred** for now, not waived. Paid in-person and traveler Search assets are intentionally restricted to policy-isolated services/landing pages. Do not launch prescription/refill/virtual-prescribing campaigns or treat removing prescription keywords as bypassing requirements. Historical #106 was closed `not_planned` with reopen triggers; don't misstate it as currently active merely because this historical B4 text says so.
+
+**NEW RESEARCH (2026-11-08; no purchasing decision):** Google announced on Nov 4 an **additional NABP Healthcare Merchant Accreditation route** for US/UK/Canada telemedicine advertisers, to be eligible for Google Ads telemedicine certification when the revised country policy is published. Research program eligibility for this clinic and domain, product/service model, calendar/effective date, application steps, current official pricing/renewals and any .pharmacy domain costs and Google follow-up certification. Official: https://support.google.com/adspolicy/answer/18794834 ; https://nabp.pharmacy/help/how-much-does-healthcare-merchant-accreditation-cost/ . Compare with LegitScript on total costs, time, and suitability. Google site notice is about a **future policy rollout**, not confirmation of current certification or exemption. Clinic/legal reviews before spending.
+
 FACT — sitelink `Clinic Services` asset `434419668405` to `/services` is disapproved for `PRESCRIPTION_DRUG_SALE` with missing US certification and limited under `HEALTH_IN_PERSONALIZED_ADS`.
 
 DECISION — do not hide/delete a legitimate telemedicine/prescription-refill service to bypass policy.
@@ -149,9 +196,9 @@ Path:
 3. Re-read affected asset and all ads/assets across both Search campaigns.
 4. Preserve separate health-sensitive personalization restrictions.
 
-Issue #106 tracks this lane. Dr. Farah has now responded to the project; the response must be reviewed in the next Google Ads step. Do not infer certification approval until the response/evidence is inspected.
+Historical issue #106 records this lane and the later 2026-10-31 decision to defer certification; reopen only if a certification-sensitive campaign becomes an approved priority or Google policy explicitly makes it necessary. Do not infer approval from the original conversation/response.
 
-Current standard LegitScript pricing last verified 2026-10-29: $975 application fee + $2,150 annual certification after approval = $3,125 standard first-year total.
+Historical standard LegitScript pricing verified 2026-10-29: $975 application fee + $2,150 annual certification after approval = $3,125 standard first-year total; re-quote before decision. NABP official FAQ (retrieved Nov 8) lists $1,075 first-year application and $1,075 annual participation starting after year 1, approximately $2,000/year, plus separate applicable .pharmacy registrar fees; **confirm total and applicability directly** rather than claiming it is necessarily cheaper for the clinic.
 
 Site readiness still includes clinic/legal-approved Terms and Notice of Privacy Practices before final certification readiness.
 
@@ -202,15 +249,15 @@ Issue #114 remains the durable website/image-quality work item.
 - staging visual review by the user confirmed the new images are materially better.
 
 ### Still open — site development is NOT complete
-- mobile/tablet navigation remains a known UX defect: the menu/navigation bar is not adequately visible/usable on small screens;
-- perform a dedicated responsive navigation implementation and QA pass across common mobile/tablet widths;
+- mobile/tablet menu + Call/Book code fix (#127 / PR #128) was implemented, staging visually accepted, and promoted in PR #129 to `main`, with PR #130 historical reconciliation and Jenkins success; **user reports production appearance is still old on 2026-11-08** — treat as a production-serving incident until verified, not a pending code implementation;
+- diagnose mismatched served bytes, browser/proxy cache, wrong docroot/HAProxy/DNS/origin, deployment scope and stale frontend assets; add content-specific production smoke assertions; test 320/375/680/768/1024px, Booking and telephone actions on actual production; only then mark production responsive release complete;
 - continue visual hierarchy, spacing, typography, card consistency and section polish where needed;
 - verify no service page reuses an inappropriate image and that crop/focal point remains acceptable across desktop/tablet/mobile;
 - continue image performance work (`srcset`/`sizes`, intrinsic dimensions, LCP prioritization, below-fold lazy loading) without degrading sharpness;
 - conduct accessibility and interaction QA after navigation changes;
 - maintain a high-end, restrained clinical/VIP visual system rather than generic template styling.
 
-This website-development lane is important but does not block the next Google Ads policy/certification work unless a defect materially affects paid landing usability, factual accuracy or conversion safety.
+The user-reported production responsive mismatch **does** materially affect paid-mobile usability (61/68 prior paid clicks were mobile), so P0-01 blocks new paid traffic until closed, while independent certification/organic/content work continues.
 
 ---
 
@@ -362,16 +409,16 @@ BG-10 exact child identifiers must be verified from OpenProject when needed.
 - B-005 GA4 live receipt/settings — SOFT.
 - B-006 authoritative clinic economics/capacity — SOFT.
 - B-007 ChatGPT Ads eligibility/account access — SOFT / WAITING_EXTERNAL.
-- B-008 LegitScript + Google healthcare certification — ACTIVE EXTERNAL / HIGH PRIORITY; issue #106; Dr. Farah has responded and response review is next.
+- B-008 Healthcare certification — DEFERRED for current policy-isolated pilots by 2026-10-31 approved decision; #106 closed not_planned with reopen triggers. NEW research: NABP telemedicine alternative announced Nov 4; verify effective date/clinic suitability/cost vs LegitScript before any certification-sensitive ad.
 - B-009 Traveler landing production readiness — CLOSED.
 - B-010 Call asset compliance + post-certification campaign review — OPEN; issue #110.
 - B-011 Git branch reconciliation — CONTROLLED; enforce `main ⊆ dev` before/after production releases.
-- B-012 Website visual/responsive development — PARTIAL / OPEN; issue #114. Real imagery refresh accepted; mobile/tablet navigation remains a known defect and additional site polish remains planned.
+- B-012 Website visual/responsive development — PRODUCTION RELEASE INCIDENT / OPEN; mobile/tablet nav fixed and staging accepted (#127/PR #128), merged to main (#129) with CI green but user reports production stale/missing; diagnose live served assets and deploy. Further visual polish/image QA remains under #114.
 - B-013 Ad/asset policy readback — DATA_GAP; current connector can return zero rows while campaign-level reads work; do not infer approval.
 
 ---
 
-## 6. Current priority queue — 2026-10-31
+## 6. Historical priority snapshot — 2026-10-31 (superseded by section 3A integrated queue)
 
 | Priority | Lane | Item | State / next evidence |
 |---:|---|---|---|
@@ -407,7 +454,7 @@ Do not enable or materially scale paid traffic if production booking is unhealth
 ## 9. Resume protocol
 
 Every substantive session:
-1. read `PROJECT_HANDOFF.md` and this roadmap;
+1. read `PROJECT_HANDOFF.md` and this roadmap **including section 3A; the dated queue in section 6 is historical**;
 2. check exact `dev`/`main` heads and Jenkins state before Git writes;
 3. check live systems for changed facts;
 4. re-check hard blockers;

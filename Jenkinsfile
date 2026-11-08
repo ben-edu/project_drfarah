@@ -2636,8 +2636,10 @@ PY
             HOME_HTML="$(mktemp)"
             ROBOTS_FILE="$(mktemp)"
 
-            curl -fsS \
-              "https://${PRODUCTION_FRONTEND_HOST}/" \
+            # Compare uncached public HTML from the actual production hostname.
+            curl -fsS --max-time 30 \
+              -H 'Cache-Control: no-cache' \
+              "https://${PRODUCTION_FRONTEND_HOST}/?drfarah_release=${GIT_COMMIT}" \
               > "$HOME_HTML"
 
             curl -fsS \
@@ -2649,6 +2651,38 @@ PY
               rm -f "$HOME_HTML" "$ROBOTS_FILE"
               exit 1
             }
+
+            # Generic "Dr. Farah" matches the legacy site too. Require the
+            # responsive release marker and byte-identical public JS/CSS, or
+            # fail deployment instead of reporting a false green production.
+            if ! grep -qF 'mobile-nav-20261108-2' "$HOME_HTML"; then
+              echo "FAIL: public homepage does not serve responsive release marker."
+              echo "Investigate DNS/HAProxy, Hestia docroot, CDN/browser cache or wrong origin."
+              rm -f "$HOME_HTML" "$ROBOTS_FILE"
+              exit 1
+            fi
+
+            for asset in app.js styles.css; do
+              LIVE_ASSET="$(mktemp)"
+              if ! curl -fsS --max-time 30 \
+                -H 'Cache-Control: no-cache' \
+                "https://${PRODUCTION_FRONTEND_HOST}/${asset}?v=20261108-mobile2&release=${GIT_COMMIT}" \
+                > "$LIVE_ASSET"; then
+                echo "FAIL: public production asset unavailable: ${asset}"
+                rm -f "$LIVE_ASSET" "$HOME_HTML" "$ROBOTS_FILE"
+                exit 1
+              fi
+              if ! cmp -s "$PRODUCTION_BUILD_DIR/$asset" "$LIVE_ASSET"; then
+                echo "FAIL: actual production asset differs from checkout: $asset"
+                echo "Expected hash:"; sha256sum "$PRODUCTION_BUILD_DIR/$asset"
+                echo "Live hash:"; sha256sum "$LIVE_ASSET"
+                echo "Check proxy caching, virtual host routing and deploy location."
+                rm -f "$LIVE_ASSET" "$HOME_HTML" "$ROBOTS_FILE"
+                exit 1
+              fi
+              rm -f "$LIVE_ASSET"
+              echo "OK: public production $asset matches the exact release bytes."
+            done
 
             if grep -qF 'noindex,nofollow,noarchive' "$HOME_HTML"; then
               echo "FAIL: production homepage is still noindexed."
