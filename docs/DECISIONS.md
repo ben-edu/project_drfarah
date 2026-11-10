@@ -57,6 +57,13 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **DECISION:** the project should use useful lawful/platform-compliant marketing measurement and attribution without arbitrary self-imposed restrictions, while excluding unnecessary medical-record detail and respecting applicable privacy/consent/platform requirements.
 - **DECISION:** the Google Business service catalogue will not be bulk-reduced merely because it is extensive. Services will be evaluated for factual availability, demand, economics, clarity, duplication, conversion usefulness, claims/pricing accuracy and platform policy before change.
 
+## Google Ads current spend/measurement authorization — 2026-11-10
+
+- **OWNER DECISION:** Dr. Farah likely re-enabled Search on 2026-11-09 and the operator expressly chooses to leave **existing Urgent Care and Traveler Search ENABLED** at their then-current $10/day and $5/day average budgets; do not interpret prior PAUSED state as current. This is **not** authorization to increase budgets, enable other groups, create campaigns, or falsely claim policy clearance. Verify actual live state before a future write.
+- **OWNER DECISION:** Prioritize cost control and real completed patients; do not remove useful conversion/attribution tracking merely to avoid an imaginary per-conversion charge. Search is currently Manual CPC (ECPC off), and Conversion measurement itself is free. Keep paid-click controls, accurate first-party/Ads diagnostics, clinical privacy boundaries and existing paused Near Me ad group until the review supports another decision.
+- **EVIDENCE / NOT YET A DECISION:** Current Google Ads `Calls from ads` is Primary, Every, but whether to make it One, whether to set Google-hosted Local Actions Secondary, how to implement extra alert/auto-rule limits, whether to alter price/$240 vs $250 or Walk-In copy, whether to remove/keep a competitor negative, or whether to retry Near Me all require their specified current readback and clinic approval. This entry does not preapprove those interventions.
+- **AUTHORITY:** `ROADMAP.md` §3A/3B and `docs/GOOGLE_ADS_COST_CONTROL_CONVERSION_STRATEGY_2026-11-10.md` describe gated next actions; Google Ads account itself remains source of truth. Protect the privacy and booking source-of-truth architecture; no PHI in marketing platforms.
+
 ## Domains
 
 The final clinic-domain migration is approved as a controlled cutover.

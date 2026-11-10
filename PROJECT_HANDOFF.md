@@ -2,11 +2,25 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-08  
+**Last updated:** 2026-11-10  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0E. 2026-11-10 — owner-approved continued Search activity and no-conversion-fee strategy
+
+**OWNER DECISION (this turn):** Preserve current ENABLED state of Urgent Care Search campaign `24414014329` ($10/day **average**) and Traveler Search campaign `24404901753` ($5/day **average**) because Dr. Farah likely re-enabled them. Keep existing Near Me ad group `204328258769` PAUSED for now. The goal is economical real completed visits, not increasing Google-reported conversion counts; do not change ads, Google tags, bids or medical claims without verified necessity, and do not create spending not already authorized.
+
+**FACT — mechanism:** Google Ads Conversion Tracking is a free measurement feature. Under existing Manual CPC / ECPC off, Ads bills ad clicks; Conversion is a report of an action and Cost/conv = paid spend / counted actions, **not a second charge**. `Calls from ads` via call assets does not need a Google Ads website tag on clinical booking pages. Click-to-call is intent, not call answer; a booking request is not confirmed appointment or completed visit. Existing `frontend/analytics.js` sends GA4 limited allowed public pages only, consent-guarded, and intentionally excludes health service/booking/registration; first-party booking attribution is preserved. No Google Tag removal or new Google Ads clinical events is justified by a billing fear alone.
+
+**LIVE CONNECTOR SNAPSHOT — 2026-11-10 (not a guarantee of instantaneous refresh):** Account 652-510-3588 USD/Los Angeles; both Search campaigns ENABLED since 2026-11-09 Google Ads web changes; Near Me paused since Nov 7. Urgent 2026-11-01..10 $302.30 / 73 clicks / 16 reported phone_calls / 8 counted Calls from ads / 37 All Conversions; Beverly Hills $115.22/26 clicks/8 calls, Near Me $160.09/40 clicks/0 counted ad calls (+22 local actions), Walk-In $26.99/7 clicks/0 calls. Travel no sampled spend. Two call assets and six RSA approved in limited reads; all other asset policy coverage incomplete. Average budgets for active campaigns $10 / $5, not hard daily caps; possible ~$456 aggregate monthly budget reference if unchanged and fully active. Separate Local Services system-generated ENABLED and $0 reported sample spend; check independent billing.
+
+**ACTIONABLE GAPS:** (1) native Ads UI: account and per-campaign budgets, keyword CPC bids and modifiers, auto-apply recommendations/automation, Local Services billing; (2) `Calls from ads` minimum duration, Count Every→potential One if actual lead definition supports it, campaign goal selection, Local Actions secondary/diagnostic, approved call reporting/privacy/recording; (3) clinic non-PHI call-to-book-to-visit reconciliation and appropriate future offline completed visits; (4) fix RSA `Urgent Visit From $250` vs site `Starting From $240` once clinic price approved, and verify Walk-In truth; (5) preserve Near Me as a paused experiment, re-evaluate only on real outcomes; (6) check all ad/sitelink/policy approvals and healthcare scope. Avoid unsupported broad certification claims.
+
+**EXECUTION STATUS:** Read-only research and Git documentation ONLY; **no Google Ads platform change, bid/goal mutation, campaign pause, or website tag edit made** in this session. User expressly wants existing live campaigns to remain enabled, but specific changes that affect spend, clinical claims, goals or user tracking must have exact pre/post state and be validated. Native Ads UI/connected API limitations documented. Authoritative detailed runbook `docs/GOOGLE_ADS_COST_CONTROL_CONVERSION_STRATEGY_2026-11-10.md`; integrated priority queue `ROADMAP.md` 3A/3B; issue #110. Next session starts from account readback and clinical price/walk-in/qualified-call truth rather than rebuilding campaigns.
 
 ---
 
