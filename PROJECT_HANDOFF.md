@@ -2,11 +2,25 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-10  
+**Last updated:** 2026-11-11  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0F. 2026-11-11 — actual Ads control audit, Source forensics and full Matomo authorization
+
+**OWNER DECISIONS:** Keep Urgent and Traveler Search currently ENABLED at pre-existing $10/$5 average daily budgets; Near Me PAUSED. Actual Urgent Care starting price is **$250** per owner; the Ads RSA already shows $250 but existing landing and potentially other site displays say $240, so next web fix is the **site**, once all price locations and service metadata are audited. The owner also directs a **complete Matomo acquisition + funnel + completed-visit measurement project** using existing `https://matomo.soria-ai.fr/` (Issue #142), not a token pageview-only implementation. Need platform access/site ID and design validation to deliver, not reason to discard useful capabilities.
+
+**LIVE ADS TECHNICAL READ (Windsor.ai, 2026-11-11):** Urgent Search #24414014329 ENABLED and Traveler #24404901753 ENABLED; dedicated nonshared budget IDs `15988400106` $10 and `15989903931` $5 (reference count 1). Beverly Hills effective ad-group Max CPC $4.50, Walk-In $4, paused Near Me $4.50, traveler groups $3.50/$4/$3.50; keyword-level CPC null/inherit group bids. Recommendations include `CAMPAIGN_BUDGET`, `MAXIMIZE_CONVERSIONS_OPT_IN`, sitelink and creative/asset suggestions. **These are only recommendations, NOT evidence Auto-apply is on.** Connector lacks direct Auto-apply subscription/rule settings or writes. Google Ads native UI Manage/History and Bulk actions Rules are the exact next control-plane inspection; no settings were changed. Nov 10 reported served spend changed between data reads ($3.37→$20.23); verify `Billed cost`, overdelivery credits and historical Nov 7 budget drop before judging unexpected fees.
+
+**SOURCE CLARIFICATION FROM USER:** Reserve Admin has `web`, `other`, `production-verification` in addition to Google labels. `frontend/app.js` classifies Google Ads by ad-click ID or paid UTM; `booking.js` relies on source snapshot but its fallback can say `google_organic` for `utm_source=google` without checking CPC. API prefers nested attribution when present; generic `web` is accepted legacy source and appears in tests, `other` unknown, `production-verification` not found in current repo as a canonical marketing channel. **Never count the latter as a valid patient lead or automatically call it synthetic without record provenance**. Review nonclinical record-level attribution + test with paid ID/UTM before tagging channels; source and patient-reported origin should be separate. The earlier 22 Near Me local actions = 6 directions + 15 engagements + 1 site visit, not 22 actual visits.
+
+**MATOMO EXECUTION:** Full scope established in Issue #142; owner instance URL alone does not grant administrator/API access. Preserve meaningful cross-page acquisition/source/booking funnel and completed-visit metrics with event/goal server/JS architecture, compatibility with existing first-party source and privacy-safe data handling. Evaluate sensitive page tracking on actual lawful design, not blanket exclusion of useful operational measurement. Distinguish website phone-click from connected/qualified telephone call. Do not double-count Ads conversions or transmit symptoms/form fields/PHI to Google or Matomo.
+
+**EXACT NEXT:** (1) Google Ads native Auto-apply Manage/History, account settings, automated Rules/scripts, billed vs served with exact account evidence; (2) verify public/API price locations then test and promote owner-approved $250 website correction with normal CI; (3) attribution provenance and Matomo service/site access, implement full Issue #142 end to end; (4) call→book→completed visit dashboard, only then choose bidding/near-me expansion. Read-only audit document `docs/GOOGLE_ADS_AUTO_APPLY_SOURCE_MATOMO_AUDIT_2026-11-11.md`. No campaign/Tag/site live edits in this checkpoint.
 
 ---
 

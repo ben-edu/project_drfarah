@@ -64,6 +64,13 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **EVIDENCE / NOT YET A DECISION:** Current Google Ads `Calls from ads` is Primary, Every, but whether to make it One, whether to set Google-hosted Local Actions Secondary, how to implement extra alert/auto-rule limits, whether to alter price/$240 vs $250 or Walk-In copy, whether to remove/keep a competitor negative, or whether to retry Near Me all require their specified current readback and clinic approval. This entry does not preapprove those interventions.
 - **AUTHORITY:** `ROADMAP.md` §3A/3B and `docs/GOOGLE_ADS_COST_CONTROL_CONVERSION_STRATEGY_2026-11-10.md` describe gated next actions; Google Ads account itself remains source of truth. Protect the privacy and booking source-of-truth architecture; no PHI in marketing platforms.
 
+## Acquisition measurement and Matomo scope — approved 2026-11-11
+
+- **OWNER DECISION:** Urgent Care starting visit price is **$250** (not the stale $240 site amount). Keep actual inclusion/conditional claim accurate; correct website/booking/service displays to source-of-truth $250 through validated release. Walk-In acceptance remains an independent clinic fact to verify.
+- **OWNER DECISION:** Implement **full** Matomo acquisition/marketing/booking-funnel/completed-business-outcome analytics using existing self-hosted `https://matomo.soria-ai.fr/`; plan and acceptance in Issue #142. Do not limit to page views or arbitrarily forbid meaningful legal event tracking. Do not leak medical form content or override applicable privacy/consent obligations; secure/aggregate/track only appropriate data and confirm admin permissions before deployment.
+- **EVIDENCE, NOT MARKETING LABEL:** `web` is generic/legacy; `other` unknown/referrer fallback; `production-verification` source provenance is unverified (not a canonical Source in current repo). Verify record-level metadata before including in acquisition ROI. `google_organic` is intended unpaid, not automatically proof.
+- **NOT YET VERIFIED:** Google Ads Auto-apply subscription settings, recommendation application History and automated rule configuration cannot be directly read via connected Windsor.ai. Campaign recommendations **are not proof Auto-apply is enabled**. Do not guess, toggle, raise spend or change bidding without actual account settings and reasoned review.
+
 ## Domains
 
 The final clinic-domain migration is approved as a controlled cutover.
