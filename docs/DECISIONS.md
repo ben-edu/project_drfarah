@@ -64,6 +64,13 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **EVIDENCE / NOT YET A DECISION:** Current Google Ads `Calls from ads` is Primary, Every, but whether to make it One, whether to set Google-hosted Local Actions Secondary, how to implement extra alert/auto-rule limits, whether to alter price/$240 vs $250 or Walk-In copy, whether to remove/keep a competitor negative, or whether to retry Near Me all require their specified current readback and clinic approval. This entry does not preapprove those interventions.
 - **AUTHORITY:** `ROADMAP.md` §3A/3B and `docs/GOOGLE_ADS_COST_CONTROL_CONVERSION_STRATEGY_2026-11-10.md` describe gated next actions; Google Ads account itself remains source of truth. Protect the privacy and booking source-of-truth architecture; no PHI in marketing platforms.
 
+## Google Ads budget drift and owner decision pending — 2026-11-15
+
+- **OBSERVED, NOT APPROVED:** Urgent Search daily average is $36 following Nov 11 Recommendations-path $10→$36 change; owner screenshots show Auto-apply History 0 active recommendations. Exact operator/automaticity remains unproven.
+- **PROPOSAL, NOT EXECUTED:** Restore Urgent average budget $36→$10 (campaign stays ENABLED), Traveler $5 stays ENABLED, Near Me stays PAUSED; requires explicit owner confirmation, billing and readback.
+- **EVIDENCE:** Nov 9–15 $189.83 served spend/51 clicks/16 phone_calls/6 Ads calls; Walk-In still attracts Near Me queries $59.33/17 clicks. Neither absence of ad calls nor local actions proves completed-visit outcome.
+- **PRICE:** Owner-confirmed Urgent from $250. Targeted proposal fixes 3 $240 website displays, staging/CI and production checks still pending. See `docs/GOOGLE_ADS_RESTART_SPEND_NEAR_ME_AUDIT_2026-11-15.md`.
+
 ## Acquisition measurement and Matomo scope — approved 2026-11-11
 
 - **OWNER DECISION:** Urgent Care starting visit price is **$250** (not the stale $240 site amount). Keep actual inclusion/conditional claim accurate; correct website/booking/service displays to source-of-truth $250 through validated release. Walk-In acceptance remains an independent clinic fact to verify.

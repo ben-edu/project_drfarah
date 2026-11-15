@@ -2,11 +2,21 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-11  
+**Last updated:** 2026-11-15  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0G. 2026-11-15 — Urgent Ads budget raised, near-me queries in Walk-In, price fix proposed
+
+**CRITICAL LIVE FINANCIAL FACT:** Urgent Search currently ENABLED with $36/day average (earlier owner-authorized $10), Traveler Search ENABLED $5/day. Google Ads Change Event Nov 11 16:16:34 shows $10→$36 via `GOOGLE_ADS_RECOMMENDATIONS`; **does not prove Auto-apply**. Owner screenshot Auto-apply History 0 enrolled and no rows, Manage shows one apparently checked Remove redundant keywords but saved state unknown. Next: verify Change History actor and Billing, obtain explicit owner confirmation to restore Urgent to $10 while keeping ENABLED; no Ads mutation done.
+
+**RESTART METRICS (Nov 9–15, LA timezone):** $189.83 served cost/51 clicks/1,148 impressions/16 phone_calls/6 ad-call conversions/55 All Conversions; Nov 12/13 $71.98 each. Whole Nov 1–15 $471.50/119 clicks/25 phone_calls/11 counted calls/89 All Conversions, not actual patients or billed-cost ledger. Two groups: Beverly Hills $93.07/23 clicks/6 counted calls, Walk-In $96.76/28 clicks/0 counted calls. Dedicated Near Me PAUSED, but Walk-In served `urgent care near me` for $59.33/17 clicks/0 calls; historic Near Me $160.09/40 clicks/0 counted calls/22 local actions. Do not unpause/delete blindly or exclude all Near Me intent; require real clinic outcomes.
+
+**SITE PRICE WORK:** Owner-approved Urgent starting price $250; review candidate changes exactly 3 obsolete website $240 price displays to $250, no API/booking/Ads Tag changes. CI and staging approval before production. Matomo full implementation Issue #142 remains planned, awaits account access. Authoritative report `docs/GOOGLE_ADS_RESTART_SPEND_NEAR_ME_AUDIT_2026-11-15.md`, work issue #110. Current main unchanged at this checkpoint.
 
 ---
 
