@@ -10,7 +10,17 @@
 
 ---
 
-**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0K. 2026-11-22 — Repaired SCM reporting job after Python/Groovy escape failure
+
+**FACT:** Owner reran Jenkins `drfarah-google-ads-api-validate`, SCM checked out `ba17e55e817b37e3b66efd64235833d0f8ef3d50` and failed with Python `SyntaxError: unterminated string literal` on inline summary formatter `replace("\\n",...)`. This is a Groovy triple-single-quote escape-processing failure, **NOT** Google Ads authorization or platform budget state. The job failed before API reads; it performed NO Ads changes.
+
+**FIX ON FEATURE BRANCH (draft PR #144):** Extracted report formatter/date checking into independent stdlib Python `scripts/google-ads-report-runner.py`; Jenkinsfile now bind-mounts and executes it, no Python heredoc. Added regression tests `api/tests/test_google_ads_report_runner.py`, testing paid-term summaries, raw output, invalid dates and absence of embedded Python. See `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md`. GitHub commits from this repair are unmerged; **no Jenkins execution of repaired source yet**.
+
+**NEXT:** Owner to rerun Jenkins Build with Parameters (`REPORT=full_audit`, `OUTPUT_FORMAT=summary`), inspect `REPORT_SOURCE_COMMIT`, final success, then bring back concise budget and paid-terms output. Do not infer API connection loss or Ads state mutation from this parser failure. Keep PR draft until passing.
+
+---
+
+## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
 
 **OWNER-SUPPLIED CONSOLE TAIL (timestamp 21:39 LA-unverified Jenkins host time):** `Google Ads API read-only reports SUCCESS`; `Finished: SUCCESS`. Source was the Google Ads reporting pipeline and final stages returned `search_terms` followed by `changes`. User-provided pasted log begins **midway through Search Terms**, so it **does not contain** account/budgets/campaigns/daily/ad_groups sections or the full Search Terms response. Do not claim complete report inspection based on this truncated excerpt.
 
