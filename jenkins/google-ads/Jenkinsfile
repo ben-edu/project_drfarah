@@ -40,7 +40,7 @@ pipeline {
           set -eu
           test -f api/app/services/google_ads_reporting.py
           test -f scripts/google-ads-readonly-report.py
-          printf 'REPORT_SOURCE_COMMIT=%s\\n' "$(git rev-parse HEAD)"
+          printf 'REPORT_SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)"
         '''
       }
     }
@@ -81,22 +81,22 @@ pipeline {
               chmod 0400 "$CRED_COPY"
 
               export DOCKER_CONFIG
-              printf '%s' "$HARBOR_PASS" \\
-                | docker login "$HARBOR_REGISTRY" \\
-                    --username "$HARBOR_USER" \\
+              printf '%s' "$HARBOR_PASS" \
+                | docker login "$HARBOR_REGISTRY" \
+                    --username "$HARBOR_USER" \
                     --password-stdin >/dev/null
 
               docker pull "$API_IMAGE" >/dev/null
 
-              docker run --rm -i \\
-                --user "$(id -u):$(id -g)" \\
-                -v "$CRED_COPY:/var/run/google/credentials.json:ro" \\
-                -v "$PWD/api/app/services/google_ads_reporting.py:/app/app/services/google_ads_reporting.py:ro" \\
-                -v "$PWD/scripts/google-ads-readonly-report.py:/app/google-ads-readonly-report.py:ro" \\
-                -e GOOGLE_APPLICATION_CREDENTIALS=/var/run/google/credentials.json \\
-                -e REPORT_KIND \\
-                -e ADS_START_DATE \\
-                -e ADS_END_DATE \\
+              docker run --rm -i \
+                --user "$(id -u):$(id -g)" \
+                -v "$CRED_COPY:/var/run/google/credentials.json:ro" \
+                -v "$PWD/api/app/services/google_ads_reporting.py:/app/app/services/google_ads_reporting.py:ro" \
+                -v "$PWD/scripts/google-ads-readonly-report.py:/app/google-ads-readonly-report.py:ro" \
+                -e GOOGLE_APPLICATION_CREDENTIALS=/var/run/google/credentials.json \
+                -e REPORT_KIND \
+                -e ADS_START_DATE \
+                -e ADS_END_DATE \
                 "$API_IMAGE" python - <<'PY'
 import os
 import subprocess
