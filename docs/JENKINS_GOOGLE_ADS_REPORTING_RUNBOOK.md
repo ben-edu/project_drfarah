@@ -54,6 +54,13 @@ The owner reported enabling **Triggers → GitHub hook trigger for GITScm pollin
 - Since code on this branch can run with Jenkins credentials, disable the trigger if code-review/branch access is not sufficiently controlled. The default is an operator-started build. There is no schedule/cron trigger in the new Jenkinsfile.
 - The hook triggers on SCM changes, not automatically once per week for business reporting. That would require a separate approved schedule.
 
+## 2026-11-22 follow-up: Pipeline build failure and repair
+
+- A subsequent owner-started SCM Jenkins build checked out feature-branch commit `ba17e55e817b37e3b66efd64235833d0f8ef3d50` and failed before any Google Ads reporting query: Python `SyntaxError: unterminated string literal` at the inline report-formatter's `term.replace("\\n", ...)` line. Cause: the Python code was embedded inside Groovy triple-single-quoted `sh` source, so Groovy interpreted the escape sequences prior to Python parsing. **Credential acquisition and Git checkout succeeded; no Google Ads budget/campaign changes occurred in this failed reporting job.**
+- The remedy is to remove the embedded Python heredoc entirely. Dedicated Python operator runner now lives at `scripts/google-ads-report-runner.py`; the SCM pipeline bind-mounts it read-only in the existing Harbor API image and runs `python /app/google-ads-report-runner.py`. The runner delegates to the existing SearchStream read-only CLI. `api/tests/test_google_ads_report_runner.py` tests Python syntax, separation from Groovy, summary of paid terms, raw output, and invalid-date safety.
+- Revised Jenkinsfile contains **no inline Python** and can be evolved using the GitHub feature branch. The new version has **not yet been Jenkins-tested**; one fresh **Build with Parameters → REPORT=full_audit, OUTPUT_FORMAT=summary** should verify the change. Expected console `REPORT_SOURCE_COMMIT=` must refer to a commit **newer than** `ba17e55`. The presence of `OUTPUT_FORMAT` alone does not prove successful execution. Observe `Google Ads API read-only reports SUCCESS` and `Finished: SUCCESS`.
+- Prior successful Google Ads API connection and previously approved Urgent budget/schedule changes remain separate and are not invalidated by the reporting formatter failure. No additional Google Ads write has been performed in this repair.
+
 ## Successful milestones / remaining checks
 
 - 2026-11-22: existing service account authenticated against production Ads account `6525103588`; direct `account` read returned USD and `America/Los_Angeles`.
