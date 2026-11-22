@@ -18,6 +18,8 @@
 
 **Change Event live readback:** `row_count=21` on 2026-11-22; one `CAMPAIGN_BUDGET` entry for Urgent budget `15988400106` at Ads-account time 12:24:27, and 20 `CAMPAIGN_CRITERION` entries for Urgent `24414014329` at 12:25:08 and Traveler `24404901753` at 12:25:10, all `GOOGLE_ADS_API`. Supports real change audit for the already-approved $36->$10 budget and Mon-Fri 08:30–16:30 schedules, although the Change Events excerpt itself does not include old/new amounts or the full weekday windows. Earlier write actions returned success for target state. No further Ads changes performed.
 
+**POST-RUN OPERATOR IMPROVEMENT (new commit after the successful build):** `jenkins/google-ads/Jenkinsfile` now includes `OUTPUT_FORMAT=summary|raw` with `summary` default. In summary mode it prints all small account/budget/campaign/daily/ad_group reports, but replaces verbose Search Terms with aggregate clicks/impressions/cost and top 20 **paid** terms, and replaces verbose Change Events with resource-type counts and 8 recent changes. `raw` still prints full JSON for forensic audits. This changed Jenkinsfile was **not yet executed**; requires next Jenkins build to validate. Do not mistake the earlier success for validation of the updated formatter.
+
 **NEXT:** Verify `budgets` readback shows `amountMicros=10000000` for `15988400106`; review full performance and expensive search terms rather than a truncated tail. Improve operator pipeline output ergonomics if needed (summarized paid terms + artifact), avoid printing service-account credentials or storing healthcare-sensitive search strings in public GitHub. PR #144 still pending review/merge.
 
 ---
