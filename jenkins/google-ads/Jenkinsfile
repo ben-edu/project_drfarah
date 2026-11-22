@@ -1,0 +1,153 @@
+// Dedicated Google Ads reporting Jenkins Pipeline.
+// Jenkins job: drfarah-google-ads-api-validate
+// Configure: Pipeline -> Definition = "Pipeline script from SCM"
+// SCM Git: https://github.com/ben-edu/project_drfarah.git
+// Branch: feature/google-ads-api-readonly-reporting-20261122 (until PR #144 merges)
+// Script Path: jenkins/google-ads/Jenkinsfile
+// After merging PR #144, select branch dev.
+// No scheduled trigger. All requests are read-only Google Ads SearchStream.
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timestamps()
+    skipDefaultCheckout(true)
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  parameters {
+    choice(
+      name: 'REPORT',
+      choices: ['full_audit', 'account', 'budgets', 'campaigns', 'daily', 'ad_groups', 'search_terms', 'changes'],
+      description: 'Google Ads reporting only. Full audit runs all seven reports.'
+    )
+    string(name: 'START_DATE', defaultValue: '', description: 'Optional YYYY-MM-DD (blank = last 7 days in America/Los_Angeles)')
+    string(name: 'END_DATE', defaultValue: '', description: 'Optional YYYY-MM-DD (blank = today in America/Los_Angeles)')
+  }
+
+  environment {
+    API_IMAGE = 'harbor.proxbenovh.cloud/devops-project-harbor/drfarah-api:d84fb0ed2cdb2898ca72b1412c856c68564b46d8'
+    HARBOR_REGISTRY = 'harbor.proxbenovh.cloud'
+  }
+
+  stages {
+    stage('Checkout reporting source') {
+      steps {
+        deleteDir()
+        checkout scm
+        sh '''
+          set -eu
+          test -f api/app/services/google_ads_reporting.py
+          test -f scripts/google-ads-readonly-report.py
+          printf 'REPORT_SOURCE_COMMIT=%s\\n' "$(git rev-parse HEAD)"
+        '''
+      }
+    }
+
+    stage('Run read-only Google Ads reports') {
+      steps {
+        withCredentials([
+          file(
+            credentialsId: 'drfarah-google-data-manager-sa-json',
+            variable: 'GOOGLE_SA_JSON'
+          ),
+          usernamePassword(
+            credentialsId: 'harbor-robot-devops-project-harbor',
+            usernameVariable: 'HARBOR_USER',
+            passwordVariable: 'HARBOR_PASS'
+          )
+        ]) {
+          withEnv([
+            "REPORT_KIND=${params.REPORT}",
+            "ADS_START_DATE=${params.START_DATE}",
+            "ADS_END_DATE=${params.END_DATE}"
+          ]) {
+            sh '''
+              set +x
+              set -eu
+              umask 077
+
+              DOCKER_CONFIG="$(mktemp -d)"
+              CRED_DIR="$(mktemp -d)"
+              CRED_COPY="$CRED_DIR/credentials.json"
+
+              cleanup() {
+                rm -rf "$DOCKER_CONFIG" "$CRED_DIR"
+              }
+              trap cleanup EXIT HUP INT TERM
+
+              cp "$GOOGLE_SA_JSON" "$CRED_COPY"
+              chmod 0400 "$CRED_COPY"
+
+              export DOCKER_CONFIG
+              printf '%s' "$HARBOR_PASS" \\
+                | docker login "$HARBOR_REGISTRY" \\
+                    --username "$HARBOR_USER" \\
+                    --password-stdin >/dev/null
+
+              docker pull "$API_IMAGE" >/dev/null
+
+              docker run --rm -i \\
+                --user "$(id -u):$(id -g)" \\
+                -v "$CRED_COPY:/var/run/google/credentials.json:ro" \\
+                -v "$PWD/api/app/services/google_ads_reporting.py:/app/app/services/google_ads_reporting.py:ro" \\
+                -v "$PWD/scripts/google-ads-readonly-report.py:/app/google-ads-readonly-report.py:ro" \\
+                -e GOOGLE_APPLICATION_CREDENTIALS=/var/run/google/credentials.json \\
+                -e REPORT_KIND \\
+                -e ADS_START_DATE \\
+                -e ADS_END_DATE \\
+                "$API_IMAGE" python - <<'PY'
+import os
+import subprocess
+from datetime import datetime, timedelta, date
+from zoneinfo import ZoneInfo
+
+report = os.environ["REPORT_KIND"]
+allowed = {
+    "account", "campaigns", "budgets", "daily",
+    "ad_groups", "search_terms", "changes", "full_audit",
+}
+if report not in allowed:
+    raise SystemExit("Invalid report selection")
+
+today = datetime.now(ZoneInfo("America/Los_Angeles")).date()
+def parse_date(value, fallback):
+    value = value.strip()
+    if not value:
+        return fallback
+    try:
+        result = date.fromisoformat(value)
+    except ValueError:
+        raise SystemExit("Dates must be YYYY-MM-DD")
+    if result.isoformat() != value:
+        raise SystemExit("Dates must be YYYY-MM-DD")
+    return result
+
+end = parse_date(os.environ.get("ADS_END_DATE", ""), today)
+start = parse_date(os.environ.get("ADS_START_DATE", ""), end - timedelta(days=6))
+if start > end or end > today:
+    raise SystemExit("Date range must be ordered and must not extend into the future")
+if (end - start).days >= 30:
+    raise SystemExit("Choose a date range under 30 days for Change Events compatibility")
+
+reports = (
+    ["account", "budgets", "campaigns", "daily", "ad_groups", "search_terms", "changes"]
+    if report == "full_audit" else [report]
+)
+print(f"REPORT_WINDOW={start.isoformat()}..{end.isoformat()} (America/Los_Angeles)", flush=True)
+for item in reports:
+    print(f"===== {item.upper()} =====", flush=True)
+    command = ["python", "/app/google-ads-readonly-report.py", "--report", item]
+    if item in {"daily", "ad_groups", "search_terms", "changes"}:
+        command += ["--start", start.isoformat(), "--end", end.isoformat()]
+    subprocess.run(command, check=True)
+print("Google Ads API read-only reports SUCCESS", flush=True)
+PY
+            '''
+          }
+        }
+      }
+    }
+  }
+}
