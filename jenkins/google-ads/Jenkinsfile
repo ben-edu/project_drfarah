@@ -172,7 +172,7 @@ for item in reports:
         total_micros = sum(int(r.get("metrics", {}).get("costMicros", 0)) for r in rows)
         print(f"SEARCH_TERMS_SUMMARY: rows={len(rows)} paid_rows={len(paid)} clicks={total_clicks} impressions={total_impressions} cost_usd={total_micros / 1_000_000:.2f}", flush=True)
         for row in paid[:20]:
-            term = str(row.get("searchTermView", {}).get("searchTerm", "")).replace("\\n", " ").replace("\\r", " ")
+            term = str(row.get("searchTermView", {}).get("searchTerm", "")).replace("\n", " ").replace("\r", " ")
             metrics = row.get("metrics", {})
             print(
                 f"PAID_TERM cost_usd={int(metrics.get('costMicros', 0)) / 1_000_000:.2f}"
