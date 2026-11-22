@@ -10,6 +10,18 @@
 
 ---
 
+## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
+
+**OWNER-SUPPLIED CONSOLE TAIL (timestamp 21:39 LA-unverified Jenkins host time):** `Google Ads API read-only reports SUCCESS`; `Finished: SUCCESS`. Source was the Google Ads reporting pipeline and final stages returned `search_terms` followed by `changes`. User-provided pasted log begins **midway through Search Terms**, so it **does not contain** account/budgets/campaigns/daily/ad_groups sections or the full Search Terms response. Do not claim complete report inspection based on this truncated excerpt.
+
+**Visible Search Terms excerpt:** 117 search-term rows for Urgent campaign `24414014329`, ad group `199388744537`; in the **visible subset only**, 250 impressions, 0 clicks, $0 served cost, 0 platform conversions. Includes competitor and broad queries, but these rows alone do not establish paid waste; do not apply broad negatives solely from zero-cost impressions. To judge paid leakage, examine full ordered paid terms from earlier in the output.
+
+**Change Event live readback:** `row_count=21` on 2026-11-22; one `CAMPAIGN_BUDGET` entry for Urgent budget `15988400106` at Ads-account time 12:24:27, and 20 `CAMPAIGN_CRITERION` entries for Urgent `24414014329` at 12:25:08 and Traveler `24404901753` at 12:25:10, all `GOOGLE_ADS_API`. Supports real change audit for the already-approved $36->$10 budget and Mon-Fri 08:30–16:30 schedules, although the Change Events excerpt itself does not include old/new amounts or the full weekday windows. Earlier write actions returned success for target state. No further Ads changes performed.
+
+**NEXT:** Verify `budgets` readback shows `amountMicros=10000000` for `15988400106`; review full performance and expensive search terms rather than a truncated tail. Improve operator pipeline output ergonomics if needed (summarized paid terms + artifact), avoid printing service-account credentials or storing healthcare-sensitive search strings in public GitHub. PR #144 still pending review/merge.
+
+---
+
 ## 0I. 2026-11-22 — Direct Ads production API passed; approved budget and weekday scheduling applied
 
 **LIVE WRITE CONFIRMED by Google Ads connector:** Urgent Search campaign `24414014329` budget changed from $36/day to **$10/day** (`10000000` micros). Campaign was not paused. Traveler Search `24404901753` retains **$5/day**. Both campaigns received replacement Ad Schedule rules Monday–Friday **08:30–16:30** in **America/Los_Angeles**, no Saturday/Sunday windows. Ads account response confirmed success for both campaigns: Urgent replaced 5 previous schedule windows; Traveler replaced 7. Do not assume other campaign types (Local Services) changed. Official clinic site publishes Mon–Fri 08:30–17:30 and weekends closed; earlier 16:30 cessation is owner-requested.
