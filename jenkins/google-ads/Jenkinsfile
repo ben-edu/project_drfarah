@@ -24,6 +24,7 @@ pipeline {
     )
     string(name: 'START_DATE', defaultValue: '', description: 'Optional YYYY-MM-DD (blank = last 7 days in America/Los_Angeles)')
     string(name: 'END_DATE', defaultValue: '', description: 'Optional YYYY-MM-DD (blank = today in America/Los_Angeles)')
+    choice(name: 'OUTPUT_FORMAT', choices: ['summary', 'raw'], description: 'summary limits Search Terms and Change Events console output; raw prints full JSON')
   }
 
   environment {
@@ -61,7 +62,8 @@ pipeline {
           withEnv([
             "REPORT_KIND=${params.REPORT}",
             "ADS_START_DATE=${params.START_DATE}",
-            "ADS_END_DATE=${params.END_DATE}"
+            "ADS_END_DATE=${params.END_DATE}",
+            "ADS_OUTPUT_FORMAT=${params.OUTPUT_FORMAT}"
           ]) {
             sh '''
               set +x
@@ -97,9 +99,12 @@ pipeline {
                 -e REPORT_KIND \
                 -e ADS_START_DATE \
                 -e ADS_END_DATE \
+                -e ADS_OUTPUT_FORMAT \
                 "$API_IMAGE" python - <<'PY'
+import json
 import os
 import subprocess
+from collections import Counter
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 
@@ -141,7 +146,59 @@ for item in reports:
     command = ["python", "/app/google-ads-readonly-report.py", "--report", item]
     if item in {"daily", "ad_groups", "search_terms", "changes"}:
         command += ["--start", start.isoformat(), "--end", end.isoformat()]
-    subprocess.run(command, check=True)
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode:
+        print(result.stderr or "Google Ads reporting command failed", flush=True)
+        raise SystemExit(result.returncode)
+    if os.environ.get("ADS_OUTPUT_FORMAT", "summary") == "raw":
+        print(result.stdout, flush=True)
+        continue
+    try:
+        payload = json.loads(result.stdout)
+    except ValueError:
+        raise SystemExit("Google Ads report returned invalid JSON")
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        raise SystemExit("Google Ads report rows are not a list")
+    print(f"ROWS={len(rows)}", flush=True)
+    if item == "search_terms":
+        paid = sorted(
+            (row for row in rows if int(row.get("metrics", {}).get("costMicros", 0)) > 0),
+            key=lambda row: int(row.get("metrics", {}).get("costMicros", 0)),
+            reverse=True,
+        )
+        total_clicks = sum(int(r.get("metrics", {}).get("clicks", 0)) for r in rows)
+        total_impressions = sum(int(r.get("metrics", {}).get("impressions", 0)) for r in rows)
+        total_micros = sum(int(r.get("metrics", {}).get("costMicros", 0)) for r in rows)
+        print(f"SEARCH_TERMS_SUMMARY: rows={len(rows)} paid_rows={len(paid)} clicks={total_clicks} impressions={total_impressions} cost_usd={total_micros / 1_000_000:.2f}", flush=True)
+        for row in paid[:20]:
+            term = str(row.get("searchTermView", {}).get("searchTerm", "")).replace("\\n", " ").replace("\\r", " ")
+            metrics = row.get("metrics", {})
+            print(
+                f"PAID_TERM cost_usd={int(metrics.get('costMicros', 0)) / 1_000_000:.2f}"
+                f" clicks={metrics.get('clicks', 0)}"
+                f" conversions={metrics.get('conversions', 0)}"
+                f" campaign_id={row.get('campaign', {}).get('id', '')}"
+                f" ad_group_id={row.get('adGroup', {}).get('id', '')}"
+                f" term={term}",
+                flush=True,
+            )
+        print(f"PAID_TERMS_NOT_SHOWN={max(0, len(paid) - 20)} ZERO_COST_ROWS_NOT_SHOWN={len(rows) - len(paid)}", flush=True)
+    elif item == "changes":
+        counts = Counter(r.get("changeEvent", {}).get("changeResourceType", "UNKNOWN") for r in rows)
+        print("CHANGE_TYPES=" + json.dumps(dict(counts), sort_keys=True), flush=True)
+        for row in rows[:8]:
+            event = row.get("changeEvent", {})
+            print(
+                "CHANGE time=" + str(event.get("changeDateTime", "")) +
+                " type=" + str(event.get("changeResourceType", "")) +
+                " client=" + str(event.get("clientType", "")) +
+                " resource=" + str(event.get("changeResourceName", "")),
+                flush=True,
+            )
+        print(f"CHANGE_EVENTS_NOT_SHOWN={max(0, len(rows) - 8)}", flush=True)
+    else:
+        print(json.dumps(payload, ensure_ascii=False, indent=2), flush=True)
 print("Google Ads API read-only reports SUCCESS", flush=True)
 PY
             '''
