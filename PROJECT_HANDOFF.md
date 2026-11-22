@@ -2,11 +2,19 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-15  
+**Last updated:** 2026-11-22  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
 **Canonical roadmap:** `ROADMAP.md`
+
+---
+
+## 0H. 2026-11-22 — Direct Google Ads API reporting foundation (review PR)
+
+**FACT:** Existing Data Manager API handles outbound offline conversion ingestion, not Google Ads cost/keyword/Change Event reads. A separate read-only Google Ads v26 SearchStream client, bounded GAQL report presets, CLI, and mocked tests are proposed in feature/google-ads-api-readonly-reporting-20261122. No Ads settings/budget/production deployment modified. Source specification: docs/GOOGLE_ADS_DIRECT_API_READONLY_2026-11-22.md.
+
+**DATA_GAP / NEXT:** Confirm current Google Cloud project's Google Ads API activation and Explorer-or-higher production access, service account presence in Ads customer 652-510-3588 (or authorized manager), and run a real read-only account/campaign/budget query. The existing Data Manager credential's authorization for Google Ads reporting is unproven. Developer tokens were sunset September 9, 2026; Cloud project now controls API access. Preserve existing P0 spend controls and don't treat GAQL cost as billed cost or platform conversions as patients.
 
 ---
 
