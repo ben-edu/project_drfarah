@@ -10,6 +10,18 @@
 
 ---
 
+## 0I. 2026-11-22 — Direct Ads production API passed; approved budget and weekday scheduling applied
+
+**LIVE WRITE CONFIRMED by Google Ads connector:** Urgent Search campaign `24414014329` budget changed from $36/day to **$10/day** (`10000000` micros). Campaign was not paused. Traveler Search `24404901753` retains **$5/day**. Both campaigns received replacement Ad Schedule rules Monday–Friday **08:30–16:30** in **America/Los_Angeles**, no Saturday/Sunday windows. Ads account response confirmed success for both campaigns: Urgent replaced 5 previous schedule windows; Traveler replaced 7. Do not assume other campaign types (Local Services) changed. Official clinic site publishes Mon–Fri 08:30–17:30 and weekends closed; earlier 16:30 cessation is owner-requested.
+
+**CLINIC-REPORTED RESULT (not verified attribution):** Dr. Farah says approximately 2–3 calls per day from Google Ads last week and two patients visited. This is an owner-reported business outcome and must not be conflated with platform phoneCalls or conversion counts; no patient identifiable information recorded. Weekly period/lead attribution not independently verified.
+
+**SCM JENKINS FILE:** New separate pipeline `jenkins/google-ads/Jenkinsfile` added to feature branch / draft PR #144. It parameterizes full_audit, account, campaigns, budgets, daily, ad_groups, search_terms, changes plus LA-local date range; reuses existing secure Jenkins credential and pinned Harbor image; `checkout scm` supports GitHub-driven changes without editing an inline Script. Existing `drfarah-google-ads-api-validate` Jenkins job still needs **ONE-TIME UI switch** to Definition=`Pipeline script from SCM`, repository `https://github.com/ben-edu/project_drfarah.git`, branch `feature/google-ads-api-readonly-reporting-20261122` until PR #144 merge (then `dev`), Script Path=`jenkins/google-ads/Jenkinsfile`. No Jenkins connector access to change job or start builds; new SCM pipeline itself **not yet Jenkins-executed**. Existing inline job pinned old SHA and WILL FAIL after feature branch advanced if rerun without switching to SCM.
+
+**PENDING:** Execute SCM Jenkins full_audit, review live report anomalies and GAQL; verify Google Ads UI readback of budget and both ad schedules, check native Auto-apply Recommendations and billed-cost ledger, consider conversion pipeline vs owner-reported patient outcomes. Do not claim PR #144 production merged or any delivery deployment. Ad schedule is a hard served-hours constraint but reduced hours/budget can limit leads.
+
+---
+
 ## 0H. 2026-11-22 — Direct Google Ads API reporting foundation (review PR)
 
 **FACT:** Existing Data Manager API handles outbound offline conversion ingestion, not Google Ads cost/keyword/Change Event reads. A separate read-only Google Ads v26 SearchStream client, bounded GAQL report presets, CLI, and mocked tests are proposed in feature/google-ads-api-readonly-reporting-20261122. No Ads settings/budget/production deployment modified. Source specification: docs/GOOGLE_ADS_DIRECT_API_READONLY_2026-11-22.md.
