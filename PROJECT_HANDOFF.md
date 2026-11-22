@@ -10,7 +10,7 @@
 
 ---
 
-## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
 
 **OWNER-SUPPLIED CONSOLE TAIL (timestamp 21:39 LA-unverified Jenkins host time):** `Google Ads API read-only reports SUCCESS`; `Finished: SUCCESS`. Source was the Google Ads reporting pipeline and final stages returned `search_terms` followed by `changes`. User-provided pasted log begins **midway through Search Terms**, so it **does not contain** account/budgets/campaigns/daily/ad_groups sections or the full Search Terms response. Do not claim complete report inspection based on this truncated excerpt.
 
