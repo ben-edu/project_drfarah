@@ -10,7 +10,25 @@
 
 ---
 
-**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0K. 2026-11-22 — Repaired SCM reporting job after Python/Groovy escape failure
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0L. 2026-11-22 — SCM Google Ads full_audit and new summary mode PASSED (operator-supplied console)
+
+**LIVE ACCEPTANCE (22:36 Jenkins console, Google Ads account TZ America/Los_Angeles):** After extracting formatter into `scripts/google-ads-report-runner.py`, the owner ran `drfarah-google-ads-api-validate` with `REPORT=full_audit`; all 7 read-only API reports returned and finished `Google Ads API read-only reports SUCCESS` / `Finished: SUCCESS`. New `summary` logic ran successfully (`SEARCH_TERMS_SUMMARY`, `PAID_TERM`, `CHANGE_TYPES` were printed). This definitively clears the previous Groovy/Python syntax blocker. This console excerpt does **not** include the checkout commit SHA or Build number, so don't ascribe an unverified SHA or number to the passing build.
+
+**Budget verification (read-after-write from Ads API):** Campaign Urgent Search `24414014329`, budget `15988400106` now **$10/day** (`amountMicros=10000000`) and `ENABLED`. Traveler Search `24404901753`, budget `15989903931` **$5/day**, `ENABLED`. Paused Legacy Smart budget $30/day. API Local Services budget record $0.01 is not proof of Local Services billed limit. All reported budgets unshared.
+
+**Actual returned DATE WINDOW 2026-11-16..22 (5 dated rows, Nov 16–20 only, Urgent Search):** **$216.17 served cost**, **58 clicks**, **1,876 impressions**, **15 metrics.phoneCalls**, **6 platform conversions**, **32 allConversions**. Missing Nov 21–22 daily rows not proof of zero spend. This interval predates the late-Nov-22 budget/schedule changes; do not evaluate post-change efficiency from it. Served cost is not billed cost. The clinic's separately reported 2 patients last week are not attributable to these Ads rows absent matched patient-source/outcome evidence.
+
+**Ad group split:** Walk-In Same-Day `199388744537`: $154.34/41 clicks/3 platform conversions/1,648 impressions (**71.4%** of campaign cost). Beverly Hills `196894367450`: $61.83/17 clicks/3 platform conversions/228 impressions. Separate Near Me group `204328258769` remains PAUSED and $0 for window; this DOES NOT block broad near-me search terms in Walk-In.
+
+**Search Terms (summary; 201 rows, 17 paid):** 46 reported term-clicks and $170.45 term-level cost vs 58 campaign clicks and $216.17 campaign cost; Search Terms coverage is not exhaustive. Single phrase `urgent care near me` cost **$92.13**, 24 clicks, 2 platform conversions **within Walk-In**, equivalent 42.6% of all campaign spend during this window. Since it produced counted platform conversions, **do not blindly negative the generic phrase**. Other paid competitor-name, insurance-intent and broad terms need contextual evaluation before applying targeted negative keywords. No keyword changes made.
+
+**Change Events:** 21 events (1 campaign budget resource and 20 campaign criterion changes), all Google Ads API; evidence corroborates Nov 22 budget/schedule writes. These Change Event selected fields do not independently expose all actual hours; separate Ad Schedule readback remains prudent.
+
+**REMAINING:** Verify native Ads billing and Auto-apply settings, post-Nov-22 spend/call/visit outcomes under new $10/day + weekday schedule, and (if relevant) narrow keyword/match-type safeguards after contextual review. PR #144 still draft/unmerged; new full_audit passing console is operator evidence, PR-head CI result checked separately. No further Ads write triggered by reporting test.
+
+---
+
+## 0K. 2026-11-22 — Repaired SCM reporting job after Python/Groovy escape failure
 
 **FACT:** Owner reran Jenkins `drfarah-google-ads-api-validate`, SCM checked out `ba17e55e817b37e3b66efd64235833d0f8ef3d50` and failed with Python `SyntaxError: unterminated string literal` on inline summary formatter `replace("\\n",...)`. This is a Groovy triple-single-quote escape-processing failure, **NOT** Google Ads authorization or platform budget state. The job failed before API reads; it performed NO Ads changes.
 
