@@ -1,7 +1,7 @@
 # Jenkins Google Ads reporting — SCM-backed operator runbook
 
 **2026-11-22 | Project:** Dr. Farah VIP Urgent Care  
-**Status:** operational pipeline in review branch PR #144; Jenkins operator observed successful SCM-pipeline build #4 on 2026-11-22, before latest summary-output change. Latest `OUTPUT_FORMAT` amendment requires a new Jenkins build to validate. This file is a feature-branch document until PR is merged into `dev`.
+**Status:** operational pipeline in review branch PR #144; Jenkins operator observed successful SCM-pipeline build #4 on 2026-11-22, before latest summary-output change. Latest `OUTPUT_FORMAT=summary` now PASSED an operator-supplied Jenkins full_audit on 2026-11-22. This file is a feature-branch document until PR is merged into `dev`.
 
 ## Purpose and source of truth
 
@@ -58,7 +58,7 @@ The owner reported enabling **Triggers → GitHub hook trigger for GITScm pollin
 
 - A subsequent owner-started SCM Jenkins build checked out feature-branch commit `ba17e55e817b37e3b66efd64235833d0f8ef3d50` and failed before any Google Ads reporting query: Python `SyntaxError: unterminated string literal` at the inline report-formatter's `term.replace("\\n", ...)` line. Cause: the Python code was embedded inside Groovy triple-single-quoted `sh` source, so Groovy interpreted the escape sequences prior to Python parsing. **Credential acquisition and Git checkout succeeded; no Google Ads budget/campaign changes occurred in this failed reporting job.**
 - The remedy is to remove the embedded Python heredoc entirely. Dedicated Python operator runner now lives at `scripts/google-ads-report-runner.py`; the SCM pipeline bind-mounts it read-only in the existing Harbor API image and runs `python /app/google-ads-report-runner.py`. The runner delegates to the existing SearchStream read-only CLI. `api/tests/test_google_ads_report_runner.py` tests Python syntax, separation from Groovy, summary of paid terms, raw output, and invalid-date safety.
-- Revised Jenkinsfile contains **no inline Python** and can be evolved using the GitHub feature branch. The new version has **not yet been Jenkins-tested**; one fresh **Build with Parameters → REPORT=full_audit, OUTPUT_FORMAT=summary** should verify the change. Expected console `REPORT_SOURCE_COMMIT=` must refer to a commit **newer than** `ba17e55`. The presence of `OUTPUT_FORMAT` alone does not prove successful execution. Observe `Google Ads API read-only reports SUCCESS` and `Finished: SUCCESS`.
+- Revised Jenkinsfile contains **no inline Python** and can be evolved using the GitHub feature branch. The fixed version was **successfully Jenkins-tested on 2026-11-22**; any subsequent **Build with Parameters → REPORT=full_audit, OUTPUT_FORMAT=summary** should verify the change. Expected console `REPORT_SOURCE_COMMIT=` must refer to a commit **newer than** `ba17e55`. The presence of `OUTPUT_FORMAT` alone does not prove successful execution. Observe `Google Ads API read-only reports SUCCESS` and `Finished: SUCCESS`.
 - Prior successful Google Ads API connection and previously approved Urgent budget/schedule changes remain separate and are not invalidated by the reporting formatter failure. No additional Google Ads write has been performed in this repair.
 
 ## Successful milestones / remaining checks
@@ -67,7 +67,7 @@ The owner reported enabling **Triggers → GitHub hook trigger for GITScm pollin
 - Subsequent `budgets`, `campaigns`, `daily` read-only job succeeded; operator-supplied metrics saved as evidence in PR #144 and `PROJECT_HANDOFF.md`.
 - Owner later supplied a successful SCM Pipeline console tail with 21 `change_event` results auditing API budget/schedule mutations (one budget resource and 20 campaign-criterion events). Tail of Search Terms showed only some zero-click/zero-cost terms, not full paid terms.
 - Direct Google Ads write successes previously reported: Urgent Search daily budget $36 → $10; Urgent and Traveler Search scheduled Monday–Friday 08:30–16:30 LA account time. These writes were from a separate approved action connector, **not** from the reporting Jenkinsfile.
-- Remaining: first live validation of revised `OUTPUT_FORMAT=summary`; post-write budget readback `campaignBudgets/15988400106 amountMicros=10000000`; assess full paid search terms; cross-check native Ads billed spend and Auto-apply settings independently. Platform conversions/calls are not confirmed patient visits.
+- **Completed later 2026-11-22:** New `OUTPUT_FORMAT=summary` passed production Jenkins full_audit, and post-write budget readback `campaignBudgets/15988400106 amountMicros=10000000` confirmed Urgent $10/day. Current Search Terms summary: 201 rows, 17 paid, $170.45, with 24 clicks/$92.13/2 platform conversions on generic near-me phrase in Walk-In. Remaining: confirm native Ads billed spend, actual Ad Schedule windows and Auto-apply settings independently; monitor post-change performance. Platform conversions/calls are not confirmed patient visits.
 - Draft PR #144 must be reviewed and merged into `dev` under the normal branch policy; publishing this documentation is not deployment.
 
 ## Authoritative references
