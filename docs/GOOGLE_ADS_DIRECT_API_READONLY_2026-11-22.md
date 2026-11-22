@@ -1,6 +1,8 @@
 # Direct Google Ads API — read-only reporting (2026-11-22)
 
-Status: FEATURE BRANCH / PR REVIEW. The implementation has mocked unit tests; it has NOT yet performed an authenticated Google Ads production request. No Google Ads campaigns, conversions, customer data, billing or production deployments changed.
+Status: FEATURE BRANCH / DRAFT PR #144. The authenticated Google Ads API v26 production read was **successfully completed on 2026-11-22** using the existing Jenkins credential; production account/campaign/budget/daily reporting and later full-audit Jenkins execution were operator-confirmed. The reporting code is READ ONLY; owner-approved budget and schedule *write actions* were separately performed through an Ads connector, not this module. Do not confuse these operations. The newer summarized Jenkins console formatter still requires its own live build verification.
+
+Dedicated Jenkins SCM setup, job parameters, GitHub hook details and troubleshooting: [JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md](JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md).
 
 ## Existing infrastructure reused
 Existing Google Data Manager authentication and service-account Kubernetes mount are preserved. Data Manager sends offline 'visit_completed' conversions; this new module reads inbound Google Ads reporting using a *different OAuth scope*. A successful Data Manager validateOnly=HTTP 200 does not demonstrate Google Ads API read permission.
