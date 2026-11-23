@@ -10,7 +10,17 @@
 
 ---
 
-**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0M. 2026-11-23 — Dr. Farah request closed on writes, schedule readback added, PR CI blocker
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0N. 2026-11-23 — Local Services ad hours also set; three-campaign readback required
+
+**FACT / LIVE WRITE SUCCESS:** After completing Urgent and Traveler Search Mon–Fri 08:30–16:30, Google Ads connector `set_ad_schedule` also successfully changed **enabled Local Services campaign `23637947414`** to Monday–Friday 08:30–16:30 `America/Los_Angeles`. Five previous schedule windows were replaced with five new ones; no pause, budget, targeting or bid changes. The clinic's request now has successful write responses for **all three campaigns that were ENABLED in the 2026-11-22 API account report**, with Legacy Smart PAUSED. Still verify **read-after-write actual window state**, especially Local Services, rather than claiming this is definitively enforced indefinitely.
+
+**UPDATED READ-ONLY AUDIT:** `schedules` GAQL query and runner compliance expectation now include all three IDs `24414014329`, `24404901753`, `23637947414`. Expected **15 ENABLED schedule windows** exactly, 5 per campaign, weekdays 08:30–16:30. Any mismatch prints `SCHEDULE_COMPLIANCE=DRIFT_OR_INCOMPLETE` and does not mutate Ads. New query has NOT been run against production yet; GAQL compatibility on Local Services needs first Jenkins run.
+
+**NEXT:** Run SCM Jenkins report `REPORT=schedules, OUTPUT_FORMAT=summary` (or full_audit); capture actual entries and compliance. Review PR #144 Jenkins CI (previous `This commit cannot be built`) separately. Native billing/Auto-apply and first-party patient attribution remain outstanding.
+
+---
+
+## 0M. 2026-11-23 — Dr. Farah request closed on writes, schedule readback added, PR CI blocker
 
 **CLINIC REQUEST:** Dr. Farah reports 2–3 Google Ads calls/day and two in-clinic patients last week (owner-reported, cannot confidently attribute every visit to Ads). She requested Search ads weekdays only with 16:30–16:45 Pacific cutoff, 45–60 min before 17:30 closing.
 
