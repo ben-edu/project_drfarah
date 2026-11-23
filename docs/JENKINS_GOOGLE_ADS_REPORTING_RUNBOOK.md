@@ -27,7 +27,7 @@ In Jenkins → **Build with Parameters**:
 
 | Parameter | Values | Default / meaning |
 |---|---|---|
-| `REPORT` | `full_audit`, `account`, `budgets`, `schedules`, `recommendations`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all nine readonly reports |
+| `REPORT` | `full_audit`, `account`, `budgets`, `schedules`, `recommendations`, `recommendation_keywords`, `auto_apply`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all nine readonly reports |
 | `START_DATE` | `YYYY-MM-DD` or blank | Blank: six days before `END_DATE` |
 | `END_DATE` | `YYYY-MM-DD` or blank | Blank: current date in `America/Los_Angeles` |
 | `OUTPUT_FORMAT` | `summary` or `raw` | `summary`: concise console; `raw`: all returned JSON |
@@ -96,7 +96,7 @@ The Google Ads action connector returned **success** setting system-generated Lo
 
 Owner supplied a successful Jenkins `REPORT=schedules` console: 15 rows, precisely 5 enabled weekday 08:30–16:30 windows each for Urgent Search, Traveler Search and Local Services. `SCHEDULE_COMPLIANCE=PASS` and `Finished: SUCCESS` independently confirm the clinic request has been enforced as of the timestamp checked; budget was separately read back as Urgent $10/Traveler $5.
 
-The standalone `REPORT=recommendations` preset was added to direct v26 GAQL and the summary runner. `full_audit` now means **nine reports**; `recommendations` prints undis­missed recommendation types, associated campaigns, estimated impact if provided, and a budget recommendation payload if present. **Recommendation retrieval PASSED a live operator-run Jenkins read on 2026-11-23 (26 undismissed).** Run `REPORT=recommendation_keywords` and `OUTPUT_FORMAT=summary` next; review and never auto-apply an account optimization on the basis of projected scores alone. The Windsor.ai connected Free plan blocks direct new data pulls due to its connector limit, so direct Ads API is the intended sustainable evidence source.
+The standalone `REPORT=recommendations` preset was added to direct v26 GAQL and the summary runner. `full_audit` now means **ten reports**; `recommendations` prints undis­missed recommendation types, associated campaigns, estimated impact if provided, and a budget recommendation payload if present. **Recommendation retrieval PASSED a live operator-run Jenkins read on 2026-11-23 (26 undismissed).** Run `REPORT=recommendation_keywords` and `OUTPUT_FORMAT=summary` next; review and never auto-apply an account optimization on the basis of projected scores alone. The Windsor.ai connected Free plan blocks direct new data pulls due to its connector limit, so direct Ads API is the intended sustainable evidence source.
 
 Release order remains `feature → dev → main` after exact SHA CI/staging gates. The standalone reporting Jenkins job’s successful `Finished: SUCCESS` does not substitute for root-project `PR-144` CI.
 
@@ -109,3 +109,11 @@ Owner-supplied read-only `REPORT=recommendations` ran successfully via Jenkins: 
 **Test-suite isolation:** Previously `api/tests/test_google_ads_report_runner.py` depended on repository-root files (`scripts/`, `jenkins/`) that the main root Jenkins API pytest container does not mount (`api/` only). The regression tests now live at `scripts/tests/test_google_ads_report_runner.py` and are executed by the *standalone Google Ads SCM Jenkins job* in a credential-free `python:3.12-slim` stage **before** binding Google Ads or Harbor credentials. This stage's live execution is pending. The API-only test `api/tests/test_google_ads_reporting.py` stays within the normal root Jenkins pytest suite. **Do not claim the prior root PR Jenkins "This commit cannot be built" error is resolved until the exact current PR head's CI is green**; Jenkins job console logs are still needed for that separate failure.
 
 **Recurring jobs:** The GitHub SCM hook is push-triggered, not a weekly schedule. Keep operational R01–R12 cadence from the canonical doc; if an unattended cron is later approved, protect service-account secret scope and prove job delivery, safe log storage, the timezone and escalation owner first.
+
+## 2026-11-23 direct auto-apply subscription read — new pending acceptance
+
+Official Google Ads API v26 resource `recommendation_subscription` exposes subscription `type`, `status` (ENABLED/PAUSED), `create_date_time`, `modify_date_time`, and `resource_name`. Reference: https://developers.google.com/google-ads/api/fields/v26/recommendation_subscription . A read-only GAQL preset `REPORT=auto_apply` has been added; it prints all subscription rows plus a warning when any is ENABLED. If there are zero rows or zero ENABLED, this does **not** prove that no other Ads automation (manager scripts, Rules) is active. This is a material improvement over relying only on a Google Ads UI screenshot for subscription-state checks.
+
+**Live acceptance pending for `auto_apply`**; do not claim it is currently enabled/disabled in Dr. Farah's Ads account. Run `REPORT=auto_apply`, `OUTPUT_FORMAT=summary` and inspect the actual Google account results. The regular `full_audit` now includes this report, for **ten** default presets. `recommendation_keywords` remains on-demand (not part of `full_audit`). Neither report changes subscriptions or recommendations.
+
+Standalone Jenkins now runs non-secret `scripts/tests/test_google_ads_report_runner.py` in a Python 3.12 container before Jenkins credentials are bound. This is separate from root `Jenkinsfile` API tests; after a new build confirm this stage succeeds and that the original `PR-144` root CI failure is independently diagnosed.
