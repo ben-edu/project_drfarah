@@ -151,14 +151,14 @@ def test_weekday_schedule_compliance_summary():
                 },
             },
         }
-        for campaign_id in ("24414014329", "24404901753")
+        for campaign_id in ("24414014329", "24404901753", "23637947414")
         for day in days
     ]
     output = io.StringIO()
     with redirect_stdout(output):
         RUNNER["summarize"]("schedules", {"rows": rows})
     assert "SCHEDULE_COMPLIANCE=PASS" in output.getvalue()
-    assert output.getvalue().count("SCHEDULE campaign_id=") == 10
+    assert output.getvalue().count("SCHEDULE campaign_id=") == 15
 
     rows[0]["campaignCriterion"]["adSchedule"]["endHour"] = "17"
     output = io.StringIO()
