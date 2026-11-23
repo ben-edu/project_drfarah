@@ -51,7 +51,7 @@ def query_for(report: str, start: str | None = None, end: str | None = None) -> 
             "FROM campaign_criterion "
             "WHERE campaign_criterion.type = AD_SCHEDULE "
             "AND campaign_criterion.status = ENABLED "
-            "AND campaign.id IN (24414014329, 24404901753)"
+            "AND campaign.id IN (24414014329, 24404901753, 23637947414)"
         ),
     }
     if report in fixed:
