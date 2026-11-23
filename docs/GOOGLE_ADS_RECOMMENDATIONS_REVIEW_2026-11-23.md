@@ -43,3 +43,7 @@
 ## 2026-11-23 engineering follow-up (not live tested)
 
 The new `REPORT=recommendation_keywords` option will query `recommendation.keyword_recommendation` and return the actual suggested text, match type, optional recommended CPC, campaign and ad-group resource for each KEYWORD recommendation. Do not treat the prior 20 resource identifiers as proof of individual keyword suitability. The new `REPORT=auto_apply` option will query `recommendation_subscription.status/type` for actual subscribed recommendation types, while still distinguishing separate Rules/scripts. Official v26 field documentation confirms these are selectable. Both features are in feature PR #144 and **Jenkins production acceptance is pending**; no Ads mutation.
+
+## New direct auto-apply readback — 2026-11-23
+
+Live owner-supplied Jenkins `REPORT=auto_apply` (09:41) PASSED after **8/8 Python regression tests**. API yielded `ROWS=0`, `total=0 enabled=0 paused=0`. **No auto-apply recommendation subscriptions returned** in this snapshot; does **not** prove independently configured automated Rules/scripts are absent. Do not confuse the earlier `GOOGLE_ADS_RECOMMENDATIONS` budget change with evidence of active Auto-apply subscription. Keyword-detail review remains unverified until live `REPORT=recommendation_keywords` output is available. No Google Ads changes were made by the report.
