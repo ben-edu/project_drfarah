@@ -27,7 +27,7 @@ In Jenkins → **Build with Parameters**:
 
 | Parameter | Values | Default / meaning |
 |---|---|---|
-| `REPORT` | `full_audit`, `account`, `budgets`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all seven readonly reports |
+| `REPORT` | `full_audit`, `account`, `budgets`, `schedules`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all eight readonly reports |
 | `START_DATE` | `YYYY-MM-DD` or blank | Blank: six days before `END_DATE` |
 | `END_DATE` | `YYYY-MM-DD` or blank | Blank: current date in `America/Los_Angeles` |
 | `OUTPUT_FORMAT` | `summary` or `raw` | `summary`: concise console; `raw`: all returned JSON |
@@ -77,3 +77,13 @@ The owner reported enabling **Triggers → GitHub hook trigger for GITScm pollin
 - Jenkins GitHub Plugin webhook trigger: https://plugins.jenkins.io/github/
 - Google Ads client operator notes: `docs/GOOGLE_ADS_DIRECT_API_READONLY_2026-11-22.md`
 - Current resume and live evidence: `PROJECT_HANDOFF.md` and PR #144
+
+## 2026-11-23 operator-added ad schedule verification
+
+The clinic requested Google Search ads **Monday–Friday only**, stopping 45–60 minutes before its documented 17:30 closing time. Both Urgent Search `24414014329` and Traveler Search `24404901753` were updated through the separate connector to **08:30–16:30** America/Los_Angeles (effective local Pacific time, including seasonal DST). Both write calls confirmed success; Change Events showed 20 campaign criteria changes. Budget readback independently confirmed Urgent $10/day and Traveler $5/day.
+
+A new read-only **`schedules`** report on the feature branch queries v26 `campaign_criterion.ad_schedule` day/hour/minute for those two campaigns, restricted to enabled AD_SCHEDULE criteria. `full_audit` now runs **eight** report presets. In summary format Jenkins prints each actual schedule row and `SCHEDULE_COMPLIANCE=PASS` only when *each* Search campaign has exactly five enabled windows, weekdays 08:30–16:30, and no weekend/extra windows. Otherwise it prints `DRIFT_OR_INCOMPLETE` and no changes are applied automatically. Confirmed query fields against Google Ads API v26 field reference; the new GAQL has **not yet been production-executed**. If API returns an error, inspect query compatibility and do not treat the previous scheduling write as automatically failed.
+
+This targeted readback covers **Search campaigns only**; Local Services scheduling/billing is separate and was not changed on behalf of the clinic.
+
+**Known CI blocker as of review:** PR #144 `continuous-integration/jenkins/pr-head` reports `error: This commit cannot be built` for the previously checked commit, with build URL pointing to Jenkins `PR-144/7`. This is **not** the manually executed reporting job and has not been diagnosed from its Jenkins Console Output. Do not merge while PR CI is in error; inspect the PR job Console Output and remedy the exact cause, then seek green CI status. No claim of CI pass for new `schedules` tests.
