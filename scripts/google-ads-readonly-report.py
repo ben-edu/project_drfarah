@@ -11,7 +11,7 @@ from app.services.google_ads_reporting import CUSTOMER_ID, GoogleAdsReadError, r
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Google Ads v26 read-only reporting")
     parser.add_argument("--report", required=True, choices=[
-        "account", "campaigns", "budgets", "schedules", "daily", "ad_groups", "search_terms", "changes"
+        "account", "campaigns", "budgets", "schedules", "recommendations", "daily", "ad_groups", "search_terms", "changes"
     ])
     parser.add_argument("--start")
     parser.add_argument("--end")
