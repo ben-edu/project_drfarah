@@ -74,29 +74,87 @@
 
 ## 0N. 2026-11-23 — Local Services ad hours also set; three-campaign readback required
 
+**FACT / LIVE WRITE SUCCESS:** After completing Urgent and Traveler Search Mon–Fri 08:30–16:30, Google Ads connector `set_ad_schedule` also successfully changed **enabled Local Services campaign `23637947414`** to Monday–Friday 08:30–16:30 `America/Los_Angeles`. Five previous schedule windows were replaced with five new ones; no pause, budget, targeting or bid changes. The clinic's request now has successful write responses for **all three campaigns that were ENABLED in the 2026-11-22 API account report**, with Legacy Smart PAUSED. Still verify **read-after-write actual window state**, especially Local Services, rather than claiming this is definitively enforced indefinitely.
+
+**UPDATED READ-ONLY AUDIT:** `schedules` GAQL query and runner compliance expectation now include all three IDs `24414014329`, `24404901753`, `23637947414`. Expected **15 ENABLED schedule windows** exactly, 5 per campaign, weekdays 08:30–16:30. Any mismatch prints `SCHEDULE_COMPLIANCE=DRIFT_OR_INCOMPLETE` and does not mutate Ads. New query has NOT been run against production yet; GAQL compatibility on Local Services needs first Jenkins run.
+
+**NEXT:** Run SCM Jenkins report `REPORT=schedules, OUTPUT_FORMAT=summary` (or full_audit); capture actual entries and compliance. Review PR #144 Jenkins CI (previous `This commit cannot be built`) separately. Native billing/Auto-apply and first-party patient attribution remain outstanding.
+
 ---
 
 ## 0M. 2026-11-23 — Dr. Farah request closed on writes, schedule readback added, PR CI blocker
+
+**CLINIC REQUEST:** Dr. Farah reports 2–3 Google Ads calls/day and two in-clinic patients last week (owner-reported, cannot confidently attribute every visit to Ads). She requested Search ads weekdays only with 16:30–16:45 Pacific cutoff, 45–60 min before 17:30 closing.
+
+**ALREADY DONE Nov 22 (Google Ads tool success):** Urgent Search budget $36→$10/day, retained ENABLED; Traveler Search stays $5/day and ENABLED. Both Search campaigns have replacement Mon–Fri **08:30–16:30 America/Los_Angeles** schedules, no weekends; 21 API Change Events were captured, and the later live budget readback independently verified Urgent $10. Local Services not modified.
+
+**NOV 23 PROGRESS:** New read-only `schedules` GAQL report added to `google_ads_reporting.py`, exposed in CLI and `jenkins/google-ads/Jenkinsfile` choices; `full_audit` now contains 8 reports. `scripts/google-ads-report-runner.py` prints exact schedule rows and `SCHEDULE_COMPLIANCE=PASS` only if both campaigns have precisely Mon–Fri 08:30–16:30; deviations labeled `DRIFT_OR_INCOMPLETE` (no automatic Ads write). Added unit tests, docs/runbook. **New schedules report has NOT yet been run in Jenkins**. Requires operator-run Build and console evidence (or validated GitHub-hook auto-trigger).
+
+**CI BLOCKER:** PR #144 is draft; checked PR head `e4dda10` Jenkins status = `error`, description **"This commit cannot be built"**, URL `https://jenkins.proxbenovh.cloud/job/project_drfarah/job/PR-144/7/display/redirect`. No direct Jenkins Console Output reader is available. This is separate from successful reporting Job; exact CI root cause unknown. Must inspect the PR #144 Jenkins job console and restore green CI before merge.
+
+**NEXT:** Read actual schedule windows through `REPORT=schedules` (or `full_audit`), confirm compliance; retrieve PR-head CI failure console; check actual billed spend and native Ads Auto-apply/rules; then review PR #144 to merge to dev and switch this Jenkins reporting job SCM branch from feature to dev. Track post-change call/visit outcomes vs spend and retain privacy boundaries.
 
 ---
 
 ## 0L. 2026-11-22 — SCM Google Ads full_audit and new summary mode PASSED (operator-supplied console)
 
+**LIVE ACCEPTANCE (22:36 Jenkins console, Google Ads account TZ America/Los_Angeles):** After extracting formatter into `scripts/google-ads-report-runner.py`, the owner ran `drfarah-google-ads-api-validate` with `REPORT=full_audit`; all 7 read-only API reports returned and finished `Google Ads API read-only reports SUCCESS` / `Finished: SUCCESS`. New `summary` logic ran successfully (`SEARCH_TERMS_SUMMARY`, `PAID_TERM`, `CHANGE_TYPES` were printed). This definitively clears the previous Groovy/Python syntax blocker. This console excerpt does **not** include the checkout commit SHA or Build number, so don't ascribe an unverified SHA or number to the passing build.
+
+**Budget verification (read-after-write from Ads API):** Campaign Urgent Search `24414014329`, budget `15988400106` now **$10/day** (`amountMicros=10000000`) and `ENABLED`. Traveler Search `24404901753`, budget `15989903931` **$5/day**, `ENABLED`. Paused Legacy Smart budget $30/day. API Local Services budget record $0.01 is not proof of Local Services billed limit. All reported budgets unshared.
+
+**Actual returned DATE WINDOW 2026-11-16..22 (5 dated rows, Nov 16–20 only, Urgent Search):** **$216.17 served cost**, **58 clicks**, **1,876 impressions**, **15 metrics.phoneCalls**, **6 platform conversions**, **32 allConversions**. Missing Nov 21–22 daily rows not proof of zero spend. This interval predates the late-Nov-22 budget/schedule changes; do not evaluate post-change efficiency from it. Served cost is not billed cost. The clinic's separately reported 2 patients last week are not attributable to these Ads rows absent matched patient-source/outcome evidence.
+
+**Ad group split:** Walk-In Same-Day `199388744537`: $154.34/41 clicks/3 platform conversions/1,648 impressions (**71.4%** of campaign cost). Beverly Hills `196894367450`: $61.83/17 clicks/3 platform conversions/228 impressions. Separate Near Me group `204328258769` remains PAUSED and $0 for window; this DOES NOT block broad near-me search terms in Walk-In.
+
+**Search Terms (summary; 201 rows, 17 paid):** 46 reported term-clicks and $170.45 term-level cost vs 58 campaign clicks and $216.17 campaign cost; Search Terms coverage is not exhaustive. Single phrase `urgent care near me` cost **$92.13**, 24 clicks, 2 platform conversions **within Walk-In**, equivalent 42.6% of all campaign spend during this window. Since it produced counted platform conversions, **do not blindly negative the generic phrase**. Other paid competitor-name, insurance-intent and broad terms need contextual evaluation before applying targeted negative keywords. No keyword changes made.
+
+**Change Events:** 21 events (1 campaign budget resource and 20 campaign criterion changes), all Google Ads API; evidence corroborates Nov 22 budget/schedule writes. These Change Event selected fields do not independently expose all actual hours; separate Ad Schedule readback remains prudent.
+
+**REMAINING:** Verify native Ads billing and Auto-apply settings, post-Nov-22 spend/call/visit outcomes under new $10/day + weekday schedule, and (if relevant) narrow keyword/match-type safeguards after contextual review. PR #144 still draft/unmerged; new full_audit passing console is operator evidence, PR-head CI result checked separately. No further Ads write triggered by reporting test.
+
 ---
 
 ## 0K. 2026-11-22 — Repaired SCM reporting job after Python/Groovy escape failure
+
+**FACT:** Owner reran Jenkins `drfarah-google-ads-api-validate`, SCM checked out `ba17e55e817b37e3b66efd64235833d0f8ef3d50` and failed with Python `SyntaxError: unterminated string literal` on inline summary formatter `replace("\\n",...)`. This is a Groovy triple-single-quote escape-processing failure, **NOT** Google Ads authorization or platform budget state. The job failed before API reads; it performed NO Ads changes.
+
+**FIX ON FEATURE BRANCH (draft PR #144):** Extracted report formatter/date checking into independent stdlib Python `scripts/google-ads-report-runner.py`; Jenkinsfile now bind-mounts and executes it, no Python heredoc. Added regression tests `api/tests/test_google_ads_report_runner.py`, testing paid-term summaries, raw output, invalid dates and absence of embedded Python. See `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md`. GitHub commits from this repair are unmerged; **no Jenkins execution of repaired source yet**.
+
+**NEXT:** Owner to rerun Jenkins Build with Parameters (`REPORT=full_audit`, `OUTPUT_FORMAT=summary`), inspect `REPORT_SOURCE_COMMIT`, final success, then bring back concise budget and paid-terms output. Do not infer API connection loss or Ads state mutation from this parser failure. Keep PR draft until passing.
 
 ---
 
 ## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
 
+**OWNER-SUPPLIED CONSOLE TAIL (timestamp 21:39 LA-unverified Jenkins host time):** `Google Ads API read-only reports SUCCESS`; `Finished: SUCCESS`. Source was the Google Ads reporting pipeline and final stages returned `search_terms` followed by `changes`. User-provided pasted log begins **midway through Search Terms**, so it **does not contain** account/budgets/campaigns/daily/ad_groups sections or the full Search Terms response. Do not claim complete report inspection based on this truncated excerpt.
+
+**Visible Search Terms excerpt:** 117 search-term rows for Urgent campaign `24414014329`, ad group `199388744537`; in the **visible subset only**, 250 impressions, 0 clicks, $0 served cost, 0 platform conversions. Includes competitor and broad queries, but these rows alone do not establish paid waste; do not apply broad negatives solely from zero-cost impressions. To judge paid leakage, examine full ordered paid terms from earlier in the output.
+
+**Change Event live readback:** `row_count=21` on 2026-11-22; one `CAMPAIGN_BUDGET` entry for Urgent budget `15988400106` at Ads-account time 12:24:27, and 20 `CAMPAIGN_CRITERION` entries for Urgent `24414014329` at 12:25:08 and Traveler `24404901753` at 12:25:10, all `GOOGLE_ADS_API`. Supports real change audit for the already-approved $36->$10 budget and Mon-Fri 08:30–16:30 schedules, although the Change Events excerpt itself does not include old/new amounts or the full weekday windows. Earlier write actions returned success for target state. No further Ads changes performed.
+
+**POST-RUN OPERATOR IMPROVEMENT (new commit after the successful build):** `jenkins/google-ads/Jenkinsfile` now includes `OUTPUT_FORMAT=summary|raw` with `summary` default. In summary mode it prints all small account/budget/campaign/daily/ad_group reports, but replaces verbose Search Terms with aggregate clicks/impressions/cost and top 20 **paid** terms, and replaces verbose Change Events with resource-type counts and 8 recent changes. `raw` still prints full JSON for forensic audits. This changed Jenkinsfile was **not yet executed**; requires next Jenkins build to validate. Do not mistake the earlier success for validation of the updated formatter.
+
+**NEXT:** Verify `budgets` readback shows `amountMicros=10000000` for `15988400106`; review full performance and expensive search terms rather than a truncated tail. Improve operator pipeline output ergonomics if needed (summarized paid terms + artifact), avoid printing service-account credentials or storing healthcare-sensitive search strings in public GitHub. PR #144 still pending review/merge.
+
 ---
 
 ## 0I. 2026-11-22 — Direct Ads production API passed; approved budget and weekday scheduling applied
 
+**LIVE WRITE CONFIRMED by Google Ads connector:** Urgent Search campaign `24414014329` budget changed from $36/day to **$10/day** (`10000000` micros). Campaign was not paused. Traveler Search `24404901753` retains **$5/day**. Both campaigns received replacement Ad Schedule rules Monday–Friday **08:30–16:30** in **America/Los_Angeles**, no Saturday/Sunday windows. Ads account response confirmed success for both campaigns: Urgent replaced 5 previous schedule windows; Traveler replaced 7. Do not assume other campaign types (Local Services) changed. Official clinic site publishes Mon–Fri 08:30–17:30 and weekends closed; earlier 16:30 cessation is owner-requested.
+
+**CLINIC-REPORTED RESULT (not verified attribution):** Dr. Farah says approximately 2–3 calls per day from Google Ads last week and two patients visited. This is an owner-reported business outcome and must not be conflated with platform phoneCalls or conversion counts; no patient identifiable information recorded. Weekly period/lead attribution not independently verified.
+
+**SCM JENKINS FILE:** New separate pipeline `jenkins/google-ads/Jenkinsfile` added to feature branch / draft PR #144. It parameterizes full_audit, account, campaigns, budgets, daily, ad_groups, search_terms, changes plus LA-local date range; reuses existing secure Jenkins credential and pinned Harbor image; `checkout scm` supports GitHub-driven changes without editing an inline Script. Existing `drfarah-google-ads-api-validate` Jenkins job still needs **ONE-TIME UI switch** to Definition=`Pipeline script from SCM`, repository `https://github.com/ben-edu/project_drfarah.git`, branch `feature/google-ads-api-readonly-reporting-20261122` until PR #144 merge (then `dev`), Script Path=`jenkins/google-ads/Jenkinsfile`. No Jenkins connector access to change job or start builds; new SCM pipeline itself **not yet Jenkins-executed**. Existing inline job pinned old SHA and WILL FAIL after feature branch advanced if rerun without switching to SCM.
+
+**PENDING:** Execute SCM Jenkins full_audit, review live report anomalies and GAQL; verify Google Ads UI readback of budget and both ad schedules, check native Auto-apply Recommendations and billed-cost ledger, consider conversion pipeline vs owner-reported patient outcomes. Do not claim PR #144 production merged or any delivery deployment. Ad schedule is a hard served-hours constraint but reduced hours/budget can limit leads.
+
 ---
 
 ## 0H. 2026-11-22 — Direct Google Ads API reporting foundation (review PR)
+
+**FACT:** Existing Data Manager API handles outbound offline conversion ingestion, not Google Ads cost/keyword/Change Event reads. A separate read-only Google Ads v26 SearchStream client, bounded GAQL report presets, CLI, and mocked tests are proposed in feature/google-ads-api-readonly-reporting-20261122. No Ads settings/budget/production deployment modified. Source specification: docs/GOOGLE_ADS_DIRECT_API_READONLY_2026-11-22.md.
+
+**DATA_GAP / NEXT:** Confirm current Google Cloud project's Google Ads API activation and Explorer-or-higher production access, service account presence in Ads customer 652-510-3588 (or authorized manager), and run a real read-only account/campaign/budget query. The existing Data Manager credential's authorization for Google Ads reporting is unproven. Developer tokens were sunset September 9, 2026; Cloud project now controls API access. Preserve existing P0 spend controls and don't treat GAQL cost as billed cost or platform conversions as patients.
 
 ---
 
