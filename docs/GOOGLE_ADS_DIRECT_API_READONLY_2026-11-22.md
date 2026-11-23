@@ -40,8 +40,10 @@ Sources:
 
 ## Schedule compliance API readback (added 2026-11-23)
 
-The targeted `schedules` report uses read-only `GoogleAdsService.SearchStream` and Google Ads API v26 campaign-criterion ad schedule fields for Urgent Search `24414014329` and Traveler Search `24404901753`:
+The targeted `schedules` report uses read-only `GoogleAdsService.SearchStream` and Google Ads API v26 campaign-criterion ad schedule fields for Urgent Search `24414014329`, Traveler Search `24404901753`, and Local Services `23637947414`:
 
     python scripts/google-ads-readonly-report.py --report schedules
 
 Once Jenkins loads the updated SCM Jenkinsfile, `REPORT=schedules` displays a compact `SCHEDULE_COMPLIANCE` result. `full_audit` now includes schedules among its eight reports. This confirms the actual account state after the 2026-11-22 owner-requested schedule write without making another update. **New schedule GAQL is not live-validated until next Jenkins Build.** Schema reference: https://developers.google.com/google-ads/api/fields/v26/campaign_criterion .
+
+**2026-11-23 extension:** Local Services received an authorized successful Mon–Fri 08:30–16:30 schedule write. The read-only `schedules` report now queries all three currently enabled campaigns; summary expects precisely 15 weekday windows. API readback has not been run after these changes.
