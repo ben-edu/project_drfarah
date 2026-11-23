@@ -16,11 +16,11 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 ALLOWED_REPORTS = (
-    "full_audit", "account", "budgets", "schedules", "recommendations", "recommendation_keywords", "campaigns", "daily",
+    "full_audit", "account", "budgets", "schedules", "recommendations", "recommendation_keywords", "auto_apply", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 FULL_AUDIT = (
-    "account", "budgets", "schedules", "recommendations", "campaigns", "daily",
+    "account", "budgets", "schedules", "recommendations", "auto_apply", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 DATED_REPORTS = {"daily", "ad_groups", "search_terms", "changes"}
@@ -154,6 +154,37 @@ def summarize(item: str, payload: dict[str, object]) -> None:
                 flush=True,
             )
         print(f"RECOMMENDATIONS_NOT_SHOWN={max(0, len(active) - 100)}", flush=True)
+    elif item == "auto_apply":
+        statuses = Counter(
+            str(r.get("recommendationSubscription", {}).get("status", "UNKNOWN"))
+            for r in rows
+        )
+        enabled = [
+            r.get("recommendationSubscription", {})
+            for r in rows
+            if r.get("recommendationSubscription", {}).get("status") == "ENABLED"
+        ]
+        print(
+            f"AUTO_APPLY_SUBSCRIPTIONS total={len(rows)} enabled={len(enabled)} "
+            f"paused={statuses.get('PAUSED', 0)}",
+            flush=True,
+        )
+        for row in rows:
+            sub = row.get("recommendationSubscription", {})
+            print(
+                "AUTO_APPLY_SUBSCRIPTION "
+                + json.dumps({
+                    "type": sub.get("type"),
+                    "status": sub.get("status"),
+                    "createDateTime": sub.get("createDateTime"),
+                    "modifyDateTime": sub.get("modifyDateTime"),
+                }, ensure_ascii=False),
+                flush=True,
+            )
+        if enabled:
+            print("AUTO_APPLY_REVIEW=ENABLED_SUBSCRIPTIONS_PRESENT", flush=True)
+        else:
+            print("AUTO_APPLY_REVIEW=NO_ENABLED_SUBSCRIPTIONS_RETURNED; CHECK_ACCOUNT_RULES_SEPARATELY", flush=True)
     elif item == "recommendation_keywords":
         print(f"RECOMMENDATION_KEYWORDS total={len(rows)}", flush=True)
         for row in rows:
