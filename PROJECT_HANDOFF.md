@@ -10,7 +10,21 @@
 
 ---
 
-**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0L. 2026-11-22 — SCM Google Ads full_audit and new summary mode PASSED (operator-supplied console)
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0M. 2026-11-23 — Dr. Farah request closed on writes, schedule readback added, PR CI blocker
+
+**CLINIC REQUEST:** Dr. Farah reports 2–3 Google Ads calls/day and two in-clinic patients last week (owner-reported, cannot confidently attribute every visit to Ads). She requested Search ads weekdays only with 16:30–16:45 Pacific cutoff, 45–60 min before 17:30 closing.
+
+**ALREADY DONE Nov 22 (Google Ads tool success):** Urgent Search budget $36→$10/day, retained ENABLED; Traveler Search stays $5/day and ENABLED. Both Search campaigns have replacement Mon–Fri **08:30–16:30 America/Los_Angeles** schedules, no weekends; 21 API Change Events were captured, and the later live budget readback independently verified Urgent $10. Local Services not modified.
+
+**NOV 23 PROGRESS:** New read-only `schedules` GAQL report added to `google_ads_reporting.py`, exposed in CLI and `jenkins/google-ads/Jenkinsfile` choices; `full_audit` now contains 8 reports. `scripts/google-ads-report-runner.py` prints exact schedule rows and `SCHEDULE_COMPLIANCE=PASS` only if both campaigns have precisely Mon–Fri 08:30–16:30; deviations labeled `DRIFT_OR_INCOMPLETE` (no automatic Ads write). Added unit tests, docs/runbook. **New schedules report has NOT yet been run in Jenkins**. Requires operator-run Build and console evidence (or validated GitHub-hook auto-trigger).
+
+**CI BLOCKER:** PR #144 is draft; checked PR head `e4dda10` Jenkins status = `error`, description **"This commit cannot be built"**, URL `https://jenkins.proxbenovh.cloud/job/project_drfarah/job/PR-144/7/display/redirect`. No direct Jenkins Console Output reader is available. This is separate from successful reporting Job; exact CI root cause unknown. Must inspect the PR #144 Jenkins job console and restore green CI before merge.
+
+**NEXT:** Read actual schedule windows through `REPORT=schedules` (or `full_audit`), confirm compliance; retrieve PR-head CI failure console; check actual billed spend and native Ads Auto-apply/rules; then review PR #144 to merge to dev and switch this Jenkins reporting job SCM branch from feature to dev. Track post-change call/visit outcomes vs spend and retain privacy boundaries.
+
+---
+
+## 0L. 2026-11-22 — SCM Google Ads full_audit and new summary mode PASSED (operator-supplied console)
 
 **LIVE ACCEPTANCE (22:36 Jenkins console, Google Ads account TZ America/Los_Angeles):** After extracting formatter into `scripts/google-ads-report-runner.py`, the owner ran `drfarah-google-ads-api-validate` with `REPORT=full_audit`; all 7 read-only API reports returned and finished `Google Ads API read-only reports SUCCESS` / `Finished: SUCCESS`. New `summary` logic ran successfully (`SEARCH_TERMS_SUMMARY`, `PAID_TERM`, `CHANGE_TYPES` were printed). This definitively clears the previous Groovy/Python syntax blocker. This console excerpt does **not** include the checkout commit SHA or Build number, so don't ascribe an unverified SHA or number to the passing build.
 
