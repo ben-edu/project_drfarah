@@ -57,6 +57,27 @@ Only approved decisions belong in this file. Do not add hypotheses or proposed t
 - **DECISION:** the project should use useful lawful/platform-compliant marketing measurement and attribution without arbitrary self-imposed restrictions, while excluding unnecessary medical-record detail and respecting applicable privacy/consent/platform requirements.
 - **DECISION:** the Google Business service catalogue will not be bulk-reduced merely because it is extensive. Services will be evaluated for factual availability, demand, economics, clarity, duplication, conversion usefulness, claims/pricing accuracy and platform policy before change.
 
+## Google Ads current spend/measurement authorization — 2026-11-10
+
+- **OWNER DECISION:** Dr. Farah likely re-enabled Search on 2026-11-09 and the operator expressly chooses to leave **existing Urgent Care and Traveler Search ENABLED** at their then-current $10/day and $5/day average budgets; do not interpret prior PAUSED state as current. This is **not** authorization to increase budgets, enable other groups, create campaigns, or falsely claim policy clearance. Verify actual live state before a future write.
+- **OWNER DECISION:** Prioritize cost control and real completed patients; do not remove useful conversion/attribution tracking merely to avoid an imaginary per-conversion charge. Search is currently Manual CPC (ECPC off), and Conversion measurement itself is free. Keep paid-click controls, accurate first-party/Ads diagnostics, clinical privacy boundaries and existing paused Near Me ad group until the review supports another decision.
+- **EVIDENCE / NOT YET A DECISION:** Current Google Ads `Calls from ads` is Primary, Every, but whether to make it One, whether to set Google-hosted Local Actions Secondary, how to implement extra alert/auto-rule limits, whether to alter price/$240 vs $250 or Walk-In copy, whether to remove/keep a competitor negative, or whether to retry Near Me all require their specified current readback and clinic approval. This entry does not preapprove those interventions.
+- **AUTHORITY:** `ROADMAP.md` §3A/3B and `docs/GOOGLE_ADS_COST_CONTROL_CONVERSION_STRATEGY_2026-11-10.md` describe gated next actions; Google Ads account itself remains source of truth. Protect the privacy and booking source-of-truth architecture; no PHI in marketing platforms.
+
+## Google Ads budget drift and owner decision pending — 2026-11-15
+
+- **OBSERVED, NOT APPROVED:** Urgent Search daily average is $36 following Nov 11 Recommendations-path $10→$36 change; owner screenshots show Auto-apply History 0 active recommendations. Exact operator/automaticity remains unproven.
+- **PROPOSAL, NOT EXECUTED:** Restore Urgent average budget $36→$10 (campaign stays ENABLED), Traveler $5 stays ENABLED, Near Me stays PAUSED; requires explicit owner confirmation, billing and readback.
+- **EVIDENCE:** Nov 9–15 $189.83 served spend/51 clicks/16 phone_calls/6 Ads calls; Walk-In still attracts Near Me queries $59.33/17 clicks. Neither absence of ad calls nor local actions proves completed-visit outcome.
+- **PRICE:** Owner-confirmed Urgent from $250. Targeted proposal fixes 3 $240 website displays, staging/CI and production checks still pending. See `docs/GOOGLE_ADS_RESTART_SPEND_NEAR_ME_AUDIT_2026-11-15.md`.
+
+## Acquisition measurement and Matomo scope — approved 2026-11-11
+
+- **OWNER DECISION:** Urgent Care starting visit price is **$250** (not the stale $240 site amount). Keep actual inclusion/conditional claim accurate; correct website/booking/service displays to source-of-truth $250 through validated release. Walk-In acceptance remains an independent clinic fact to verify.
+- **OWNER DECISION:** Implement **full** Matomo acquisition/marketing/booking-funnel/completed-business-outcome analytics using existing self-hosted `https://matomo.soria-ai.fr/`; plan and acceptance in Issue #142. Do not limit to page views or arbitrarily forbid meaningful legal event tracking. Do not leak medical form content or override applicable privacy/consent obligations; secure/aggregate/track only appropriate data and confirm admin permissions before deployment.
+- **EVIDENCE, NOT MARKETING LABEL:** `web` is generic/legacy; `other` unknown/referrer fallback; `production-verification` source provenance is unverified (not a canonical Source in current repo). Verify record-level metadata before including in acquisition ROI. `google_organic` is intended unpaid, not automatically proof.
+- **NOT YET VERIFIED:** Google Ads Auto-apply subscription settings, recommendation application History and automated rule configuration cannot be directly read via connected Windsor.ai. Campaign recommendations **are not proof Auto-apply is enabled**. Do not guess, toggle, raise spend or change bidding without actual account settings and reasoned review.
+
 ## Domains
 
 The final clinic-domain migration is approved as a controlled cutover.
@@ -110,3 +131,33 @@ Current email transport and production evidence are maintained in the live techn
 - Jenkins mapping: feature/fix/docs branches validate, `dev` deploys staging, `main` deploys production after approval.
 - Measurement implementation must preserve staging/production analytics isolation.
 - See `docs/architecture/ENVIRONMENT_ISOLATION.md` for full rationale.
+
+## Recurring Google Ads review and no-auto-apply decision — 2026-11-23
+
+- **OWNER FINANCIAL CONTROL RETAINED:** Urgent Search daily average remains $10; Traveler Search $5. On 2026-11-23 live `REPORT=recommendations` showed `CAMPAIGN_BUDGET` suggesting **$110/day** for Urgent (11×); **NOT APPROVED OR APPLIED**. All 26 proposals remain undismissed as observed. Do not confuse dismissal with rejecting a proposal for now; no Google Ads `Apply` or `Dismiss` API write was made. Google projected `costMicros` / `conversions` do not prove billed cost or completed visits.
+- **REVIEW POLICY:** No unattended recommendation application, dynamic image enablement, Performance Max opt-in, broader keyword additions, or Smart Bidding migration. Each candidate requires live context, patient outcome economics, ad/landing compliance and owner signoff before any write.
+- **RECURRING GOVERNANCE:** Adopt `docs/OPERATIONS_RECURRING_CADENCE.md` R01–R12: weekly Monday Recommendations review and paid search terms/Rules/Billing; weekdays budget/schedule/health; weekly Friday source→completed-visit reconciliation and docs; biweekly SEO; monthly invoice/economics; post-change CI/release checks. Evidence log and next-due required for every cycle; don't close recurrent work after one pass.
+- **CURRENT KNOWN GAP:** 20 KEYWORD recommendation texts/match types were not returned by the summary; review incomplete at per-keyword level. Separate dated audit `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`. Next weekly review Mon 2026-11-30 Pacific. Operator-triggered Jenkins is not a running unattended scheduled review.
+
+## Live API Auto-apply subscriptions readback — 2026-11-23
+
+**FACT:** Jenkins direct Google Ads API v26 `REPORT=auto_apply` returned **zero recommendation_subscription records**, zero ENABLED and zero PAUSED with a passing build and 8/8 Python regression tests. This is **not a global proof of no automation**; Google Ads native Rules, manager scripts, scheduled changes, policy automation, billing and historical Recommendations-path actors remain to be checked separately. **No change to Auto-apply subscriptions or other live Ads settings was made.** Include this check in recurring R06 review.
+
+## Proposed keyword selection / clinic confirmation gate — 2026-11-23
+
+**EVIDENCE, NOT AN OWNER APPROVAL:** All 20 live Urgent Walk-In Google Ads KEYWORD recommendations were read back: Exact match, suggested $4 CPC bid each; current actual Keyword overlap and qualified-visit performance unknown. Analyst completed individual triage **6 conditional shortlist, 9 hold, 5 do not add now**. No keywords/bids or budgets changed. Full reasons `docs/GOOGLE_ADS_KEYWORD_RECOMMENDATIONS_REVIEW_2026-11-23.md`. Until owner/Dr. Farah confirms true unscheduled walk-in acceptance, last-admission rules, service suitability, geographic area and outcomes, **do not add**. If clinically and economically justified, propose at most 1–2 exact high-intent tests under unchanged owner-approved $10/day budget, following explicit owner approval, baseline, close-variant/duplicate audit, and rollback.
+
+**CI and communications:** `PR-144/17` root Jenkins SUCCESS, exact feature SHA `5a7a1ce...` green; PR merge still conflicts with latest dev documentation and requires reconciliation/new SHA verification. Draft Dr. Farah English update stored `docs/DR_FARAH_BUSINESS_UPDATE_2026-11-23.md`; publishing/sending not implied by saving. R02 weekly recommendations remain recurring.
+
+## Urgent-care patient-intent prioritization and outstanding clinic workflow promises — 2026-11-23
+
+**NEW OWNER FACT:** Dr. Farah's practice truly evaluates urgent-care cases, and a meaningful share of intended patients need prompt/same-day attention. Therefore `urgent care near me`, `closest walk in urgent care` and `open urgent clinic` are **potentially relevant patient search intents**, not automatically negative keywords simply because they are high-spend/local. Verified Nov 16–20 term `urgent care near me` in Walk-In spent $92.13, 24 clicks, 2 platform conversions, but completed patient source remains unverified.
+
+**ANALYST EVALUATION, NOT ADS-ACCOUNT WRITE:** With the new clinical context, reclassify 20 Exact $4 CPC-bid recommendations from preliminary 6 conditional / 9 hold / 5 reject-for-now to **8 conditional urgency candidates / 7 hold / 5 do not add now**. Detailed list and exact cost interpretations in `docs/GOOGLE_ADS_URGENT_CARE_MARKETING_EVALUATION_2026-11-23.md`. No Google suggestions applied. Before any 1–2 keyword trial, first confirm existing keyword/negative/close-variant overlap, service intake and local range, same-day landing/call funnel, and explicitly obtain owner budget/bid approval; current Urgent average $10/day, Traveler $5/day unchanged. A proposed $4 CPC bid is neither a charge per keyword nor a fixed daily cost. Google’s $110/day proposal is **not approved**; normal full-month average-budget examples (unchanged $10→$110) imply $304→$3,344 monthly charging-limit references, not actual expected costs.
+
+**PENDING OWNER COMMITMENTS TO DR. FARAH, NOT DELIVERED:**
+- Issue #147: repair public same-day online booking, presently excluded by `frontend/booking.js` start-tomorrow logic and potentially wrong UTC clinic-day serialization; requires service/clinical cutoff and cross-timezone/regression acceptance. No booking code change or production deployment claimed.
+- Issue #148: private Telegram channel/bot with prompt generic admin-only booking notifications *after confirmed booking*, no PHI, bot token in secure server secret, delivery retries/deduplication; no bot/channel or live integration claimed.
+These are P0 conversion/operations prerequisites, not evidence of a feature already delivered.
+
+**DECISION OWNER:** Dr. Farah to validate true walk-in rules, urgent vs emergency scope, last appointment/admission, geographic area, real qualified calls/seen patient counts and approximate collected revenue. Clinical ad copy/sitelink/image approval remains hers. No marketing platform writes follow from drafting her progress update.
