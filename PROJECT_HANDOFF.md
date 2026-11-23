@@ -10,6 +10,16 @@
 
 ---
 
+## 0V. 2026-11-23 — Dr. Farah business report SENT by owner; move to same-day booking execution
+
+**OWNER CONFIRMED:** The revised clinic-facing progress report was sent to Dr. Farah on 2026-11-23. Sent communication concerns completed Ads budget/dayparting, 26 recommendation audit, urgent-care keyword intent and cost, and outstanding promised same-day booking/Telegram admin alerts. **Response from Dr. Farah is pending**; do not fabricate service, walk-in, last-admission, revenue or attribution decisions.
+
+**NEXT EXECUTION ORDER:** 1. Prioritize Issue #147 same-day online availability (frontend currently starts tomorrow; clinic-local date UTC serialization bug). Build isolated feature branch, test future same-day availability, clinic timezone/DST, zero slots/call-first fallback, backend working hours/conflicts; secure Dr. Farah intake/last admission requirements before live deployment. 2. Issue #148 staff-only Telegram booking alerts with generic notification and token/destination secret only in secure config, after committed booking and idempotent retries; do not put PHI in Telegram. 3. Reconcile recurring marketing recommendations with Dr. Farah responses and clinic aggregate patient outcomes, keep $10 Urgent and no auto-apply.
+
+**CURRENT RELEASE CHECK:** GitHub root PR #144 exact checked head `7f8df3d...` CI SUCCESS (Jenkins PR-144/18), but PR is still DRAFT / `mergeable=false` against rapidly changing `dev`, so do not merge blindly. PR #145 `dev→main` has SUCCESS exact head Jenkins PR-145/19 and is clean, but remains DRAFT pending staging release/owner acceptance; `main` not promoted. Distinguish CI success from production booking fixes.
+
+---
+
 ## 0U. 2026-11-23 — Urgent-care patient intent prioritized; same-day booking / Telegram admin notification registered as open promises
 
 **OWNER CLINICAL-CONTEXT CLARIFICATION:** Dr. Farah's practice genuinely delivers urgent care and many intended patients need urgent evaluation. This changes marketing **priority**, not live Ads authorization: urgent/near-me/walk-in/open-now search themes are worth retaining and carefully testing IF medically appropriate intake and accurate office-hours/last-admission claims can be supported. Original conservative 20-keyword triage 6 conditional/9 hold/5 avoid is superseded by a **provisional urgency-focused 8 conditional candidates / 7 hold / 5 avoid**; analyst evaluations, costs and all 20 text rows in `docs/GOOGLE_ADS_URGENT_CARE_MARKETING_EVALUATION_2026-11-23.md`. No keywords, bids, budget, RSA, sitelinks or other recommendation applied. At most 1–2 proposed Exact high-intent keywords after live existing-coverage review, true walk-in policy and owner authorization. Historic `urgent care near me` = $92.13/24 clicks/2 Ads platform conversions (Nov 16–20) in Walk-In, not 2 verified completed visits. "Near me" is not automatically irrelevant.
