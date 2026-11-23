@@ -19,7 +19,7 @@ pipeline {
   parameters {
     choice(
       name: 'REPORT',
-      choices: ['full_audit', 'account', 'budgets', 'schedules', 'recommendations', 'campaigns', 'daily', 'ad_groups', 'search_terms', 'changes'],
+      choices: ['full_audit', 'account', 'budgets', 'schedules', 'recommendations', 'recommendation_keywords', 'campaigns', 'daily', 'ad_groups', 'search_terms', 'changes'],
       description: 'Google Ads reporting only. Full audit runs all nine reports.'
     )
     string(name: 'START_DATE', defaultValue: '', description: 'Optional YYYY-MM-DD (blank = last 7 days in America/Los_Angeles)')
