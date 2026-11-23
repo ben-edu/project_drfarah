@@ -142,3 +142,9 @@ Current email transport and production evidence are maintained in the live techn
 ## Live API Auto-apply subscriptions readback — 2026-11-23
 
 **FACT:** Jenkins direct Google Ads API v26 `REPORT=auto_apply` returned **zero recommendation_subscription records**, zero ENABLED and zero PAUSED with a passing build and 8/8 Python regression tests. This is **not a global proof of no automation**; Google Ads native Rules, manager scripts, scheduled changes, policy automation, billing and historical Recommendations-path actors remain to be checked separately. **No change to Auto-apply subscriptions or other live Ads settings was made.** Include this check in recurring R06 review.
+
+## Proposed keyword selection / clinic confirmation gate — 2026-11-23
+
+**EVIDENCE, NOT AN OWNER APPROVAL:** All 20 live Urgent Walk-In Google Ads KEYWORD recommendations were read back: Exact match, suggested $4 CPC bid each; current actual Keyword overlap and qualified-visit performance unknown. Analyst completed individual triage **6 conditional shortlist, 9 hold, 5 do not add now**. No keywords/bids or budgets changed. Full reasons `docs/GOOGLE_ADS_KEYWORD_RECOMMENDATIONS_REVIEW_2026-11-23.md`. Until owner/Dr. Farah confirms true unscheduled walk-in acceptance, last-admission rules, service suitability, geographic area and outcomes, **do not add**. If clinically and economically justified, propose at most 1–2 exact high-intent tests under unchanged owner-approved $10/day budget, following explicit owner approval, baseline, close-variant/duplicate audit, and rollback.
+
+**CI and communications:** `PR-144/17` root Jenkins SUCCESS, exact feature SHA `5a7a1ce...` green; PR merge still conflicts with latest dev documentation and requires reconciliation/new SHA verification. Draft Dr. Farah English update stored `docs/DR_FARAH_BUSINESS_UPDATE_2026-11-23.md`; publishing/sending not implied by saving. R02 weekly recommendations remain recurring.
