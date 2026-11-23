@@ -72,6 +72,34 @@
 
 ---
 
+## 0N. 2026-11-23 — Local Services ad hours also set; three-campaign readback required
+
+---
+
+## 0M. 2026-11-23 — Dr. Farah request closed on writes, schedule readback added, PR CI blocker
+
+---
+
+## 0L. 2026-11-22 — SCM Google Ads full_audit and new summary mode PASSED (operator-supplied console)
+
+---
+
+## 0K. 2026-11-22 — Repaired SCM reporting job after Python/Groovy escape failure
+
+---
+
+## 0J. 2026-11-22 — Jenkins SCM pipeline execution confirmed (partial console evidence)
+
+---
+
+## 0I. 2026-11-22 — Direct Ads production API passed; approved budget and weekday scheduling applied
+
+---
+
+## 0H. 2026-11-22 — Direct Google Ads API reporting foundation (review PR)
+
+---
+
 ## 0G. 2026-11-15 — Urgent Ads budget raised, near-me queries in Walk-In, price fix proposed
 
 **CRITICAL LIVE FINANCIAL FACT:** Urgent Search currently ENABLED with $36/day average (earlier owner-authorized $10), Traveler Search ENABLED $5/day. Google Ads Change Event Nov 11 16:16:34 shows $10→$36 via `GOOGLE_ADS_RECOMMENDATIONS`; **does not prove Auto-apply**. Owner screenshot Auto-apply History 0 enrolled and no rows, Manage shows one apparently checked Remove redundant keywords but saved state unknown. Next: verify Change History actor and Billing, obtain explicit owner confirmation to restore Urgent to $10 while keeping ENABLED; no Ads mutation done.
