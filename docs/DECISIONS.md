@@ -131,3 +131,13 @@ Current email transport and production evidence are maintained in the live techn
 - Jenkins mapping: feature/fix/docs branches validate, `dev` deploys staging, `main` deploys production after approval.
 - Measurement implementation must preserve staging/production analytics isolation.
 - See `docs/architecture/ENVIRONMENT_ISOLATION.md` for full rationale.
+
+## Google Ads owner/clinic budget and operating-hours decision — 2026-11-22
+
+- **OWNER-APPROVED AND EXECUTED:** Set Urgent Search campaign `24414014329` daily average budget from unexpected $36/day back to **$10/day**, keeping the campaign ENABLED. Direct Google Ads API live readback returned budget `15988400106 amountMicros=10000000` on 2026-11-22. Do not re-apply higher Google recommendations without new explicit approval.
+- **CLINIC REQUEST AND EXECUTED FOR BOTH SEARCH CAMPAIGNS:** Dr. Farah requested ads Monday–Friday only and stopping 45–60 min before clinic's 17:30 local closing. Existing Urgent Search `24414014329` and Traveler Search `24404901753` were set to **Monday–Friday, 08:30–16:30 America/Los_Angeles**, weekends excluded. Two Ads connector write actions succeeded; Google Ads Change Events recorded 20 campaign-criterion changes. Independent per-window schedule readback is pending the new `schedules` report.
+- **PRESERVE:** Traveler Search stays ENABLED at **$5/day**; standalone Urgent Near Me ad group remains PAUSED; do not widen or reinterpret authorized budget/keyword changes. No other account settings or Ads campaign types were changed by this decision.
+- **SCOPE GAP:** System-generated **Local Services** campaign `23637947414` is ENABLED and was not modified. Its ads schedule and billing are independently governed; the phrase "all Google ads weekdays only" cannot be deemed globally fulfilled until Local Services scheduling is separately inspected with proper tools and clinic authorization. The API budget `$0.01` record is not independently validated as a Local Services spending ceiling.
+- **CLINIC OUTCOME FACT (NON-PHI):** Dr. Farah reported ~2–3 calls from Google Ads per day last week and **two clinic visits**; attribution of those visits to individual Google Ads campaigns, bookings, or clicks remains unverified. Track this separately from Ads `phoneCalls`, `conversions`, `allConversions`; never upload personal or health information to advertising systems.
+- **AUTHORITY / REVIEW:** Live Google Ads remains authoritative for budget/campaign status; operational acceptance evidence in draft PR #144, `PROJECT_HANDOFF.md`, `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md`. Any further ads writes require current-state readback, economic assessment, and owner-approved scope.
+
