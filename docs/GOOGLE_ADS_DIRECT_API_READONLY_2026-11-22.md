@@ -47,3 +47,9 @@ The targeted `schedules` report uses read-only `GoogleAdsService.SearchStream` a
 Once Jenkins loads the updated SCM Jenkinsfile, `REPORT=schedules` displays a compact `SCHEDULE_COMPLIANCE` result. `full_audit` now includes schedules among its eight reports. This confirms the actual account state after the 2026-11-22 owner-requested schedule write without making another update. **New schedule GAQL is not live-validated until next Jenkins Build.** Schema reference: https://developers.google.com/google-ads/api/fields/v26/campaign_criterion .
 
 **2026-11-23 extension:** Local Services received an authorized successful Mon–Fri 08:30–16:30 schedule write. The read-only `schedules` report now queries all three currently enabled campaigns; summary expects precisely 15 weekday windows. API readback has not been run after these changes.
+
+## November 23 schedule and recommendations update
+
+Read-only `schedules` has now **passed on live Google Ads account** with 15 rows across three enabled campaigns (Urgent Search, Traveler Search, Local Services), Monday–Friday 08:30–16:30, `SCHEDULE_COMPLIANCE=PASS`. This meets the clinic-specified operating hours as of that readback.
+
+`recommendations` is the new ninth report. v26 GAQL selects resource name, type, campaign, dismissed status, impact and campaign budget recommendation detail from `recommendation`. This is **read only**; it does not invoke RecommendationService Apply/Dismiss methods. The new query is **pending first live Jenkins run**; do not use stale Nov 11 recommendations as current account facts. Google docs: https://developers.google.com/google-ads/api/docs/recommendations .
