@@ -2,7 +2,7 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-15  
+**Last updated:** 2026-11-23  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
@@ -313,3 +313,17 @@ ChatGPT Ads remains a later paid-growth lane. Ads Manager installed; prior disco
 ## 12. Resume protocol
 
 Read this file, then `ROADMAP.md`; check exact `dev`, `main`, Jenkins statuses, branch lineage and live Ads state. Before any Git write that can trigger CI, verify no relevant build is already pending/running. Before production promotion, enforce `docs/GIT_RELEASE_STRATEGY.md`. Preserve spend/privacy/data/policy hard gates. Continue safe independent lanes instead of waiting on external dependencies. Never recreate existing campaign/ad objects without live read-back. Update this handoff after material sessions and keep deferred work in `ROADMAP.md`/issues.
+
+---
+
+## 13. Current operational checkpoint — 2026-11-23 (supersedes historical paid PAUSED/overspend notes above)
+
+**Owner- and clinic-authorized Google Ads state, independently verified:**
+- Account `652-510-3588`, time zone `America/Los_Angeles`. Urgent Search `24414014329` ENABLED at **$10/day** (budget `15988400106 amountMicros=10000000`, live API readback). Traveler Search `24404901753` ENABLED at **$5/day**. Legacy Smart PAUSED. This supersedes older instructions describing both Search campaigns as PAUSED and the earlier $36 Urgent spending alert.
+- Dr. Farah requested Mon–Fri only and stopping 45–60 minutes before closing; owner/assistant applied **08:30–16:30 Mon–Fri** to Urgent, Traveler and system Local Services `23637947414` via authorized Google Ads actions. Independent production Google Ads API readback Nov 23 returned **15 ENABLED weekday schedule rows, exactly five per campaign**, `SCHEDULE_COMPLIANCE=PASS`, Jenkins job `drfarah-google-ads-api-validate` `Finished: SUCCESS`. No weekends. No new budget or bid writes from the verification.
+- Dr. Farah reported ~2–3 calls/day and 2 patients visited in the prior week; **clinic-reported, not reliably Ads-to-patient attributed**. Platform calls/conversions and billed cost are distinct; no PHI uploaded. Need Ads billed cost, Auto-apply subscription/rule readbacks, call→patient matching without PII/PHI, and post-cutoff performance.
+- Standalone direct v26 Google Ads API reports and Python summary succeeded via Jenkins SCM pipeline. Current work **draft PR #144** on `feature/google-ads-api-readonly-reporting-20261122` (to dev), with source `jenkins/google-ads/Jenkinsfile`; further code/doc evidence in PR feature `PROJECT_HANDOFF.md`, `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md`. **NEW read-only ninth `recommendations` query is not yet Jenkins live-tested**, so current Nov 23 Google recommendations are NOT reviewed; Nov 11 historical proposed budget/bid/asset ideas must not be auto-applied. Direct Windsor.ai read is blocked by Free-plan account limits.
+- **RELEASE GATE:** PR #144 root Jenkins `PR-144` CI previously returned `error: This commit cannot be built` even though separate reporting Jenkins job passed; exact PR job console is unavailable to ChatGPT, and no green root CI/staging release evidence for the latest code. Approved production path remains `feature -> dev -> main`, after CI and staging. As of last verified, main `37794a7490ff338e1648fd788b0c38527fef838a` is ancestor of dev `d59e190914271ffda00ff5313b56c27744d99949`; dev includes $250 website price edits and docs not silently eligible for production. **Do not claim code merged or deployed** before signed gates.
+- **CURRENT NEXT (priority):** (1) run Jenkins reporting `REPORT=recommendations`, `OUTPUT_FORMAT=summary` and evaluate proposals, no auto-apply; (2) investigate PR-144 Jenkins `This commit cannot be built`, exact-head CI and staging, then feature->dev and validated dev->main; (3) native Ads billed ledger/Auto-apply/Rules; (4) call-to-qualified-to-completed attribution; (5) website production $250 price verification and pending Matomo issue #142.
+
+**Persistence note:** Canonical dev handoff has this deliberately short, current checkpoint. Extended logs, new report code and in-flight roadmap/decision docs remain in draft PR #144 until CI and merge. Earlier dated sections are retained for audit history and must not override this newer account fact.
