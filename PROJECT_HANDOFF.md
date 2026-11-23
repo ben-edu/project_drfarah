@@ -10,6 +10,18 @@
 
 ---
 
+## 0Q. 2026-11-23 — Weekly review cycle recorded; keyword detail pending; Jenkins test isolation repaired
+
+**RECURRING R02 cycle completed:** Live 2026-11-23 `REPORT=recommendations` = 26 undismissed; seven types, including 20 KEYWORD and campaign budget suggestion $110/day (not authorized). Dated assessment in `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`, next weekly due Monday Nov 30 (Pacific). Durable R01–R12 operational schedule in `docs/OPERATIONS_RECURRING_CADENCE.md`, tracking Issue #146. This is a recurring activity, **not permanently complete**.
+
+**ENGINEERING FOLLOW-UP (feature PR #144 only):** Added separate read-only `REPORT=recommendation_keywords` GAQL to expose actual suggested keyword text/match type/optional recommended CPC (not included in original 26-row summary); live run is **PENDING**. Kept `full_audit` at nine reports. Discovered isolated root Jenkins `API — tests` mounts just `api/`, so regression test under `api/tests/` couldn't see `scripts/` and `jenkins/` in that container. Moved runner regression test to `scripts/tests/test_google_ads_report_runner.py` and inserted a credential-free Python 3.12 stage in dedicated SCM Google Ads Job before its credentials are bound. **New test stage and keyword detail query not yet live-run.** This fixes an independently verified test design problem but does NOT prove that the Jenkins PR-head `This commit cannot be built` problem is fixed. Root PR-144 CI output needs actual diagnostic Console.
+
+**PRODUCTION RELEASE GATE:** Draft PR #145 `dev→main` Jenkins `PR-145` was reporting SUCCESS for its then-current head as of this session, but `dev` keeps moving because Docs/Handoff are updated often; require a fresh exact-head green and actual staging $250 price/service/booking evidence before promotion. `main` unchanged as last verified; **no deployment or main merge performed**.
+
+**NEXT:** (1) ask operator to run dedicated Jenkins `REPORT=recommendation_keywords`, `OUTPUT_FORMAT=summary` on latest feature branch; confirm Python regression stage passes and review term intent; (2) get root `PR-144` Jenkins Console Output for `This commit cannot be built`, then exact-head CI; (3) stage and promote reviewed dev→main only through approved strategy; (4) follow R01–R12 recurring program, including billing/Auto-apply and patient visit linkage.
+
+---
+
 ## 0P. 2026-11-23 — Google Ads 26 live recommendations reviewed; recurring operations cadence established
 
 **LATEST OWNER-SUPPLIED JENKINS `REPORT=recommendations` (displayed 09:16 2026-11-23):** 26 undismissed Google Ads v26 recommendations, successful read-only production report: 20 KEYWORD, 1 CAMPAIGN_BUDGET, 1 MAXIMIZE_CONVERSIONS_OPT_IN, 1 PERFORMANCE_MAX_OPT_IN, 1 RESPONSIVE_SEARCH_AD, 1 SITELINK_ASSET, 1 DYNAMIC_IMAGE_EXTENSION_OPT_IN. Urgent Search `24414014329` recommendation proposes **$110/day**, versus live owner-approved and read-back-verified **$10/day**. **NO recommendation accepted, dismissed or applied.** Budget, automated bidding, Performance Max and images are on hold; RSA/Sitelink require reviewed copy/landing; KEYWORD content missing and needs details before per-keyword decisions. Google's optimization forecasts are not patient outcomes. Source and analysis: `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`; next review **Monday 2026-11-30 Pacific**, also immediately after material Ads change.
