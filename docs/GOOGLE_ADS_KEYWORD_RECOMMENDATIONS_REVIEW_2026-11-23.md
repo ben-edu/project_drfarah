@@ -1,6 +1,6 @@
 # Google Ads — individual review of 20 suggested Exact-match keywords
 
-**Date:** 2026-11-23 | **Source:** operator-supplied SUCCESS console at 10:05 for `REPORT=recommendation_keywords` (Google Ads API v26), 20 rows.  
+> **Urgent-care clinical context update (2026-11-23):** This file preserves the initial conservative 6 shortlist / 9 hold / 5 do-not-add triage. The owner subsequently confirmed urgent-care and prompt local patient demand are core to the practice. The **new priority assessment** is 8 urgent-intent conditional / 7 hold / 5 avoid, detailed in [GOOGLE_ADS_URGENT_CARE_MARKETING_EVALUATION_2026-11-23.md](GOOGLE_ADS_URGENT_CARE_MARKETING_EVALUATION_2026-11-23.md). This is an analyst reprioritization only, with **no Ads keyword additions** or budget changes.\n\n**Date:** 2026-11-23 | **Source:** operator-supplied SUCCESS console at 10:05 for `REPORT=recommendation_keywords` (Google Ads API v26), 20 rows.  
 **Account:** `652-510-3588` USD; campaign Urgent Search `24414014329`; ad group Walk-In / Same-Day `199388744537`.  
 **Fact:** ALL 20 proposals have `matchType=EXACT` and `recommendedCpcBidMicros=4000000` (**$4 suggested bid**). That bid is NOT the observed CPC or a newly authorized budget. **No keywords were added, bids changed, or recommendations applied/dismissed** during this analysis.  
 **Approval:** the keyword dispositions below are analyst recommendations, NOT a medical/clinic-operational decision or final Ads changes. See `docs/DECISIONS.md` for owner-approved decisions.
