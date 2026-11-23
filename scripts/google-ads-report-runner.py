@@ -94,7 +94,7 @@ def summarize(item: str, payload: dict[str, object]) -> None:
             flush=True,
         )
     elif item == "schedules":
-        expected_ids = {"24414014329", "24404901753"}
+        expected_ids = {"24414014329", "24404901753", "23637947414"}
         expected_days = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"}
         observed = {}
         for row in rows:
