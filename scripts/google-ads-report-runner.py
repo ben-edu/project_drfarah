@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 ALLOWED_REPORTS = (
-    "full_audit", "account", "budgets", "schedules", "recommendations", "campaigns", "daily",
+    "full_audit", "account", "budgets", "schedules", "recommendations", "recommendation_keywords", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 FULL_AUDIT = (
@@ -154,6 +154,25 @@ def summarize(item: str, payload: dict[str, object]) -> None:
                 flush=True,
             )
         print(f"RECOMMENDATIONS_NOT_SHOWN={max(0, len(active) - 100)}", flush=True)
+    elif item == "recommendation_keywords":
+        print(f"RECOMMENDATION_KEYWORDS total={len(rows)}", flush=True)
+        for row in rows:
+            rec = row.get("recommendation", {})
+            candidate = rec.get("keywordRecommendation", {})
+            keyword = candidate.get("keyword", {})
+            term = str(keyword.get("text", "")).replace(chr(10), " ").replace(chr(13), " ")
+            print(
+                "KEYWORD_CANDIDATE "
+                + json.dumps({
+                    "text": term,
+                    "matchType": keyword.get("matchType"),
+                    "recommendedCpcBidMicros": candidate.get("recommendedCpcBidMicros"),
+                    "campaign": rec.get("campaign"),
+                    "adGroup": rec.get("adGroup"),
+                    "resourceName": rec.get("resourceName"),
+                }, ensure_ascii=False),
+                flush=True,
+            )
     elif item == "changes":
         counts = Counter(
             row.get("changeEvent", {}).get("changeResourceType", "UNKNOWN")
