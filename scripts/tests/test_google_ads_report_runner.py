@@ -62,7 +62,7 @@ def test_full_audit_summary_prints_paid_terms_and_budget():
         )
     text = output.getvalue()
     assert status == 0
-    assert len(calls) == 9
+    assert len(calls) == 10
     assert "REPORT_WINDOW=2026-11-16..2026-11-22" in text
     assert "SEARCH_TERMS_SUMMARY: rows=2 paid_rows=1 clicks=2 impressions=9 cost_usd=7.30" in text
     assert "PAID_TERM cost_usd=7.30" in text
@@ -168,6 +168,24 @@ def test_weekday_schedule_compliance_summary():
 
 
 
+
+
+
+def test_auto_apply_subscriptions_summarize_enabled_and_zero():
+    for rows, expected in [
+        ([{
+            "recommendationSubscription": {
+                "type": "KEYWORD", "status": "ENABLED",
+                "createDateTime": "2026-11-23 08:00:00",
+                "modifyDateTime": "2026-11-23 08:00:00",
+            }
+        }], "AUTO_APPLY_REVIEW=ENABLED_SUBSCRIPTIONS_PRESENT"),
+        ([], "AUTO_APPLY_REVIEW=NO_ENABLED_SUBSCRIPTIONS_RETURNED"),
+    ]:
+        out = io.StringIO()
+        with redirect_stdout(out):
+            RUNNER["summarize"]("auto_apply", {"rows": rows})
+        assert expected in out.getvalue()
 
 def test_keyword_recommendation_detail_with_text_and_match_type():
     import json
