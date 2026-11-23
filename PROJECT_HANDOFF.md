@@ -10,6 +10,20 @@
 
 ---
 
+## 0T. 2026-11-23 — All 20 recommended keywords reviewed; root Jenkins PR-144/17 green; doctor update drafted
+
+**VERIFIED LIVE KEYWORD RECOMMENDATIONS (owner-supplied 10:05 Jenkins `REPORT=recommendation_keywords`):** `ROWS=20`, each `EXACT`, `recommendedCpcBidMicros=4000000` ($4 proposed bid), all for Urgent Search `24414014329` / Walk-In ad group `199388744537`; `Finished: SUCCESS`. Every term individually evaluated with reasons in `docs/GOOGLE_ADS_KEYWORD_RECOMMENDATIONS_REVIEW_2026-11-23.md`: **6 conditional shortlist, 9 hold, 5 do not add now**. NONE approved/added. Exact match can include same-intent close variants; current keyword duplication and direct patient outcomes are unverified. At $10/day budget, propose at most 1–2 bounded trial terms after owner confirms walk-ins, patient eligibility, geographic radius/hours and reception outcome data.
+
+**ROOT CI VERIFIED:** Owner-supplied Jenkins `project_drfarah/PR-144/17` console ends `SUCCESS — all required stages completed`, `Finished: SUCCESS`. GitHub status at feature SHA `5a7a1ce02a4b72ec469aa74f617e95b83d98fd74` is `continuous-integration/jenkins/pr-head = success`. Earlier `This commit cannot be built` error no longer applies to THIS checked SHA, though historical root-cause cannot be inferred from the supplied tail. **Release still blocked by Git merge conflict**: PR #144 `mergeable_state=dirty` vs newer `dev` due independently updated canonical `PROJECT_HANDOFF.md`, `ROADMAP.md`, `docs/DECISIONS.md`. Merge strategy: preserve newer canonical dev docs, integrate tested feature read-only reporting code, recheck exact new SHA/CI before merging. Successful PR CI does not imply staging acceptance or release to main.
+
+**DOCTOR COMMUNICATION:** Concise English draft, clinic decisions/weekly KPI requests, and plain-language 26 recommendation dispositions saved to `docs/DR_FARAH_BUSINESS_UPDATE_2026-11-23.md`. Requires confirmation of 2 visits' Google Ads attribution, calls answered/qualified, bookings/completed visits, approximate collected revenue, true walk-in/admission policy, allowed services and geographic catchment. No PII/PHI requested. Do not claim all 26 recommendations approved or that RSA/Sitelink actual text/image proposals were evaluated; those content details remain for clinic review.
+
+**ONGOING:** Every Monday R02 recheck recommendations (next Nov 30 LA); R06 account `auto_apply` read returned 0 subscriptions, but Rules/scripts must still be independently inspected. Clinic schedule 15/15 PASS for three enabled campaigns; Urgent $10, Traveler $5. No new Ads mutation in this review. Production PR #145 remains draft; main not changed.
+
+**IMMEDIATE NEXT:** align conflict-prone feature docs with canonical dev without losing historical evidence, green exact-head PR#144 CI, merge feature→dev, verify dev/staging, then inspect dev→main diff and promote PR#145 only after verified production gate. Separate clinic business/medical approvals and finance data pending.
+
+---
+
 ## 0S. 2026-11-23 — Auto-apply direct readback succeeded, keyword detail + Jenkins root CI still open
 
 **OWNER-SUPPLIED LIVE JENKINS (09:41, account `6525103588`):** Dedicated `drfarah-google-ads-api-validate` ran the new `Python reporting runner regression tests` stage and **all 8 tests PASS**, then read-only `REPORT=auto_apply` returned **ROWS=0**, `AUTO_APPLY_SUBSCRIPTIONS total=0 enabled=0 paused=0`, `AUTO_APPLY_REVIEW=NO_ENABLED_SUBSCRIPTIONS_RETURNED; CHECK_ACCOUNT_RULES_SEPARATELY`, `Google Ads API read-only reports SUCCESS`, `Finished: SUCCESS`. Therefore **no enabled Google Ads recommendation auto-apply subscriptions were returned from the API in this verified snapshot**. This does NOT exclude account/manager-level automated Rules/scripts, past Google Ads Recommendations-path budget changes, or another campaign's future automation. Nothing was enabled/disabled. Docker login emitted a transient credential-store warning; this is not credential disclosure in this supplied log and did not fail the build, but secure credential-helper handling remains an ops hardening item.
