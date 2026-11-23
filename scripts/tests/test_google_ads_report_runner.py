@@ -167,6 +167,40 @@ def test_weekday_schedule_compliance_summary():
     assert "SCHEDULE_COMPLIANCE=DRIFT_OR_INCOMPLETE" in output.getvalue()
 
 
+
+
+def test_keyword_recommendation_detail_with_text_and_match_type():
+    import json
+
+    def fake_run(cmd, **kwargs):
+        assert cmd[cmd.index("--report") + 1] == "recommendation_keywords"
+        return SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout=json.dumps({"rows": [{
+                "recommendation": {
+                    "resourceName": "customers/6525103588/recommendations/example",
+                    "campaign": "customers/6525103588/campaigns/24414014329",
+                    "adGroup": "customers/6525103588/adGroups/199388744537",
+                    "keywordRecommendation": {
+                        "keyword": {"text": "urgent care clinic", "matchType": "PHRASE"},
+                        "recommendedCpcBidMicros": "4000000",
+                    },
+                },
+            }]}),
+        )
+
+    output = io.StringIO()
+    with redirect_stdout(output):
+        status = RUNNER["main"](
+            {"REPORT_KIND": "recommendation_keywords", "ADS_OUTPUT_FORMAT": "summary"},
+            run=fake_run, today=date(2026, 11, 23),
+        )
+    assert status == 0
+    assert "RECOMMENDATION_KEYWORDS total=1" in output.getvalue()
+    assert '"matchType": "PHRASE"' in output.getvalue()
+    assert '"text": "urgent care clinic"' in output.getvalue()
+
 if __name__ == "__main__":
     # Runs in a Python 3.12 container without external dependencies or API credentials.
     # Kept outside api/tests because root Jenkins' API pytest container mounts only api/.
