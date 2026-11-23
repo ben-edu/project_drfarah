@@ -141,3 +141,9 @@ Current email transport and production evidence are maintained in the live techn
 - **CLINIC OUTCOME FACT (NON-PHI):** Dr. Farah reported ~2–3 calls from Google Ads per day last week and **two clinic visits**; attribution of those visits to individual Google Ads campaigns, bookings, or clicks remains unverified. Track this separately from Ads `phoneCalls`, `conversions`, `allConversions`; never upload personal or health information to advertising systems.
 - **AUTHORITY / REVIEW:** Live Google Ads remains authoritative for budget/campaign status; operational acceptance evidence in draft PR #144, `PROJECT_HANDOFF.md`, `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md`. Any further ads writes require current-state readback, economic assessment, and owner-approved scope.
 
+
+## Google Ads weekday operating schedule independently verified — 2026-11-23
+
+**VERIFIED PASS:** The clinic-requested Mon–Fri 08:30–16:30 `America/Los_Angeles` schedule was read back via production Google Ads API v26 for all three enabled campaigns `24414014329`, `24404901753`, `23637947414`: 15 active ad schedule criteria rows total, exactly five weekdays per campaign, no weekend schedule, `SCHEDULE_COMPLIANCE=PASS`, Jenkins `Finished: SUCCESS`. The separately executed $36→$10 Urgent budget change was read back as $10. No Ads configuration writes were performed by this verification.
+
+**DO NOT AUTO-APPLY RECOMMENDATIONS:** Current Google recommendations have not yet been re-read via the new `recommendations` API query. Nov 11 types are historical proposals, not authoritative current state. Assessment and any subsequent budget/bid/keyword changes require a newly verified recommendation report and the owner's approval. A proposed budget increase does not override the $10/day owner decision.
