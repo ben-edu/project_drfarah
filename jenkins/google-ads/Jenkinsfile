@@ -42,7 +42,22 @@ pipeline {
           test -f api/app/services/google_ads_reporting.py
           test -f scripts/google-ads-readonly-report.py
           test -f scripts/google-ads-report-runner.py
+          test -f scripts/tests/test_google_ads_report_runner.py
           echo "REPORT_SOURCE_COMMIT=$(git rev-parse HEAD)"
+        '''
+      }
+    }
+
+    stage('Python reporting runner regression tests') {
+      steps {
+        sh '''
+          set -eu
+          docker run --rm \
+            -v "$PWD:/repo:ro" \
+            -w /repo \
+            -e PYTHONDONTWRITEBYTECODE=1 \
+            python:3.12-slim \
+            python scripts/tests/test_google_ads_report_runner.py
         '''
       }
     }
