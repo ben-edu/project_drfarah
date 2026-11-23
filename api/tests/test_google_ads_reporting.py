@@ -13,6 +13,8 @@ def test_curated_reports():
     assert "FROM customer" in query_for("account")
     assert "FROM campaign_budget" in query_for("budgets")
     assert "FROM recommendation" in query_for("recommendations")
+    assert "FROM recommendation_subscription" in query_for("auto_apply")
+    assert "recommendation_subscription.status" in query_for("auto_apply")
     assert "recommendation.keyword_recommendation" in query_for("recommendation_keywords")
     assert "WHERE recommendation.type = KEYWORD" in query_for("recommendation_keywords")
     assert "recommendation.campaign_budget_recommendation" in query_for("recommendations")
