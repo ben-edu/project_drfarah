@@ -53,3 +53,9 @@ Once Jenkins loads the updated SCM Jenkinsfile, `REPORT=schedules` displays a co
 Read-only `schedules` has now **passed on live Google Ads account** with 15 rows across three enabled campaigns (Urgent Search, Traveler Search, Local Services), Monday–Friday 08:30–16:30, `SCHEDULE_COMPLIANCE=PASS`. This meets the clinic-specified operating hours as of that readback.
 
 `recommendations` is the new ninth report. v26 GAQL selects resource name, type, campaign, dismissed status, impact and campaign budget recommendation detail from `recommendation`. This is **read only**; it does not invoke RecommendationService Apply/Dismiss methods. The new query is **pending first live Jenkins run**; do not use stale Nov 11 recommendations as current account facts. Google docs: https://developers.google.com/google-ads/api/docs/recommendations .
+
+## Direct auto-apply recommendation subscription audit (added 2026-11-23)
+
+`REPORT=auto_apply` queries read-only `recommendation_subscription` for type, status, created/modified times and resource names using Ads API v26 SearchStream. Documentation: https://developers.google.com/google-ads/api/fields/v26/recommendation_subscription . It cannot change a subscription. The status report prints each subscription and counts ENABLED versus PAUSED; empty readback does not rule out independent account Rules/scripts. **Live Jenkins test pending.**
+
+`REPORT=recommendation_keywords` separately retrieves `recommendation.keyword_recommendation` text/match type/recommended CPC and target ad group (if present). **Live Jenkins test pending.** `full_audit` includes ten normal reports (including `auto_apply`) but excludes the more verbose on-demand per-keyword detail report.
