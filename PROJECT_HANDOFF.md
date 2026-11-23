@@ -10,6 +10,14 @@
 
 ---
 
+## 0R. 2026-11-23 — Direct auto-apply subscription audit implemented; pending Jenkins readback
+
+**FOLLOW-UP CODE IN FEATURE PR #144 (still unmerged):** Added `REPORT=auto_apply` read-only GAQL for `recommendation_subscription.type/status/create_date_time/modify_date_time`. Google's v26 field docs confirm selectability. The report prints how many subscription types are ENABLED vs PAUSED, without modifying them. The direct Google Ads `full_audit` now includes **10** report presets. A new `recommendation_keywords` detail report remains available on-demand, not included in full_audit. **Both new GAQL reports and the relocated credential-free test stage still need owner-run Jenkins live validation.**
+
+**R06 RECURRING CONTROL:** When verified, use `auto_apply` weekly Mondays plus manual native UI Rules/scripts/history; absence of subscription rows cannot rule out other Ads automations. Recurring operations are documented in `docs/OPERATIONS_RECURRING_CADENCE.md`, and analysis of the 26 current Google recommendations in `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`. All 26 remain read-only proposals; no Apply or Dismiss was invoked. PR #144 root CI gate still needs exact-head successful validation, separate from standalone Jenkins.
+
+---
+
 ## 0Q. 2026-11-23 — Weekly review cycle recorded; keyword detail pending; Jenkins test isolation repaired
 
 **RECURRING R02 cycle completed:** Live 2026-11-23 `REPORT=recommendations` = 26 undismissed; seven types, including 20 KEYWORD and campaign budget suggestion $110/day (not authorized). Dated assessment in `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`, next weekly due Monday Nov 30 (Pacific). Durable R01–R12 operational schedule in `docs/OPERATIONS_RECURRING_CADENCE.md`, tracking Issue #146. This is a recurring activity, **not permanently complete**.
