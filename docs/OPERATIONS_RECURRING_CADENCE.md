@@ -52,7 +52,7 @@ This is the operating status at the stated snapshot, not proof that a scheduler 
 | R03 Spend/search terms | 2026-11-22 read for Nov 16–20: $216.17 Urgent served, 58 clicks, 6 platform conversions | Mon 2026-11-30 LA | No post-change week yet; paid terms incomplete vs campaign ledger |
 | R04 Clinic patient outcomes | Clinic owner reported 2 visits and ~2–3 calls/day for prior week, source unverified | Fri 2026-11-27 LA | Booking/source/actual paid attribution not yet reconciled |
 | R05 Billing | **NOT verified** against official billed-cost ledger | Initial native Billing review required; monthly after invoice | Google Ads served cost is not billed cost; Local Services separate |
-| R06 Auto-apply and account rules | Historical screenshots/Change Events partial; no direct subscription state yet | Initial `REPORT=auto_apply` live test **now**, then Mondays; monthly Rules audit | New GAQL implemented but **not live-tested**; separate Rules remain open |
+| R06 Auto-apply and account rules | 2026-11-23 direct `auto_apply`: 0 returned subscriptions/0 ENABLED, Jenkins SUCCESS, 8 runner tests PASS | Mondays + monthly native Rules/scripts review | No Auto-apply subscription returned, but Rules/scripts and history still require native verification |
 | R07 Site release and booking | PR #143 $250 frontend edit tested at PR head, but integrated staging acceptance not documented | Before dev→main PR #145 merge, then weekly/after deploy | No production price release or smoke claim |
 | R08 GBP/reviews | No fresh same-cycle readback | Next business-week review | Do not fabricate rating/review facts |
 | R09 GSC organic | No fresh same-cycle readback | By 2026-12-07 LA | No current data snapshot |
