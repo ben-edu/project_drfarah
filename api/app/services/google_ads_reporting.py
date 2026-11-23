@@ -41,6 +41,13 @@ def query_for(report: str, start: str | None = None, end: str | None = None) -> 
         "budgets": ("SELECT campaign_budget.id, campaign_budget.amount_micros, "
                     "campaign_budget.explicitly_shared, campaign_budget.reference_count "
                     "FROM campaign_budget ORDER BY campaign_budget.id"),
+        "auto_apply": (
+            "SELECT recommendation_subscription.resource_name, "
+            "recommendation_subscription.type, recommendation_subscription.status, "
+            "recommendation_subscription.create_date_time, "
+            "recommendation_subscription.modify_date_time "
+            "FROM recommendation_subscription ORDER BY recommendation_subscription.type"
+        ),
         "recommendation_keywords": (
             "SELECT recommendation.resource_name, recommendation.campaign, "
             "recommendation.ad_group, recommendation.type, "
