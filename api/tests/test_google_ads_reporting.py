@@ -12,6 +12,9 @@ def test_customer_id():
 def test_curated_reports():
     assert "FROM customer" in query_for("account")
     assert "FROM campaign_budget" in query_for("budgets")
+    assert "FROM campaign_criterion" in query_for("schedules")
+    assert "campaign_criterion.ad_schedule.day_of_week" in query_for("schedules")
+    assert "24414014329, 24404901753" in query_for("schedules")
     assert "cost_micros" in query_for("daily", "2026-11-09", "2026-11-15")
     assert "change_event.client_type" in query_for("changes", "2026-11-09", "2026-11-15")
     with pytest.raises(ValueError):
