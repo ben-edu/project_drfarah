@@ -40,6 +40,28 @@
 - Most recent owner-supplied direct recommendations: **26 undismissed** (20 KEYWORD, 1 CAMPAIGN_BUDGET, 1 MAXIMIZE_CONVERSIONS_OPT_IN, 1 PERFORMANCE_MAX_OPT_IN, 1 RESPONSIVE_SEARCH_AD, 1 SITELINK_ASSET, 1 DYNAMIC_IMAGE_EXTENSION_OPT_IN). Budget suggestion **$110/day** is **not approved**; review at every R02 cycle. No action applied/dismissed as part of the read.
 - Do not automatically enact weekly decisions or new spending. Direct Google Ads reporting code is in **draft PR #144** until release gates close. Opening an automated Jenkins cron/notification is a *separate implementation step requiring configured credentials, timezone, recipients and a verified owner*.
 
+
+## Current cycle ledger — 2026-11-23 (evidence vs outstanding)
+
+This is the operating status at the stated snapshot, not proof that a scheduler is active. Dates refer to the clinic's Pacific day unless noted; Jenkins console display time may be in the operator's own locale.
+
+| Control | Last proven check | Next due / follow-up | Current exception |
+|---|---|---|---|
+| R01 Budget and schedules | 2026-11-22 budget readback; 2026-11-23 15-rule schedule `PASS` | Each following clinic weekday before 08:30 LA | Future drift monitoring not automatically scheduled |
+| R02 Google Ads Recommendations | 2026-11-23 `ROWS=26`, 26 undismissed; dated review saved | **Mon 2026-11-30 LA** | 20 KEYWORD proposals lack detail; on-demand detail report awaiting live test |
+| R03 Spend/search terms | 2026-11-22 read for Nov 16–20: $216.17 Urgent served, 58 clicks, 6 platform conversions | Mon 2026-11-30 LA | No post-change week yet; paid terms incomplete vs campaign ledger |
+| R04 Clinic patient outcomes | Clinic owner reported 2 visits and ~2–3 calls/day for prior week, source unverified | Fri 2026-11-27 LA | Booking/source/actual paid attribution not yet reconciled |
+| R05 Billing | **NOT verified** against official billed-cost ledger | Initial native Billing review required; monthly after invoice | Google Ads served cost is not billed cost; Local Services separate |
+| R06 Auto-apply and account rules | Historical screenshots/Change Events partial; no direct subscription state yet | Initial `REPORT=auto_apply` live test **now**, then Mondays; monthly Rules audit | New GAQL implemented but **not live-tested**; separate Rules remain open |
+| R07 Site release and booking | PR #143 $250 frontend edit tested at PR head, but integrated staging acceptance not documented | Before dev→main PR #145 merge, then weekly/after deploy | No production price release or smoke claim |
+| R08 GBP/reviews | No fresh same-cycle readback | Next business-week review | Do not fabricate rating/review facts |
+| R09 GSC organic | No fresh same-cycle readback | By 2026-12-07 LA | No current data snapshot |
+| R10 Matomo/GA4 first-party | Matomo full implementation remains Issue #142 | Weekly measurement QA / implementation gate | Installation and dashboard not verified |
+| R11 Economics | Owner price $250; clinic visit counts unlinked to Ads | Next monthly economic checkpoint | CAC per confirmed paid patient unknown |
+| R12 CI and documentation | Canonical Handoff/Roadmap/Decisions updated Nov 23; PR #144/#145 drafted | Every Git write/CI status change and Fridays | PR #144 root CI not green; main production not released |
+
+Always keep `next_due` after checking each line. No automatic recovery, dismissals, bid, budget or keyword writes are authorized by a recurring read-only check.
+
 ## Review cycle record template
 
 ```text
