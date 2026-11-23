@@ -39,3 +39,7 @@
 - **Unresolved:** actual 20 keyword texts, proposed RSA/Sitelink specifics, Auto-apply native settings and actual patient ROI.
 - **Next due:** Monday **2026-11-30**, Pacific; recheck earlier if budgets/schedules/rules change.
 - **Persistent status:** R02 **RECURRING — ACTIVE**, not done after one pass.
+
+## 2026-11-23 engineering follow-up (not live tested)
+
+The new `REPORT=recommendation_keywords` option will query `recommendation.keyword_recommendation` and return the actual suggested text, match type, optional recommended CPC, campaign and ad-group resource for each KEYWORD recommendation. Do not treat the prior 20 resource identifiers as proof of individual keyword suitability. The new `REPORT=auto_apply` option will query `recommendation_subscription.status/type` for actual subscribed recommendation types, while still distinguishing separate Rules/scripts. Official v26 field documentation confirms these are selectable. Both features are in feature PR #144 and **Jenkins production acceptance is pending**; no Ads mutation.
