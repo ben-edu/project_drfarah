@@ -87,3 +87,7 @@ A new read-only **`schedules`** report on the feature branch queries v26 `campai
 This targeted readback covers **Search campaigns only**; Local Services scheduling/billing is separate and was not changed on behalf of the clinic.
 
 **Known CI blocker as of review:** PR #144 `continuous-integration/jenkins/pr-head` reports `error: This commit cannot be built` for the previously checked commit, with build URL pointing to Jenkins `PR-144/7`. This is **not** the manually executed reporting job and has not been diagnosed from its Jenkins Console Output. Do not merge while PR CI is in error; inspect the PR job Console Output and remedy the exact cause, then seek green CI status. No claim of CI pass for new `schedules` tests.
+
+## 2026-11-23 Local Services schedule execution
+
+The Google Ads action connector returned **success** setting system-generated Local Services campaign `23637947414` to the same weekday 08:30–16:30 America/Los_Angeles schedule. The `schedules` read-only GAQL and compliance checker on this feature branch were expanded to cover **all three enabled campaigns**, expecting exactly **15 active windows**. This is an operator-requested change to cover clinic-wide weekday hours; **Local Services budget and billed charges were not altered**. The new query is not yet production-tested. A failed GAQL response from Local Services requires inspection and should not by itself be conflated with an unsuccessful write.
