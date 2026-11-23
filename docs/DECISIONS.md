@@ -131,3 +131,10 @@ Current email transport and production evidence are maintained in the live techn
 - Jenkins mapping: feature/fix/docs branches validate, `dev` deploys staging, `main` deploys production after approval.
 - Measurement implementation must preserve staging/production analytics isolation.
 - See `docs/architecture/ENVIRONMENT_ISOLATION.md` for full rationale.
+
+## Recurring Google Ads review and no-auto-apply decision — 2026-11-23
+
+- **OWNER FINANCIAL CONTROL RETAINED:** Urgent Search daily average remains $10; Traveler Search $5. On 2026-11-23 live `REPORT=recommendations` showed `CAMPAIGN_BUDGET` suggesting **$110/day** for Urgent (11×); **NOT APPROVED OR APPLIED**. All 26 proposals remain undismissed as observed. Do not confuse dismissal with rejecting a proposal for now; no Google Ads `Apply` or `Dismiss` API write was made. Google projected `costMicros` / `conversions` do not prove billed cost or completed visits.
+- **REVIEW POLICY:** No unattended recommendation application, dynamic image enablement, Performance Max opt-in, broader keyword additions, or Smart Bidding migration. Each candidate requires live context, patient outcome economics, ad/landing compliance and owner signoff before any write.
+- **RECURRING GOVERNANCE:** Adopt `docs/OPERATIONS_RECURRING_CADENCE.md` R01–R12: weekly Monday Recommendations review and paid search terms/Rules/Billing; weekdays budget/schedule/health; weekly Friday source→completed-visit reconciliation and docs; biweekly SEO; monthly invoice/economics; post-change CI/release checks. Evidence log and next-due required for every cycle; don't close recurrent work after one pass.
+- **CURRENT KNOWN GAP:** 20 KEYWORD recommendation texts/match types were not returned by the summary; review incomplete at per-keyword level. Separate dated audit `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`. Next weekly review Mon 2026-11-30 Pacific. Operator-triggered Jenkins is not a running unattended scheduled review.
