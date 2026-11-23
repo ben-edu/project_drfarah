@@ -2,7 +2,7 @@
 
 > **Live unified resume document.** Continue from this file + `ROADMAP.md`; live systems remain authoritative for their own state.
 
-**Last updated:** 2026-11-22  
+**Last updated:** 2026-11-23  
 **Repository:** `ben-edu/project_drfarah`  
 **Canonical branch:** `dev`  
 **Production branch:** `main`  
@@ -10,7 +10,19 @@
 
 ---
 
-**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0N. 2026-11-23 — Local Services ad hours also set; three-campaign readback required
+**SCM Jenkins operational runbook (2026-11-22):** `docs/JENKINS_GOOGLE_ADS_REPORTING_RUNBOOK.md` records exact job path/SCM branch, Jenkins parameters, the `OUTPUT_FORMAT` parameter-refresh behavior, GitHub push-hook setup and verification, and secret-bearing branch-review safeguards. Owner enabled `GitHub hook trigger for GITScm polling` but GitHub delivery/automatic trigger is not yet independently confirmed. Documentation exists in feature branch / draft PR #144, not in canonical `dev` until merge. Updated summary formatter still needs a live Jenkins run.\n\n---\n\n## 0O. 2026-11-23 — Independent 15/15 ad-schedule readback PASS; recommendations reporting added; release still gated
+
+**OWNER-SUPPLIED PRODUCTION JENKINS EVIDENCE (08:51 local console):** `REPORT=schedules` returned exactly **ROWS=15**, 5 enabled campaign_criterion.ad_schedule rows apiece for campaigns `23637947414` Local Services, `24404901753` Traveler Search, and `24414014329` Urgent Search; each MONDAY–FRIDAY 08:30–16:30 account time `America/Los_Angeles`, no Sat/Sun rows. Runner printed **`SCHEDULE_COMPLIANCE=PASS`**, `Google Ads API read-only reports SUCCESS`, and `Finished: SUCCESS`. Owner-requested operating-hour scheduling is now confirmed by direct API read-after-write for **all 3 enabled campaigns**. No further Ads write or budget increase.
+
+**RECOMMENDATIONS AUDIT — NOT YET NEW-LIVE-REVIEWED:** Previously (Nov 11) read through Windsor.ai: Urgent recommendation types `CAMPAIGN_BUDGET`, `MAXIMIZE_CONVERSIONS_OPT_IN`, `SITELINK_ASSET`, `RESPONSIVE_SEARCH_AD`, `DYNAMIC_IMAGE_EXTENSION_OPT_IN`, unknown other. Direct Windsor read is now blocked by Free-plan connector account limit (9 connected, 1 allowed). To eliminate paid dependency, added new **read-only `recommendations` GAQL v26 report** (resource/type/campaign/dismissed/impact/budget details), exposed via CLI, Jenkins report selection and summarized with no apply/dismiss. `full_audit` now includes **nine** reports. **New Recommendations query has NOT been Jenkins-executed**, so no claim of current recommendation counts or contents. Hold auto-apply/budget or bidding changes pending outcome review.
+
+**RELEASE READINESS GATE:** User requests validated changes flow to `main` and frequent GitHub `PROJECT_HANDOFF.md` updates. Approved release strategy `docs/GIT_RELEASE_STRATEGY.md` mandates exact-head feature PR CI → `dev` merge + staging proof → `dev` to `main` promotion + production smoke. `main` `37794a7490ff338e1648fd788b0c38527fef838a` is ancestor of `dev` `d59e190914271ffda00ff5313b56c27744d99949` (compare main..dev: ahead 5/behind 0), but dev additionally contains website $250 price changes and documents, not all newly validated for current production rollout. PR #144 CI on prior feature head `68efb400...` reported `error: This commit cannot be built` (Jenkins `PR-144/12`), distinct from manual successful Ads reporting job. Updated head status needs review and PR CI root cause inspection. **Do NOT merge until nine-report live review, exact-head CI, and staging gates pass.** No main write has occurred.
+
+**NEXT:** Operator run SCM Jenkins `REPORT=recommendations`, `OUTPUT_FORMAT=summary`; capture types/impacts and evaluate each against actual visits and $10/$5 owner-approved budgets, without applying. Check Jenkins PR-144 job console for CI error (not available to assistant), restore green. Merge PR #144 to dev only after CI, validate staging, then inspect full dev→main diff and promote with production smoke. Confirm native billed charges/Auto-apply rules, and patient attribution separately.
+
+---
+
+## 0N. 2026-11-23 — Local Services ad hours also set; three-campaign readback required
 
 **FACT / LIVE WRITE SUCCESS:** After completing Urgent and Traveler Search Mon–Fri 08:30–16:30, Google Ads connector `set_ad_schedule` also successfully changed **enabled Local Services campaign `23637947414`** to Monday–Friday 08:30–16:30 `America/Los_Angeles`. Five previous schedule windows were replaced with five new ones; no pause, budget, targeting or bid changes. The clinic's request now has successful write responses for **all three campaigns that were ENABLED in the 2026-11-22 API account report**, with Legacy Smart PAUSED. Still verify **read-after-write actual window state**, especially Local Services, rather than claiming this is definitively enforced indefinitely.
 
