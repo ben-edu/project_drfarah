@@ -27,7 +27,7 @@ In Jenkins → **Build with Parameters**:
 
 | Parameter | Values | Default / meaning |
 |---|---|---|
-| `REPORT` | `full_audit`, `account`, `budgets`, `schedules`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all eight readonly reports |
+| `REPORT` | `full_audit`, `account`, `budgets`, `schedules`, `recommendations`, `campaigns`, `daily`, `ad_groups`, `search_terms`, `changes` | `full_audit` performs all nine readonly reports |
 | `START_DATE` | `YYYY-MM-DD` or blank | Blank: six days before `END_DATE` |
 | `END_DATE` | `YYYY-MM-DD` or blank | Blank: current date in `America/Los_Angeles` |
 | `OUTPUT_FORMAT` | `summary` or `raw` | `summary`: concise console; `raw`: all returned JSON |
@@ -91,3 +91,11 @@ This targeted readback covers **Search campaigns only**; Local Services scheduli
 ## 2026-11-23 Local Services schedule execution
 
 The Google Ads action connector returned **success** setting system-generated Local Services campaign `23637947414` to the same weekday 08:30–16:30 America/Los_Angeles schedule. The `schedules` read-only GAQL and compliance checker on this feature branch were expanded to cover **all three enabled campaigns**, expecting exactly **15 active windows**. This is an operator-requested change to cover clinic-wide weekday hours; **Local Services budget and billed charges were not altered**. The new query is not yet production-tested. A failed GAQL response from Local Services requires inspection and should not by itself be conflated with an unsuccessful write.
+
+## 2026-11-23 verified schedule acceptance and recommendation report
+
+Owner supplied a successful Jenkins `REPORT=schedules` console: 15 rows, precisely 5 enabled weekday 08:30–16:30 windows each for Urgent Search, Traveler Search and Local Services. `SCHEDULE_COMPLIANCE=PASS` and `Finished: SUCCESS` independently confirm the clinic request has been enforced as of the timestamp checked; budget was separately read back as Urgent $10/Traveler $5.
+
+The standalone `REPORT=recommendations` preset was added to direct v26 GAQL and the summary runner. `full_audit` now means **nine reports**; `recommendations` prints undis­missed recommendation types, associated campaigns, estimated impact if provided, and a budget recommendation payload if present. **Recommendation retrieval has not yet been run live from Jenkins.** Run `REPORT=recommendations` and `OUTPUT_FORMAT=summary` first; review and never auto-apply an account optimization on the basis of projected scores alone. The Windsor.ai connected Free plan blocks direct new data pulls due to its connector limit, so direct Ads API is the intended sustainable evidence source.
+
+Release order remains `feature → dev → main` after exact SHA CI/staging gates. The standalone reporting Jenkins job’s successful `Finished: SUCCESS` does not substitute for root-project `PR-144` CI.
