@@ -16,11 +16,11 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 ALLOWED_REPORTS = (
-    "full_audit", "account", "budgets", "campaigns", "daily",
+    "full_audit", "account", "budgets", "schedules", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 FULL_AUDIT = (
-    "account", "budgets", "campaigns", "daily",
+    "account", "budgets", "schedules", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 DATED_REPORTS = {"daily", "ad_groups", "search_terms", "changes"}
