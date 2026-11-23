@@ -62,7 +62,7 @@ def test_full_audit_summary_prints_paid_terms_and_budget():
         )
     text = output.getvalue()
     assert status == 0
-    assert len(calls) == 8
+    assert len(calls) == 9
     assert "REPORT_WINDOW=2026-11-16..2026-11-22" in text
     assert "SEARCH_TERMS_SUMMARY: rows=2 paid_rows=1 clicks=2 impressions=9 cost_usd=7.30" in text
     assert "PAID_TERM cost_usd=7.30" in text
