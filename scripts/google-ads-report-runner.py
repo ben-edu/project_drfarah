@@ -16,11 +16,11 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 ALLOWED_REPORTS = (
-    "full_audit", "account", "budgets", "schedules", "campaigns", "daily",
+    "full_audit", "account", "budgets", "schedules", "recommendations", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 FULL_AUDIT = (
-    "account", "budgets", "schedules", "campaigns", "daily",
+    "account", "budgets", "schedules", "recommendations", "campaigns", "daily",
     "ad_groups", "search_terms", "changes",
 )
 DATED_REPORTS = {"daily", "ad_groups", "search_terms", "changes"}
@@ -135,6 +135,25 @@ def summarize(item: str, payload: dict[str, object]) -> None:
             + " expected=Mon-Fri_08:30-16:30_America/Los_Angeles",
             flush=True,
         )
+    elif item == "recommendations":
+        types = Counter(str(r.get("recommendation", {}).get("type", "UNKNOWN")) for r in rows)
+        active = [r for r in rows if r.get("recommendation", {}).get("dismissed") is not True]
+        print(f"RECOMMENDATIONS total={len(rows)} undismissed={len(active)}", flush=True)
+        print("RECOMMENDATION_TYPES=" + json.dumps(dict(types), sort_keys=True), flush=True)
+        for row in active[:100]:
+            data = row.get("recommendation", {})
+            print(
+                "RECOMMENDATION "
+                + json.dumps({
+                    "type": data.get("type"),
+                    "campaign": data.get("campaign"),
+                    "resourceName": data.get("resourceName"),
+                    "impact": data.get("impact"),
+                    "campaignBudgetRecommendation": data.get("campaignBudgetRecommendation"),
+                }, ensure_ascii=False),
+                flush=True,
+            )
+        print(f"RECOMMENDATIONS_NOT_SHOWN={max(0, len(active) - 100)}", flush=True)
     elif item == "changes":
         counts = Counter(
             row.get("changeEvent", {}).get("changeResourceType", "UNKNOWN")
