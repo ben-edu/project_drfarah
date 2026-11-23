@@ -41,6 +41,13 @@ def query_for(report: str, start: str | None = None, end: str | None = None) -> 
         "budgets": ("SELECT campaign_budget.id, campaign_budget.amount_micros, "
                     "campaign_budget.explicitly_shared, campaign_budget.reference_count "
                     "FROM campaign_budget ORDER BY campaign_budget.id"),
+        "recommendations": (
+            "SELECT recommendation.resource_name, recommendation.type, "
+            "recommendation.campaign, recommendation.dismissed, "
+            "recommendation.impact, "
+            "recommendation.campaign_budget_recommendation "
+            "FROM recommendation ORDER BY recommendation.type LIMIT 500"
+        ),
         "schedules": (
             "SELECT campaign.id, campaign.name, campaign_criterion.status, "
             "campaign_criterion.ad_schedule.day_of_week, "
