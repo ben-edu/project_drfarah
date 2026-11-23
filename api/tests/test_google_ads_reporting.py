@@ -12,6 +12,8 @@ def test_customer_id():
 def test_curated_reports():
     assert "FROM customer" in query_for("account")
     assert "FROM campaign_budget" in query_for("budgets")
+    assert "FROM recommendation" in query_for("recommendations")
+    assert "recommendation.campaign_budget_recommendation" in query_for("recommendations")
     assert "FROM campaign_criterion" in query_for("schedules")
     assert "campaign_criterion.ad_schedule.day_of_week" in query_for("schedules")
     assert "24414014329, 24404901753, 23637947414" in query_for("schedules")
