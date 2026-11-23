@@ -10,6 +10,20 @@
 
 ---
 
+## 0P. 2026-11-23 — Google Ads 26 live recommendations reviewed; recurring operations cadence established
+
+**LATEST OWNER-SUPPLIED JENKINS `REPORT=recommendations` (displayed 09:16 2026-11-23):** 26 undismissed Google Ads v26 recommendations, successful read-only production report: 20 KEYWORD, 1 CAMPAIGN_BUDGET, 1 MAXIMIZE_CONVERSIONS_OPT_IN, 1 PERFORMANCE_MAX_OPT_IN, 1 RESPONSIVE_SEARCH_AD, 1 SITELINK_ASSET, 1 DYNAMIC_IMAGE_EXTENSION_OPT_IN. Urgent Search `24414014329` recommendation proposes **$110/day**, versus live owner-approved and read-back-verified **$10/day**. **NO recommendation accepted, dismissed or applied.** Budget, automated bidding, Performance Max and images are on hold; RSA/Sitelink require reviewed copy/landing; KEYWORD content missing and needs details before per-keyword decisions. Google's optimization forecasts are not patient outcomes. Source and analysis: `docs/GOOGLE_ADS_RECOMMENDATIONS_REVIEW_2026-11-23.md`; next review **Monday 2026-11-30 Pacific**, also immediately after material Ads change.
+
+**RECURRING PROGRAM:** `docs/OPERATIONS_RECURRING_CADENCE.md` + GitHub Issue #146 are now the authoritative operations checklist with IDs R01–R12, frequencies, LA timezone, owners/roles, sources, evidence capture, escalation and explicit next-due. Highlights: weekday budget/schedule/health scan before clinic 08:30; Monday weekly recommendations, search terms, spend/Auto-apply/finance check; Friday patient-call→booking→completed-visit/source review and docs/PR backlog; biweekly GSC; monthly billed invoices and economics; after every change CI→staging→production smoke and update Handoff. Recurring does **NOT** mean completed forever or automatically scheduled: Jenkins GitHub SCM hook does not schedule weekly checks. Manual operator runs until an actual safe scheduler is configured and tested.
+
+**LATEST PROVEN CLINIC AD SCHEDULE:** 15/15 windows Mon–Fri 08:30–16:30 `America/Los_Angeles` across all three enabled campaigns; `SCHEDULE_COMPLIANCE=PASS` (owner-supplied 2026-11-23 Jenkins). Urgent $10/day / Traveler $5/day verified, original "near me" ad group PAUSED. These are live Google Ads account changes already made, independent of Git branch release.
+
+**RELEASE:** PR #144 feature→dev remains Draft, latest previously observed root Jenkins `error: This commit cannot be built`; separate reporting Job success does NOT unblock root CI. PR #145 dev→main is Draft, prior Jenkins PR checks may have succeeded at a prior SHA, but the head tracks `dev` and changes as more docs land. DO NOT promote without exact-current-head CI, staging, complete diff and release smoke. `main` last verified SHA `37794a7490ff338e1648fd788b0c38527fef838a`. Direct Jenkins PR-144 Console Output is unavailable to assistant without operator evidence.
+
+**NEXT IN ORDER:** (1) fetch 20 KEYWORD details via GAQL read-only and review intent/copy; (2) inspect root PR-144 Jenkins Console, fix real CI root cause, pass exact-head tests; (3) validate integrated staging and promote only approved dev snapshot to main; (4) execute the R01–R12 recurring operations cycles and maintain event-driven docs. No Ads writes in this review.
+
+---
+
 ## 0G. 2026-11-15 — Urgent Ads budget raised, near-me queries in Walk-In, price fix proposed
 
 **CRITICAL LIVE FINANCIAL FACT:** Urgent Search currently ENABLED with $36/day average (earlier owner-authorized $10), Traveler Search ENABLED $5/day. Google Ads Change Event Nov 11 16:16:34 shows $10→$36 via `GOOGLE_ADS_RECOMMENDATIONS`; **does not prove Auto-apply**. Owner screenshot Auto-apply History 0 enrolled and no rows, Manage shows one apparently checked Remove redundant keywords but saved state unknown. Next: verify Change History actor and Billing, obtain explicit owner confirmation to restore Urgent to $10 while keeping ENABLED; no Ads mutation done.
