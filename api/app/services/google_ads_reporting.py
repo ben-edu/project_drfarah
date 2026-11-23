@@ -41,6 +41,18 @@ def query_for(report: str, start: str | None = None, end: str | None = None) -> 
         "budgets": ("SELECT campaign_budget.id, campaign_budget.amount_micros, "
                     "campaign_budget.explicitly_shared, campaign_budget.reference_count "
                     "FROM campaign_budget ORDER BY campaign_budget.id"),
+        "schedules": (
+            "SELECT campaign.id, campaign.name, campaign_criterion.status, "
+            "campaign_criterion.ad_schedule.day_of_week, "
+            "campaign_criterion.ad_schedule.start_hour, "
+            "campaign_criterion.ad_schedule.start_minute, "
+            "campaign_criterion.ad_schedule.end_hour, "
+            "campaign_criterion.ad_schedule.end_minute "
+            "FROM campaign_criterion "
+            "WHERE campaign_criterion.type = AD_SCHEDULE "
+            "AND campaign_criterion.status = ENABLED "
+            "AND campaign.id IN (24414014329, 24404901753)"
+        ),
     }
     if report in fixed:
         if start is not None or end is not None:
