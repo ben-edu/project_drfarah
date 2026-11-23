@@ -93,6 +93,48 @@ def summarize(item: str, payload: dict[str, object]) -> None:
             f"ZERO_COST_ROWS_NOT_SHOWN={len(rows) - len(paid)}",
             flush=True,
         )
+    elif item == "schedules":
+        expected_ids = {"24414014329", "24404901753"}
+        expected_days = {"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"}
+        observed = {}
+        for row in rows:
+            campaign = row.get("campaign", {})
+            criterion = row.get("campaignCriterion", {})
+            window = criterion.get("adSchedule", {})
+            cid = str(campaign.get("id", ""))
+            day = str(window.get("dayOfWeek", ""))
+            start_hour = str(window.get("startHour", ""))
+            end_hour = str(window.get("endHour", ""))
+            start_minute = str(window.get("startMinute", ""))
+            end_minute = str(window.get("endMinute", ""))
+            minute_ok = lambda v: v in {"THIRTY", "30"}
+            valid_window = (
+                cid in expected_ids and day in expected_days
+                and start_hour == "8" and end_hour == "16"
+                and minute_ok(start_minute) and minute_ok(end_minute)
+                and str(criterion.get("status", "")) == "ENABLED"
+            )
+            observed.setdefault(cid, []).append((day, valid_window))
+            print(
+                f"SCHEDULE campaign_id={cid} day={day} "
+                f"start={start_hour}:{start_minute} end={end_hour}:{end_minute} "
+                f"enabled={criterion.get('status')}",
+                flush=True,
+            )
+        compliant = (
+            set(observed) == expected_ids
+            and all(
+                len(observed[cid]) == 5
+                and {day for day, _ in observed[cid]} == expected_days
+                and all(ok for _, ok in observed[cid])
+                for cid in expected_ids
+            )
+        )
+        print(
+            "SCHEDULE_COMPLIANCE=" + ("PASS" if compliant else "DRIFT_OR_INCOMPLETE")
+            + " expected=Mon-Fri_08:30-16:30_America/Los_Angeles",
+            flush=True,
+        )
     elif item == "changes":
         counts = Counter(
             row.get("changeEvent", {}).get("changeResourceType", "UNKNOWN")
