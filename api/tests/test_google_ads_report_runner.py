@@ -135,3 +135,33 @@ def test_rejects_invalid_output_format():
         )
     assert code == 2
     assert "Invalid output format" in stderr.getvalue()
+
+
+def test_weekday_schedule_compliance_summary():
+    from contextlib import redirect_stdout
+    days = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
+    rows = [
+        {
+            "campaign": {"id": campaign_id},
+            "campaignCriterion": {
+                "status": "ENABLED",
+                "adSchedule": {
+                    "dayOfWeek": day, "startHour": "8", "startMinute": "THIRTY",
+                    "endHour": "16", "endMinute": "THIRTY",
+                },
+            },
+        }
+        for campaign_id in ("24414014329", "24404901753")
+        for day in days
+    ]
+    output = io.StringIO()
+    with redirect_stdout(output):
+        RUNNER["summarize"]("schedules", {"rows": rows})
+    assert "SCHEDULE_COMPLIANCE=PASS" in output.getvalue()
+    assert output.getvalue().count("SCHEDULE campaign_id=") == 10
+
+    rows[0]["campaignCriterion"]["adSchedule"]["endHour"] = "17"
+    output = io.StringIO()
+    with redirect_stdout(output):
+        RUNNER["summarize"]("schedules", {"rows": rows})
+    assert "SCHEDULE_COMPLIANCE=DRIFT_OR_INCOMPLETE" in output.getvalue()
